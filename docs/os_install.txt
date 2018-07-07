@@ -1,0 +1,154 @@
+###### OS Development Environment Setting up ######
+
+### install cygwin ###
+# create directories
+C:\work\cygwin64
+C:\work\cygwin64\packages
+
+# download web page
+https://cygwin.com/install.html
+
+# execute the downloaded file
+setup-x86_64.exe
+
+# Select Root Install Directory
+C:\work\cygwin64
+
+# Select Local Package Directory
+C:\work\cygwin64\packages
+
+# Choose A Download Site
+ftp://ftp.kaist.ac.kr
+
+# Select Packages - Devel
+- binutils   : bin, src
+- bison      : bin
+- flex       : bin
+- gcc-core   : bin, src
+- gcc-g++    : bin
+- libtool    : bin
+- make       : bin
+- patchutils : bin
+- texinfo    : bin
+
+# Select Packages - Libs
+- libgmp-devel     : bin
+- libiconv         : bin
+- libintl-devel    : bin
+- libmpc-devel     : bin
+- libmpfr-devel    : bin
+- libncurses-devel : bin
+- libopenssl100    : bin, auto checked
+- libreadline7     : bin, auto checked
+
+# set Path
+Path -> ;C:\work\cygwin64\bin;C:\work\cygwin64\usr\cross\bin
+
+# check if gcc supports both 32-bit and 64-bit
+# (It's the test result on 64-bit windows)
+$ gcc -m32 -o hello hello.c -> fail
+$ gcc -m64 -o hello hello.c -> success
+--------------------------------------------------
+// hello.c
+#include <stdio.h>
+
+int main(int argc, const char** argv) {
+	printf("Hello, world!\n");
+	return 0
+}
+--------------------------------------------------
+
+### build binutils: create cross linker ###
+# execute the commands below on cygwin
+$ mkdir -p /usr/cross
+$ cd /usr/src/binutils-2.25-4.src
+$ tar xvf binutils-gdb-2.25.tar.bz2
+$ cd /usr/src/binutils-2.25-4.src/binutils-gdb
+$ export TARGET=x86_64-pc-linux
+$ export PREFIX=/usr/cross
+$ ./configure --target=$TARGET --prefix=$PREFIX --enable-64-bit-bfd --disable-shared --disable-nls
+$ ls -alF config.status -> exist
+$ ls -alF Makefile -> exist
+$ make configure-host
+$ make LDFLAGS="-static"
+--------------------------------------------------
+modify <Makefile> before make install
+  350 #MAKEINFO = /usr/src/binutils-2.25-4.src/binutils-gdb/missing makeinfo
+  351 MAKEINFO = makeinfo
+--------------------------------------------------
+$ make install (Before this command, do step1, 2 below)
+
+# check result
+$ /usr/cross/bin/x86_64-pc-linux-ld --help | grep "supported targets" -> elf64-x86-64 elf32-i386
+$ /usr/cross/bin/x86_64-pc-linux-ld --help | grep "supported emulations" -> elf64_x86_64 elf32_i386
+
+### build gcc: create cross compiler ###
+# execute the commands below on cygwin
+$ cd /usr/src/gcc-5.4.0-1.src
+$ tar xvf gcc-5.4.0.tar.bz2
+$ cd /usr/src/gcc-5.4.0-1.src/gcc-5.4.0
+skip patch
+$ export TARGET=x86_64-pc-linux
+$ export PREFIX=/usr/cross
+$ export PATH=$PATH:$PREFIX/bin
+$ ./configure --target=$TARGET --prefix=$PREFIX --disable-nls --enable-languages=c --without-headers --disable-shared --enable-multilib
+$ ls -alF config.status -> exist
+$ ls -alF Makefile -> exist
+$ make configure-host
+$ cp /lib/gcc/x86_64-pc-cygwin/5.4.0/libgcc_s.dll.a /lib/gcc/x86_64-pc-cygwin/5.4.0/libgcc_s.a
+$ cp /lib/libmpfr.dll.a /lib/libmpfr.a
+$ cp /lib/libgmp.dll.a /lib/libgmp.a
+$ cp /lib/libmpc.dll.a /lib/libmpc.a
+$ make all-gcc
+$ make install-gcc
+
+# check result
+$ /usr/cross/bin/x86_64-pc-linux-gcc -dumpspecs | grep -A1 multilib_options -> m64/m32
+
+### install nasm ###
+# download web page
+https://www.nasm.us/
+
+# copy nasm to bin directory
+- file: nasm.exe
+- from: C:\Users\hansu\AppData\Local\nasm
+- to: C:\work\cygwin64\bin
+
+# check version
+$ nasm -version -> 2.11.08
+
+### install eclipse (optional) ###
+# install jdk from download web page
+http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+
+# set Path
+Path -> ;C:\Program Files\Java\jdk1.8.0_111\bin
+
+# check version
+java -version -> 1.8.0_111
+
+# install eclipse from download web page
+http://www.eclipse.org/downloads/
+
+# set Properties
+eclipse -> Properties -> C/C++ General -> Paths and Symbols -> includes (Languages: GNU C)
+-> C:/work/cygwin64/usr/include
+-> C:/work/cygwin64/lib/gcc/x86_64-pc-cygwin/5.4.0/include
+
+### install qemu ###
+# install qemu from zip file
+qemu-0.10.4.zip
+
+# backup original batch file and copy new batch file and modifiy it.
+- original file: qemu-x86_64.bat_org
+- new file: qemu-x86_64.bat
+- modify: qemu-system-x86_64.exe -L . -m 64 -fda "C:/work/ws/os/hans-os/hans-os.img" -hda "C:/work/ws/os/hans-os/hdd.img" -boot a -localtime -M pc -serial tcp:127.0.0.1:4444,server,nowait -smp 16
+
+# create hdd image
+> qemu-img.exe create hdd.img 20M
+
+# move hdd image
+- file: hdd.img
+- from: C:\work\qemu
+- to: C:\work\ws\os\hans-os
+
