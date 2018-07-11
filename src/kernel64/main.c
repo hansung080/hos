@@ -96,7 +96,8 @@ void k_main(void) {
 		
 	} else {
 		k_printf("fail\n");
-		while (true);
+		// Do not call infinite loop here,
+		// because it could fail when hard disk has never been formatted.
 	}
 	
 	// initialize serial port.
