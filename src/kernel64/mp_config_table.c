@@ -7,7 +7,7 @@ static MpConfigManager g_mpConfigManager = {0, };
 bool k_findMpFloatingPointerAddr(qword* addr) {
 	char* mpFloatingPointer;
 	qword ebdaAddr;      // extended BIOD data area address
-	qword systemBaseMem; // system basic memory size
+	qword systemBaseMem; // system base memory size
 
 	k_printf("====>>>> MP Floating Point Search\n");
 	k_printf("1. Extended BIOS Data Area = [0x%X]\n", MP_SEARCH1_EBDA_ADDRESS);
@@ -25,7 +25,7 @@ bool k_findMpFloatingPointerAddr(qword* addr) {
 		}
 	}
 
-	/* 2. search MP floating pointer: search it in the ending 1KB-sized range of system basic memory */
+	/* 2. search MP floating pointer: search it in the ending 1KB-sized range of system base memory */
 	systemBaseMem = MP_SEARCH2_SYSEMBASEMEMORY;
 
 	for (mpFloatingPointer = (char*)(systemBaseMem - 1024); (qword)mpFloatingPointer <= systemBaseMem; mpFloatingPointer++) {
@@ -79,7 +79,7 @@ bool k_analyzeMpConfigTable(void) {
 		g_mpConfigManager.usePicMode = true;
 	}
 
-	// set MP configuration table header, basic MP configuration table entry start address.
+	// set MP configuration table header, base MP configuration table entry start address.
 	g_mpConfigManager.mpConfigTableHeader = mpConfigTableHeader;
 	g_mpConfigManager.baseEntryStartAddr = mpFloatingPointer->mpConfigTableAddr + sizeof(MpConfigTableHeader);
 
@@ -166,7 +166,7 @@ void k_printMpConfigTable(void) {
 	k_printf("- MP Floating Pointer Address                     : 0x%Q\n", mpConfigManager->mpFloatingPointer);
 	k_printf("- MP Configuration Table Header Address           : 0x%Q\n", mpConfigManager->mpConfigTableHeader);
 	k_printf("- Base MP Configuration Table Entry Start Address : 0x%Q\n", mpConfigManager->baseEntryStartAddr);
-	k_printf("- Processor/Core Count                            : %d\n", mpConfigManager->processorCount);
+	k_printf("- Processor Count                                 : %d\n", mpConfigManager->processorCount);
 	k_printf("- PIC Mode Support                                : %s\n", (mpConfigManager->usePicMode == true) ? "true" : "false");
 	k_printf("- ISA Bus ID                                      : %d\n", mpConfigManager->isaBusId);
 
@@ -249,7 +249,7 @@ void k_printMpConfigTable(void) {
 	k_printf("\n");
 
 	//----------------------------------------------------------------------------------------------------
-	// print basic MP configuration table entry info.
+	// print base MP configuration table entry info.
 	//----------------------------------------------------------------------------------------------------
 	k_printf("\n====>>>> Base MP Configuration Table Entry Info (%d Entries)\n", mpConfigTableHeader->entryCount);
 
@@ -264,7 +264,7 @@ void k_printMpConfigTable(void) {
 		case MP_ENTRYTYPE_PROCESSOR:
 			processorEntry = (ProcessorEntry*)baseEntryAddr;
 
-			k_printf("- Entry Type         : Processor Entry\n");
+			k_printf("- Entry Type         : Processor\n");
 			k_printf("- Local APIC ID      : %d\n", processorEntry->localApicId);
 			k_printf("- Local APIC Version : 0x%X\n", processorEntry->localApicVersion);
 			k_printf("- CPU Flags          : 0x%X ", processorEntry->cpuFlags);
@@ -288,7 +288,7 @@ void k_printMpConfigTable(void) {
 		case MP_ENTRYTYPE_BUS:
 		    busEntry = (BusEntry*)baseEntryAddr;
 
-		    k_printf("- Entry Type      : Bus Entry\n");
+		    k_printf("- Entry Type      : Bus\n");
 		    k_printf("- Bus ID          : %d\n", busEntry->busId);
 		    k_memcpy(buffer, busEntry->busTypeStr, sizeof(busEntry->busTypeStr));
 		    buffer[sizeof(busEntry->busTypeStr)] = '\0';
@@ -300,7 +300,7 @@ void k_printMpConfigTable(void) {
 		case MP_ENTRYTYPE_IOAPIC:
 			ioApicEntry = (IoApicEntry*)baseEntryAddr;
 
-			k_printf("- Entry Type            : IO APIC Entry\n");
+			k_printf("- Entry Type            : IO APIC\n");
 			k_printf("- IO APIC ID            : %d\n", ioApicEntry->ioApicId);
 			k_printf("- IO APIC Version       : 0x%X\n", ioApicEntry->ioApicVersion);
 			k_printf("- IO APIC Flags         : 0x%X ", ioApicEntry->ioApicFlags);
@@ -317,16 +317,16 @@ void k_printMpConfigTable(void) {
 		case MP_ENTRYTYPE_IOINTERRUPTASSIGNMENT:
 			ioInterruptAssignEntry = (IoInterruptAssignEntry*)baseEntryAddr;
 
-			k_printf("- EntryType                 : IO Interrupt Assignment Entry\n");
-			k_printf("- Interrupt Type            : 0x%X ", ioInterruptAssignEntry->interruptType);
+			k_printf("- EntryType          : IO Interrupt Assignment\n");
+			k_printf("- Interrupt Type     : 0x%X ", ioInterruptAssignEntry->interruptType);
 			k_printf("(%s)\n", interruptType[ioInterruptAssignEntry->interruptType]);
-			k_printf("- Interrupt Flags           : 0x%X ", ioInterruptAssignEntry->interruptFlags);
+			k_printf("- Interrupt Flags    : 0x%X ", ioInterruptAssignEntry->interruptFlags);
 			k_printf("(%s, %s)\n", interruptPolarity[ioInterruptAssignEntry->interruptFlags & 0x03]
 								, interruptTrigger[(ioInterruptAssignEntry->interruptFlags >> 2) & 0x03]);
-			k_printf("- Source BUS ID             : %d\n", ioInterruptAssignEntry->srcBusId);
-			k_printf("- Source BUS IRQ            : %d\n", ioInterruptAssignEntry->srcBusIrq);
-			k_printf("- Destination IO APIC ID    : %d\n", ioInterruptAssignEntry->destIoApicId);
-			k_printf("- Destination IO APIC INTIN : %d\n", ioInterruptAssignEntry->destIoApicIntin);
+			k_printf("- Src BUS ID         : %d\n", ioInterruptAssignEntry->srcBusId);
+			k_printf("- Src BUS IRQ        : %d\n", ioInterruptAssignEntry->srcBusIrq);
+			k_printf("- Dest IO APIC ID    : %d\n", ioInterruptAssignEntry->destIoApicId);
+			k_printf("- Dest IO APIC INTIN : %d\n", ioInterruptAssignEntry->destIoApicIntin);
 
 			baseEntryAddr += sizeof(IoInterruptAssignEntry);
 			break;
@@ -334,22 +334,22 @@ void k_printMpConfigTable(void) {
 		case MP_ENTRYTYPE_LOCALINTERRUPTASSIGNMENT:
 			localInterruptAssignEntry = (LocalInterruptAssignEntry*)baseEntryAddr;
 
-			k_printf("- Entry Type                    : Local Interrupt Assignment Entry\n");
-			k_printf("- Interrupt Type                : 0x%X ", localInterruptAssignEntry->interruptType);
+			k_printf("- Entry Type             : Local Interrupt Assignment\n");
+			k_printf("- Interrupt Type         : 0x%X ", localInterruptAssignEntry->interruptType);
 			k_printf("(%s)\n", interruptType[localInterruptAssignEntry->interruptType]);
-			k_printf("- Interrupt Flags               : 0x%X ", localInterruptAssignEntry->interruptFlags);
+			k_printf("- Interrupt Flags        : 0x%X ", localInterruptAssignEntry->interruptFlags);
 			k_printf("(%s, %s)\n", interruptPolarity[localInterruptAssignEntry->interruptFlags & 0x03]
 								, interruptTrigger[(localInterruptAssignEntry->interruptFlags >> 2) & 0x03]);
-			k_printf("- Source BUS ID                 : %d\n", localInterruptAssignEntry->srcBusId);
-			k_printf("- Source BUS IRQ                : %d\n", localInterruptAssignEntry->srcBusIrq);
-			k_printf("- Destination Local APIC ID     : %d\n", localInterruptAssignEntry->destLocalApicId);
-			k_printf("- Destination Local APIC LINTIN : %d\n", localInterruptAssignEntry->destLocalApicLintin);
+			k_printf("- Src BUS ID             : %d\n", localInterruptAssignEntry->srcBusId);
+			k_printf("- Src BUS IRQ            : %d\n", localInterruptAssignEntry->srcBusIrq);
+			k_printf("- Dest Local APIC ID     : %d\n", localInterruptAssignEntry->destLocalApicId);
+			k_printf("- Dest Local APIC LINTIN : %d\n", localInterruptAssignEntry->destLocalApicLintin);
 
 			baseEntryAddr += sizeof(LocalInterruptAssignEntry);
 			break;
 
 		default:
-			k_printf("Unknown Entry Type (%d)\n", entryType);
+			k_printf("Invaild Entry Type (%d)\n", entryType);
 			break;
 		}
 

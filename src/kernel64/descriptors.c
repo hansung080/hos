@@ -23,7 +23,7 @@ void k_initGdtAndTss(void) {
 	k_setGdtEntry8(&(entry[0]), 0, 0, 0, 0, 0);
 	k_setGdtEntry8(&(entry[1]), 0x00000000, 0xFFFFF, GDT_FLAGS_UPPER_CODE, GDT_FLAGS_LOWER_KERNELCODE, GDT_TYPE_CODE);
 	k_setGdtEntry8(&(entry[2]), 0x00000000, 0xFFFFF, GDT_FLAGS_UPPER_DATA, GDT_FLAGS_LOWER_KERNELDATA, GDT_TYPE_DATA);
-	for (i = 0; i < MAXPROCESSORCOUNT; i++) { // create TSS segment descriptors as many as the max processor count.
+	for (i = 0; i < MAXPROCESSORCOUNT; i++) { // create TSS segment descriptors as many as max processor count.
 		k_setGdtEntry16((GdtEntry16*)&(entry[GDT_MAXENTRY8COUNT + (i * 2)]), (qword)tss + (i * sizeof(Tss)), sizeof(Tss) - 1, GDT_FLAGS_UPPER_TSS, GDT_FLAGS_LOWER_TSS, GDT_TYPE_TSS);
 	}
 
@@ -54,7 +54,7 @@ void k_setGdtEntry16(GdtEntry16* entry, qword baseAddr, dword limit, byte upperF
 void k_initTss(Tss* tss) {
 	int i;
 
-	// create TSS segments as many as the max processor count.
+	// create TSS segments as many as max processor count.
 	for (i = 0; i < MAXPROCESSORCOUNT; i++) {
 		k_memset(tss, 0, sizeof(Tss));
 

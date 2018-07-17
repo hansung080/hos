@@ -4,8 +4,8 @@ global k_readCpuid, k_switchToKernel64
 
 SECTION .text
 
-; Param  : dword eax_, dword* eax, dword* ebx, dword* ecx, dword* edx
-; Return : void
+; param  : dword eax_, dword* eax, dword* ebx, dword* ecx, dword* edx
+; return : void
 k_readCpuid:
 	push ebp
 	mov ebp, esp
@@ -40,8 +40,8 @@ k_readCpuid:
 	pop ebp
 	ret
 
-; Param  : void
-; Return : void
+; param  : void
+; return : void
 k_switchToKernel64:
 
 	; CR4 control register: OSXMMEXCPT(bit 10)=1, OSFXSR(bit 9)=1, PAE(bit 5)=1

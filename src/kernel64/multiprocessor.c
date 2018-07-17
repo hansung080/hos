@@ -65,7 +65,7 @@ static bool k_wakeupAp(void) {
 	g_apicIdAddr = localApicBaseAddr + APIC_REGISTER_APICID;
 
 
-	/* send Initialization IPI to AP */
+	/* send Init IPI to AP */
 	*(dword*)(localApicBaseAddr + APIC_REGISTER_ICRLOWER) = APIC_DESTINATIONSHORTHAND_ALLEXCLUDINGSELF |
 			                                                APIC_TRIGGERMODE_EDGE |
 															APIC_LEVEL_ASSERT |
@@ -86,7 +86,7 @@ static bool k_wakeupAp(void) {
 		return false;
 	}
 
-	/* send Start IPI to AP (2 times): set AP start address as kernel32 start address. */
+	/* send Start-up IPI to AP (2 times): set AP start address as kernel32 start address. */
 	for (i = 0; i < 2; i++) {
 		*(dword*)(localApicBaseAddr + APIC_REGISTER_ICRLOWER) = APIC_DESTINATIONSHORTHAND_ALLEXCLUDINGSELF |
 				                                                APIC_TRIGGERMODE_EDGE |

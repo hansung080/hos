@@ -8,15 +8,15 @@
 
 // MP floating pointer searching
 #define MP_SEARCH1_EBDA_ADDRESS         (*(word*)0x040E) * 16   // extended BIOS data area address: Physical address was multiplied by 16, because it's segment start address in the address <0x040E>.
-#define MP_SEARCH2_SYSEMBASEMEMORY      (*(word*)0x0413) * 1024 // system basic memory size: Physical address was multiplied by 1024, because it's KByte unit in the address <0x0413>.
+#define MP_SEARCH2_SYSEMBASEMEMORY      (*(word*)0x0413) * 1024 // system base memory size: Physical address was multiplied by 1024, because it's KByte unit in the address <0x0413>.
 #define MP_SEARCH3_BIOSROM_STARTADDRESS 0x0F0000                // BIOS ROM area start address
 #define MP_SEARCH3_BIOSROM_ENDADDRESS   0x0FFFFF                // BIOS ROM area end address
 
 // MP floating pointer - MP feature byte 1~5 (1 byte * 5)
-#define MP_FLOATINGPOINTER_FEATUREBYTE1_USEMPTABLE 0x00 // use MP configuration table (0:use MP configuration table, !0:use basic configuration in MultiProcessor Specification)
+#define MP_FLOATINGPOINTER_FEATUREBYTE1_USEMPTABLE 0x00 // use MP configuration table (0:use MP configuration table, !0:use default configuration defined in MultiProcessor Specification)
 #define MP_FLOATINGPOINTER_FEATUREBYTE2_PICMODE    0x80 // support PIC mode(bit 7=1: support PIC mode, bit 7=0: support virtual wire mode, bit 0~6: reserved)
 
-// basic MP configuration table entry - entry type (1 byte)
+// base MP configuration table entry - entry type (1 byte)
 #define MP_ENTRYTYPE_PROCESSOR                0 // processor entry
 #define MP_ENTRYTYPE_BUS                      1 // bus entry
 #define MP_ENTRYTYPE_IOAPIC                   2 // IO APIC entry
@@ -78,21 +78,21 @@ typedef struct k_MpFloatingPointer {
 // MP configuration table header (44 bytes)
 typedef struct k_MpConfigTableHeader {
 	char signature[4];             // signature (PCMP)
-	word baseTableLen;             // basic table length
+	word baseTableLen;             // base table length
 	byte revision;                 // MultiProcessor Specification version
 	byte checksum;                 // checksum
 	char oemIdStr[8];              // OEM ID string
 	char productIdStr[12];         // PRODUCT ID string
 	dword oemTablePointerAddr;     // OEM table pointer
 	word oemTableSize;             // OEM table size
-	word entryCount;               // basic MP configuration table entry count
+	word entryCount;               // base MP configuration table entry count
 	dword memMapIoAddrOfLocalApic; // memory map IO address of local APIC
 	word extendedTableLen;         // extended table length
 	byte extendedTableChecksum;    // extended table checksum
 	byte reserved;                 // reserved area
 } MpConfigTableHeader;
 
-// basic MP configuration table entry - processor entry (20 bytes)
+// base MP configuration table entry - processor entry (20 bytes)
 typedef struct k_ProcessorEntry {
 	byte entryType;        // entry type (0)
 	byte localApicId;      // local APIC ID
@@ -103,14 +103,14 @@ typedef struct k_ProcessorEntry {
 	dword reserved[2];     // reserved area
 } ProcessorEntry;
 
-// basic MP configuration table entry - bus entry (8 bytes)
+// base MP configuration table entry - bus entry (8 bytes)
 typedef struct k_BusEntry {
 	byte entryType;     // entry type (1)
 	byte busId;         // bus ID
 	char busTypeStr[6]; // bus type string
 } BusEntry;
 
-// basic MP configuration table entry - IO APIC entry (8 bytes)
+// base MP configuration table entry - IO APIC entry (8 bytes)
 typedef struct k_IoApicEntry {
 	byte entryType;     // entry type (2)
 	byte ioApicId;      // IO APIC ID
@@ -119,7 +119,7 @@ typedef struct k_IoApicEntry {
 	dword memMapIoAddr; // memory map IO address of IO APIC
 } IoApicEntry;
 
-// basic MP configuration table entry - IO interrupt assignment entry (8 bytes)
+// base MP configuration table entry - IO interrupt assignment entry (8 bytes)
 typedef struct k_IoInterruptAssignEntry {
 	byte entryType;       // entry type (3)
 	byte interruptType;   // interrupt type
@@ -130,7 +130,7 @@ typedef struct k_IoInterruptAssignEntry {
 	byte destIoApicIntin; // destination IO APIC INTIN
 } IoInterruptAssignEntry;
 
-// basic MP configuration table entry - local interrupt assignment entry (8 bytes)
+// base MP configuration table entry - local interrupt assignment entry (8 bytes)
 typedef struct k_LocalInterruptAssignEntry {
 	byte entryType;           // entry type (4)
 	byte interruptType;       // interrupt type
@@ -143,9 +143,9 @@ typedef struct k_LocalInterruptAssignEntry {
 
 // MP configuration table manager
 typedef struct k_MpConfigManager {
-	MpFloatingPointer* mpFloatingPointer;     // MP floating pointer
-	MpConfigTableHeader* mpConfigTableHeader; // MP configuration table header
-	qword baseEntryStartAddr;                 // basic MP configuration table entry start address
+	MpFloatingPointer* mpFloatingPointer;     // MP floating pointer address
+	MpConfigTableHeader* mpConfigTableHeader; // MP configuration table header address
+	qword baseEntryStartAddr;                 // base MP configuration table entry start address
 	int processorCount;                       // processor count
 	bool usePicMode;                          // PIC mode support flag
 	byte isaBusId;                            // ISA bus ID
