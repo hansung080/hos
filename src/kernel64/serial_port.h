@@ -5,10 +5,10 @@
 #include "sync.h"
 
 // I/O port base address of Serial Port Controller
-#define SERIAL_PORT_COM1 0x3F8 // COM1 serial port (IRQ4)
-#define SERIAL_PORT_COM2 0x2F8 // COM2 serial port (IRQ3)
-#define SERIAL_PORT_COM3 0x3E8 // COM3 serial port (IRQ4)
-#define SERIAL_PORT_COM4 0x2E8 // COM4 serial port (IRQ3)
+#define SERIAL_PORT_COM1 0x3F8 // COM1 serial port (IRQ 4)
+#define SERIAL_PORT_COM2 0x2F8 // COM2 serial port (IRQ 3)
+#define SERIAL_PORT_COM3 0x3E8 // COM3 serial port (IRQ 4)
+#define SERIAL_PORT_COM4 0x2E8 // COM4 serial port (IRQ 3)
 
 // I/O port offset of register (all 1 byte)
 #define SERIAL_PORT_INDEX_RECEIVEBUFFER           0x00 // Receive Buffer Register (read)

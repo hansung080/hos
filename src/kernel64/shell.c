@@ -13,6 +13,9 @@
 #include "serial_port.h"
 #include "mp_config_table.h"
 #include "multiprocessor.h"
+#include "pic.h"
+#include "local_apic.h"
+#include "io_apic.h"
 
 static ShellCommandEntry g_commandTable[] = {
 		{"help", "Show Help", k_help},
@@ -53,7 +56,9 @@ static ShellCommandEntry g_commandTable[] = {
 		{"flush", "Flush File System Cache", k_flushCache},
 		{"download", "Download Data from Serial, ex) download a.txt", k_downloadFile},
 		{"showmpinfo", "Show MP Configuration Table Information", k_showMpConfigTable},
-		{"startap", "Start Application Processor", k_startAp}
+		{"startap", "Start Application Processor", k_startAp},
+		{"startsymmetricio", "Start Symmetric IO Mode", k_startSymmetricIoMode},
+		{"showirqintinmap", "Show IRQ to INTIN Map", k_showIrqToIntinMap}
 };
 
 void k_startShell(void) {
@@ -2124,7 +2129,57 @@ static void k_startAp(const char* paramBuffer) {
 		k_printf("====>>>> Application Processor Start Fail~!!\n");
 		return;
 	}
-
+	
 	k_printf("====>>>> Application Processor Start Success~!!\n");
 	k_printf("-> Bootstrap Processor(APIC ID:%d) started Application Processor.\n", k_getApicId());
 }
+
+static void k_startSymmetricIoMode(const char* paramBuffer) {
+	MpConfigManager* mpManager;
+	bool interruptFlag;
+	
+	if (k_analyzeMpConfigTable() == false) {
+		k_printf("fail to analyze MP configuration table\n");
+		return;
+	}
+	
+	mpManager = k_getMpConfigManager();
+	
+	// If it's PIC mode, disable PIC mode using IMCR Register.
+	if (mpManager->usePicMode == true) {
+		k_printf("disable PIC mode\n");
+		k_outPortByte(0x22, 0x70);
+		k_outPortByte(0x23, 0x01);
+	}
+	
+	k_printf("mask PIC interrupt\n");
+	k_maskPicInterrupt(0xFFFF);
+	
+	k_printf("enable global Local APIC\n");
+	k_enableGlobalLocalApic();
+	
+	k_printf("enable software Local APIC\n");
+	k_enableSoftwareLocalApic();
+	
+	k_printf("disable CPU interrupt flag\n");
+	interruptFlag = k_setInterruptFlag(false);
+	
+	k_printf("set 0 priority to Task Priority Register\n");
+	k_setInterruptPriority(0);
+	
+	k_printf("initialize Local Vector Table\n");
+	k_initLocalVectorTable();
+	
+	k_printf("initialize IO Redirection Table\n");
+	k_initIoRedirectionTable();
+	
+	k_printf("restore CPU interrupt flag\n");
+	k_setInterruptFlag(interruptFlag);
+	
+	k_printf("succeed to start symmetric IO mode\n");
+}
+
+static void k_showIrqToIntinMap(const char* paramBuffer) {
+	k_printIrqToIntinMap();
+}
+

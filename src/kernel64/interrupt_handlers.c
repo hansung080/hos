@@ -7,6 +7,7 @@
 #include "descriptors.h"
 #include "asm_util.h"
 #include "hdd.h"
+#include "local_apic.h"
 
 void k_commonExceptionHandler(int vectorNumber, qword errorCode) {
 	char buffer[3] = {0, };
@@ -43,6 +44,7 @@ void k_commonInterruptHandler(int vectorNumber) {
 	//====================================================================================================
 
 	k_sendEoiToPic(vectorNumber - PIC_IRQSTARTVECTOR);
+	k_sendEoiToLocalApic();
 }
 
 void k_keyboardHandler(int vectorNumber) {
@@ -70,6 +72,7 @@ void k_keyboardHandler(int vectorNumber) {
 	}
 
 	k_sendEoiToPic(vectorNumber - PIC_IRQSTARTVECTOR);
+	k_sendEoiToLocalApic();
 }
 
 void k_timerHandler(int vectorNumber) {
@@ -91,6 +94,7 @@ void k_timerHandler(int vectorNumber) {
 	//====================================================================================================
 
 	k_sendEoiToPic(vectorNumber - PIC_IRQSTARTVECTOR);
+	k_sendEoiToLocalApic();
 
 	g_tickCount++;
 
@@ -185,4 +189,5 @@ void k_hddHandler(int vectorNumber) {
 	}
 
 	k_sendEoiToPic(vectorNumber - PIC_IRQSTARTVECTOR);
+	k_sendEoiToLocalApic();
 }

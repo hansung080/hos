@@ -8,45 +8,45 @@ bool k_findMpFloatingPointerAddr(qword* addr) {
 	char* mpFloatingPointer;
 	qword ebdaAddr;      // extended BIOD data area address
 	qword systemBaseMem; // system base memory size
-
-	k_printf("====>>>> MP Floating Point Search\n");
-	k_printf("1. Extended BIOS Data Area = [0x%X]\n", MP_SEARCH1_EBDA_ADDRESS);
-	k_printf("2. System Base Memory      = [0x%X]\n", MP_SEARCH2_SYSEMBASEMEMORY);
-	k_printf("3. BIOS ROM Area           = [0x%X~0x%X]\n", MP_SEARCH3_BIOSROM_STARTADDRESS, MP_SEARCH3_BIOSROM_ENDADDRESS);
-
+	
+	//k_printf("====>>>> MP Floating Point Search\n");
+	//k_printf("1. Extended BIOS Data Area = [0x%X]\n", MP_SEARCH1_EBDA_ADDRESS);
+	//k_printf("2. System Base Memory      = [0x%X]\n", MP_SEARCH2_SYSEMBASEMEMORY);
+	//k_printf("3. BIOS ROM Area           = [0x%X~0x%X]\n", MP_SEARCH3_BIOSROM_STARTADDRESS, MP_SEARCH3_BIOSROM_ENDADDRESS);
+	
 	/* 1. search MP floating pointer: search it in the starting 1KB-sized range of extended BIOS data area */
 	ebdaAddr = MP_SEARCH1_EBDA_ADDRESS;
-
+	
 	for (mpFloatingPointer = (char*)ebdaAddr; (qword)mpFloatingPointer <= (ebdaAddr + 1024); mpFloatingPointer++) {
 		if (k_memcmp(mpFloatingPointer, MP_FLOATINGPOINTER_SIGNATURE, 4) == 0) {
-			k_printf("Search Success : MP Floating Pointer is in address[0x%X] of Extended BIOS Data Area.\n\n", (qword)mpFloatingPointer);
+			//k_printf("Search Success : MP Floating Pointer is in address[0x%X] of Extended BIOS Data Area.\n\n", (qword)mpFloatingPointer);
 			*addr = (qword)mpFloatingPointer;
 			return true;
 		}
 	}
-
+	
 	/* 2. search MP floating pointer: search it in the ending 1KB-sized range of system base memory */
 	systemBaseMem = MP_SEARCH2_SYSEMBASEMEMORY;
-
+	
 	for (mpFloatingPointer = (char*)(systemBaseMem - 1024); (qword)mpFloatingPointer <= systemBaseMem; mpFloatingPointer++) {
 		if (k_memcmp(mpFloatingPointer, MP_FLOATINGPOINTER_SIGNATURE, 4) == 0) {
-			k_printf("Search Success : MP Floating Pointer is in address[0x%X] of System Base Memory.\n\n", (qword)mpFloatingPointer);
+			//k_printf("Search Success : MP Floating Pointer is in address[0x%X] of System Base Memory.\n\n", (qword)mpFloatingPointer);
 			*addr = (qword)mpFloatingPointer;
 			return true;
 		}
 	}
-
+	
 	/* 3. search MP floating pointer: search it in BIOS ROM area */
 	for (mpFloatingPointer = (char*)MP_SEARCH3_BIOSROM_STARTADDRESS; (qword)mpFloatingPointer < (qword)MP_SEARCH3_BIOSROM_ENDADDRESS; mpFloatingPointer++) {
 		if (k_memcmp(mpFloatingPointer, MP_FLOATINGPOINTER_SIGNATURE, 4) == 0) {
-			k_printf("Search Success : MP Floating Pointer is in address[0x%X] of BIOS ROM Area.\n\n", (qword)mpFloatingPointer);
+			//k_printf("Search Success : MP Floating Pointer is in address[0x%X] of BIOS ROM Area.\n\n", (qword)mpFloatingPointer);
 			*addr = (qword)mpFloatingPointer;
 			return true;
 		}
 	}
-
-	k_printf("Search Fail\n\n");
-
+	
+	//k_printf("Search Fail\n\n");
+	
 	return false;
 }
 
@@ -67,7 +67,7 @@ bool k_analyzeMpConfigTable(void) {
 		return false;
 	}
 
-	k_printf("====>>>> MP Configuration Table Analysis\n");
+	//k_printf("====>>>> MP Configuration Table Analysis\n");
 
 	// set MP floating pointer
 	mpFloatingPointer = (MpFloatingPointer*)mpFloatingPointerAddr;
@@ -120,12 +120,12 @@ bool k_analyzeMpConfigTable(void) {
 			break;
 
 		default:
-			k_printf("Analysis Fail : Unknown Entry Type (%d)\n\n", entryType);
+			//k_printf("Analysis Fail : Invalid Entry Type (%d)\n\n", entryType);
 			return false;
 		}
 	}
 
-	k_printf("Analysis Success\n\n");
+	//k_printf("Analysis Success\n\n");
 
 	return true;
 }
@@ -375,3 +375,92 @@ int k_getProcessorCount(void) {
 
 	return g_mpConfigManager.processorCount;
 }
+
+IoApicEntry* k_findIoApicEntryForIsa(void) {
+	MpConfigTableHeader* mpHeader;
+	IoInterruptAssignEntry* ioInterruptAssignEntry;
+	IoApicEntry* ioApicEntry;
+	qword entryAddr;
+	byte entryType;
+	bool found = false;
+	int i;
+	
+	mpHeader = g_mpConfigManager.mpConfigTableHeader;
+	entryAddr = g_mpConfigManager.baseEntryStartAddr;
+	
+	/* find IO interrupt assignment entry connected with ISA bus */
+	for (i = 0; i < mpHeader->entryCount && found == false; i++) {
+		entryType = *(byte*)entryAddr;
+		switch (entryType) {
+		case MP_ENTRYTYPE_PROCESSOR:
+			entryAddr += sizeof(ProcessorEntry);
+			break;
+			
+		case MP_ENTRYTYPE_BUS:
+			entryAddr += sizeof(BusEntry);
+			break;
+			
+		case MP_ENTRYTYPE_IOAPIC:
+			entryAddr += sizeof(IoApicEntry);
+			break;
+			
+		case MP_ENTRYTYPE_IOINTERRUPTASSIGNMENT:
+			ioInterruptAssignEntry = (IoInterruptAssignEntry*)entryAddr;
+			if (ioInterruptAssignEntry->srcBusId == g_mpConfigManager.isaBusId) {
+				found = true;
+			}
+			
+			entryAddr += sizeof(IoInterruptAssignEntry);
+			break;
+			
+		case MP_ENTRYTYPE_LOCALINTERRUPTASSIGNMENT:
+			entryAddr += sizeof(LocalInterruptAssignEntry);
+			break;
+			
+		default:
+			return null;
+		}
+	}
+	
+	if (found == false) {
+		return null;
+	}
+	
+	/* find IO APIC entry connected with IO interrupt assignment entry found above */
+	entryAddr = g_mpConfigManager.baseEntryStartAddr;
+	for (i = 0; i < mpHeader->entryCount; i++) {
+		entryType = *(byte*)entryAddr;
+		switch (entryType) {
+		case MP_ENTRYTYPE_PROCESSOR:
+			entryAddr += sizeof(ProcessorEntry);
+			break;
+			
+		case MP_ENTRYTYPE_BUS:
+			entryAddr += sizeof(BusEntry);
+			break;
+			
+		case MP_ENTRYTYPE_IOAPIC:
+			ioApicEntry = (IoApicEntry*)entryAddr;
+			if (ioApicEntry->ioApicId == ioInterruptAssignEntry->destIoApicId) {
+				return ioApicEntry;
+			}
+			
+			entryAddr += sizeof(IoApicEntry);
+			break;
+			
+		case MP_ENTRYTYPE_IOINTERRUPTASSIGNMENT:
+			entryAddr += sizeof(IoInterruptAssignEntry);
+			break;
+			
+		case MP_ENTRYTYPE_LOCALINTERRUPTASSIGNMENT:
+			entryAddr += sizeof(LocalInterruptAssignEntry);
+			break;
+			
+		default:
+			return null;
+		}
+	}
+	
+	return null;
+}
+

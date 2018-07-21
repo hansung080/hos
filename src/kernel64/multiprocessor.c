@@ -9,23 +9,23 @@ volatile int g_awakeApCount = 0;  // awake AP count
 volatile qword g_apicIdAddr = 0; // Local APIC ID Register address
 
 bool k_startupAp(void) {
-
+	
 	// analyze MP configuration table.
 	if (k_analyzeMpConfigTable() == false) {
 		return false;
 	}
-
+	
 	// enable local APIC of all processors.
 	k_enableGlobalLocalApic();
-
+	
 	// enable local APIC of BSP.
 	k_enableSoftwareLocalApic();
-
+	
 	// wake up AP.
 	if (k_wakeupAp() == false) {
 		return false;
 	}
-
+	
 	return true;
 }
 
@@ -41,7 +41,7 @@ byte k_getApicId(void) {
 		}
 
 		localApicBaseAddr = mpHeader->memMapIoAddrOfLocalApic;
-		g_apicIdAddr = localApicBaseAddr + APIC_REGISTER_APICID;
+		g_apicIdAddr = localApicBaseAddr + LAPIC_REGISTER_APICID;
 	}
 
 	// local APIC ID field (bit 24~31) of Local APIC ID Register.
@@ -62,21 +62,21 @@ static bool k_wakeupAp(void) {
 	localApicBaseAddr = mpHeader->memMapIoAddrOfLocalApic;
 
 	// save Local APIC ID Register address.
-	g_apicIdAddr = localApicBaseAddr + APIC_REGISTER_APICID;
+	g_apicIdAddr = localApicBaseAddr + LAPIC_REGISTER_APICID;
 
 
 	/* send Init IPI to AP */
-	*(dword*)(localApicBaseAddr + APIC_REGISTER_ICRLOWER) = APIC_DESTINATIONSHORTHAND_ALLEXCLUDINGSELF |
-			                                                APIC_TRIGGERMODE_EDGE |
-															APIC_LEVEL_ASSERT |
-															APIC_DESTINATIONMODE_PHYSICAL |
-															APIC_DELIVERYMODE_INIT;
+	*(dword*)(localApicBaseAddr + LAPIC_REGISTER_ICRLOWER) = LAPIC_DESTINATIONSHORTHAND_ALLEXCLUDINGSELF |
+			                                                 LAPIC_TRIGGERMODE_EDGE |
+															 LAPIC_LEVEL_ASSERT |
+															 LAPIC_DESTINATIONMODE_PHYSICAL |
+															 LAPIC_DELIVERYMODE_INIT;
 
 	// wait for 10 milliseconds.
 	k_waitUsingDirectPit(MSTOCOUNT(10));
 
 	// check if it's sent successfully.
-	if (*(dword*)(localApicBaseAddr + APIC_REGISTER_ICRLOWER) & APIC_DELIVERYSTATUS_PENDING) {
+	if (*(dword*)(localApicBaseAddr + LAPIC_REGISTER_ICRLOWER) & LAPIC_DELIVERYSTATUS_PENDING) {
 
 		// re-set in order to make timer interrupt occur 1000 times per 1 second.
 		k_initPit(MSTOCOUNT(1), true);
@@ -88,18 +88,18 @@ static bool k_wakeupAp(void) {
 
 	/* send Start-up IPI to AP (2 times): set AP start address as kernel32 start address. */
 	for (i = 0; i < 2; i++) {
-		*(dword*)(localApicBaseAddr + APIC_REGISTER_ICRLOWER) = APIC_DESTINATIONSHORTHAND_ALLEXCLUDINGSELF |
-				                                                APIC_TRIGGERMODE_EDGE |
-																APIC_LEVEL_ASSERT |
-																APIC_DESTINATIONMODE_PHYSICAL |
-																APIC_DELIVERYMODE_STARTUP |
-																APIC_VECTOR_KERNEL32STARTADDRESS;
+		*(dword*)(localApicBaseAddr + LAPIC_REGISTER_ICRLOWER) = LAPIC_DESTINATIONSHORTHAND_ALLEXCLUDINGSELF |
+				                                                 LAPIC_TRIGGERMODE_EDGE |
+																 LAPIC_LEVEL_ASSERT |
+																 LAPIC_DESTINATIONMODE_PHYSICAL |
+																 LAPIC_DELIVERYMODE_STARTUP |
+																 LAPIC_VECTOR_KERNEL32STARTADDRESS;
 
 		// wait for 200 microseconds.
 		k_waitUsingDirectPit(USTOCOUNT(200));
 
 		// check if it's sent successfully.
-		if (*(dword*)(localApicBaseAddr + APIC_REGISTER_ICRLOWER) & APIC_DELIVERYSTATUS_PENDING) {
+		if (*(dword*)(localApicBaseAddr + LAPIC_REGISTER_ICRLOWER) & LAPIC_DELIVERYSTATUS_PENDING) {
 
 			// re-set in order to make timer interrupt occur 1000 times per 1 second.
 			k_initPit(MSTOCOUNT(1), true);

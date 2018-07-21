@@ -14,7 +14,7 @@
 
 // MP floating pointer - MP feature byte 1~5 (1 byte * 5)
 #define MP_FLOATINGPOINTER_FEATUREBYTE1_USEMPTABLE 0x00 // use MP configuration table (0:use MP configuration table, !0:use default configuration defined in MultiProcessor Specification)
-#define MP_FLOATINGPOINTER_FEATUREBYTE2_PICMODE    0x80 // support PIC mode(bit 7=1: support PIC mode, bit 7=0: support virtual wire mode, bit 0~6: reserved)
+#define MP_FLOATINGPOINTER_FEATUREBYTE2_PICMODE    0x80 // support PIC mode(bit 7=1: support PIC mode, bit 7=0: support virtual wire mode, bit 6~0: reserved)
 
 // base MP configuration table entry - entry type (1 byte)
 #define MP_ENTRYTYPE_PROCESSOR                0 // processor entry
@@ -37,18 +37,18 @@
 #define MP_IOAPIC_FLAGS_ENABLE 0x01 // can use IO APIC (bit 0=1: can use IO APIC, bit 0=0:can't use IO APIC)
 
 // IO interrupt assignment entry, local interrupt assignment entry - interrupt type (1 byte)
-#define MP_INTERRUPT_TYPE_INT    0 // vector interrupt which is passed to local APIC through interrupt vector of IO APIC
-#define MP_INTERRUPT_TYPE_NMI    1 // non-maskable interrupt
-#define MP_INTERRUPT_TYPE_SMI    2 // system management interrupt
-#define MP_INTERRUPT_TYPE_EXTINT 3 // interrupt which is passed from PIC
+#define MP_INTERRUPTTYPE_INT    0 // vector interrupt which is passed to local APIC through interrupt vector of IO APIC
+#define MP_INTERRUPTTYPE_NMI    1 // non-maskable interrupt
+#define MP_INTERRUPTTYPE_SMI    2 // system management interrupt
+#define MP_INTERRUPTTYPE_EXTINT 3 // interrupt which is passed from PIC
 
 /**
   IO interrupt assignment entry, local interrupt assignment entry - interrupt flag (2 bytes)
   - PO (polarity, 2 bits)
       bit 1=0 and bit 0=0 : depends on bus type
-      bit 1=0 and bit 0=1 : enabled at 1
+      bit 1=0 and bit 0=1 : active high
       bit 1=1 and bit 0=0 : reserved
-      bit 1=1 and bit 0=1 : enabled at 0
+      bit 1=1 and bit 0=1 : active low
 
   - EL (edge/level trigger, 2 bits)
       bit 3=0 and bit 2=0 : depends on bus type
@@ -56,12 +56,12 @@
       bit 3=1 and bit 2=0 : reserved
       bit 3=1 and bit 2=1 : level trigger
  */
-#define MP_INTERRUPT_FLAGS_CONFORMPOLARITY 0x00 // set polarity depends on bus type
-#define MP_INTERRUPT_FLAGS_ACTIVEHIGH      0x01 // enabled at 1
-#define MP_INTERRUPT_FLAGS_ACTIVELOW       0x03 // enabled at 0
-#define MP_INTERRUPT_FLAGS_CONFORMTRIGGER  0x00 // set trigger mode depends on bus type
-#define MP_INTERRUPT_FLAGS_EDGETRIGGERED   0x04 // edge trigger
-#define MP_INTERRUPT_FLAGS_LEVELTRIGGERED  0x0C // level trigger
+#define MP_INTERRUPTFLAGS_CONFORMPOLARITY 0x00 // set polarity depends on bus type
+#define MP_INTERRUPTFLAGS_ACTIVEHIGH      0x01 // active high
+#define MP_INTERRUPTFLAGS_ACTIVELOW       0x03 // active low
+#define MP_INTERRUPTFLAGS_CONFORMTRIGGER  0x00 // set trigger mode depends on bus type
+#define MP_INTERRUPTFLAGS_EDGETRIGGERED   0x04 // edge trigger
+#define MP_INTERRUPTFLAGS_LEVELTRIGGERED  0x0C // level trigger
 
 #pragma pack(push, 1)
 
@@ -146,7 +146,7 @@ typedef struct k_MpConfigManager {
 	MpFloatingPointer* mpFloatingPointer;     // MP floating pointer address
 	MpConfigTableHeader* mpConfigTableHeader; // MP configuration table header address
 	qword baseEntryStartAddr;                 // base MP configuration table entry start address
-	int processorCount;                       // processor count
+	int processorCount;                       // processor count: [Ref] processor means processor of multiprocessor or processor's core of multi-core processor.
 	bool usePicMode;                          // PIC mode support flag
 	byte isaBusId;                            // ISA bus ID
 } MpConfigManager;
@@ -158,5 +158,6 @@ bool k_analyzeMpConfigTable(void);
 MpConfigManager* k_getMpConfigManager(void);
 void k_printMpConfigTable(void);
 int k_getProcessorCount(void);
+IoApicEntry* k_findIoApicEntryForIsa(void);
 
 #endif // __MP_CONFIG_TABLE_H__

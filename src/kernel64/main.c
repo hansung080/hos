@@ -13,6 +13,7 @@
 #include "file_system.h"
 #include "serial_Port.h"
 #include "multiprocessor.h"
+#include "local_apic.h"
 
 void k_mainForAp(void);
 
@@ -112,22 +113,30 @@ void k_main(void) {
 
 void k_mainForAp(void) {
 	qword tickCount;
-
-	// load GDT
+	
+	// load GDT.
 	k_loadGdt(GDTR_STARTADDRESS);
-
-	// load TSS
+	
+	// load TSS.
 	k_loadTss(GDT_TSSSEGMENT + (k_getApicId() * sizeof(GdtEntry16)));
-
-	// load IDT
+	
+	// load IDT.
 	k_loadIdt(IDTR_STARTADDRESS);
-
-	// print message once per 1 second.
+	
+	/* support symmetric IO mode. */
+	k_enableSoftwareLocalApic();
+	k_setInterruptPriority(0);
+	k_initLocalVectorTable();
+	k_enableInterrupt();
+	
+	k_printf("-> Application Processor(APIC ID:%d) is activated.\n", k_getApicId());
+	
+	// print message once per 5 second.
 	tickCount = k_getTickCount();
 	while (true) {
-		if (k_getTickCount() - tickCount > 1000) {
+		if (k_getTickCount() - tickCount > 5000) {
 			tickCount = k_getTickCount();
-			k_printf("-> Application Processor(APIC ID:%d) is activated.\n", k_getApicId());
+			k_printf("-> Application Processor(APIC ID:%d) is working.\n", k_getApicId());
 		}
 	}
 }
