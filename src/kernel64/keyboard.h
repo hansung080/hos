@@ -95,7 +95,7 @@ bool k_activateKeyboard(void);
 byte k_getKeyboardScanCode(void); // get scan code
 bool k_changeKeyboardLed(bool capslockOn, bool numlockOn, bool scrolllockOn);
 void k_enableA20gate(void);
-void k_reboot(void);
+void k_rebootSystem(void);
 bool k_isAlphabetScanCode(byte downScanCode);
 bool k_isNumberOrSymbolScanCode(byte downScanCode);
 bool k_isNumberPadScanCode(byte downScanCode);

@@ -167,7 +167,7 @@ void k_enableA20gate(void) {
 	k_outPortByte(0x60, outPortData);
 }
 
-void k_reboot(void) {
+void k_rebootSystem(void) {
 	int i;
 
 	for (i = 0; i < 0xFFFF; i++) {

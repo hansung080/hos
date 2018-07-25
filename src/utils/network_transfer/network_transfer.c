@@ -17,120 +17,123 @@
 #define MIN(x, y)          (((x) < (y)) ? (x) : (y))
 #define SERIAL_FIFOMAXSIZE 16 // FIFO max size (16 bytes)
 
-int main(int argc, const char** argv) {
-	char vcFileName[256];
-	char vcDataBuffer[SERIAL_FIFOMAXSIZE];
-	struct sockaddr_in stSocketAddr;
-	int iSocket;
-	byte bAck;
-	dword dwDataLen;
-	dword dwSentSize;
-	dword dwTempSize;
-	FILE* fp;
+#define SERVER_IP   "127.0.0.1"
+#define SERVER_PORT 7984
 
+int main(int argc, const char** argv) {
+	char fileName[256];
+	char dataBuffer[SERIAL_FIFOMAXSIZE];
+	struct sockaddr_in sockAddr;
+	int sockfd;
+	byte ack;
+	dword dataLen;
+	dword sentSize;
+	dword tempSize;
+	FILE* file;
+	
 	//----------------------------------------------------------------------------------------------------
 	// open file
 	//----------------------------------------------------------------------------------------------------
-
+	
 	// check file name.
 	if (argc < 2) {
-		fprintf(stderr, "Input file name:");
-		gets(vcFileName);
-
+		printf("input file name:");
+		gets(fileName);
+		
 	} else {
-		strcpy(vcFileName, argv[1]);
+		strcpy(fileName, argv[1]);
 	}
-
+	
 	// open file
-	fp = fopen(vcFileName, "rb");
-	if (fp == NULL) {
-		fprintf(stderr, "'%s' File Open Fail~!!\n", vcFileName);
-		return 0;
+	file = fopen(fileName, "rb");
+	if (file == NULL) {
+		fprintf(stderr, "%s opening failure\n", fileName);
+		exit(8);
 	}
-
+	
 	// measure file length, and move to the start of file.
-	fseek(fp, 0, SEEK_END);
-	dwDataLen = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
-	fprintf(stderr, "File Name = [%s], Data Length = [%d] byte\n", vcFileName, dwDataLen);
-
+	fseek(file, 0, SEEK_END);
+	dataLen = ftell(file);
+	fseek(file, 0, SEEK_SET);
+	printf("file name: %s, data length: %d bytes\n", fileName, dataLen);
+	
 	//----------------------------------------------------------------------------------------------------
 	// connect to network
 	//----------------------------------------------------------------------------------------------------
-
+	
 	// set server into.
-	stSocketAddr.sin_family = AF_INET;
-	stSocketAddr.sin_port = htons(4444);
-	stSocketAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-
+	sockAddr.sin_family = AF_INET;
+	sockAddr.sin_port = htons(SERVER_PORT);
+	sockAddr.sin_addr.s_addr = inet_addr(SERVER_IP);
+	
 	// create socket.
-	iSocket = socket(AF_INET, SOCK_STREAM, 0);
-
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	
 	// connect to network.
-	if (connect(iSocket, (struct sockaddr*)&stSocketAddr, sizeof(stSocketAddr)) == -1) {
-		fprintf(stderr, "Socket Connect Fail~!! Server IP = [127.0.0.1], Server Port = [4444]\n");
-		return 0;
-
+	if (connect(sockfd, (struct sockaddr*)&sockAddr, sizeof(sockAddr)) == -1) {
+		fprintf(stderr, "socket connection failure: address: %s, port: %d\n", SERVER_IP, SERVER_PORT);
+		exit(8);
+		
 	} else {
-		fprintf(stderr, "Socket Connect Success~!! Server IP = [127.0.0.1], Server Port = [4444]\n");
+		printf("socket connection success: address: %s, port: %d\n", SERVER_IP, SERVER_PORT);
 	}
-
+	
 	//----------------------------------------------------------------------------------------------------
 	// read file, and send data
 	//----------------------------------------------------------------------------------------------------
-
+	
 	// send data length.
-	if (send(iSocket, &dwDataLen, 4, 0) != 4) {
-		fprintf(stderr, "Data Length Send Fail~!! Data Length = [%d] byte\n", dwDataLen);
-		return 0;
-
+	if (send(sockfd, &dataLen, 4, 0) != 4) {
+		fprintf(stderr, "data length sending failure: data length: %d bytes\n", dataLen);
+		exit(8);
+		
 	} else {
-		fprintf(stderr, "Data Length Send Success~!! Data Length = [%d] byte\n", dwDataLen);
+		printf("data length sending success: data length: %d bytes\n", dataLen);
 	}
-
+	
 	// wait until ACK will be received.
-	if (recv(iSocket, &bAck, 1, 0) != 1) {
-		fprintf(stderr, "ACK Receive Fail~!!\n");
-		return 0;
+	if (recv(sockfd, &ack, 1, 0) != 1) {
+		fprintf(stderr, "ACK receiving failure\n");
+		exit(8);
 	}
-
+	
 	// send data.
-	fprintf(stderr, "Data Send Start...");
-	dwSentSize = 0;
-	while (dwSentSize < dwDataLen) {
+	printf("send data...");
+	sentSize = 0;
+	while (sentSize < dataLen) {
 		// sending byte count = MIN(remained byte count, FIFO max size)
-		dwTempSize = MIN(dwDataLen - dwSentSize, SERIAL_FIFOMAXSIZE);
-		dwSentSize += dwTempSize;
-
+		tempSize = MIN(dataLen - sentSize, SERIAL_FIFOMAXSIZE);
+		sentSize += tempSize;
+		
 		// read file.
-		if (fread(vcDataBuffer, 1, dwTempSize, fp) != dwTempSize) {
-			fprintf(stderr, "'%s' File Read Fail~!!\n", vcFileName);
-			return 0;
+		if (fread(dataBuffer, 1, tempSize, file) != tempSize) {
+			fprintf(stderr, "%s reading failure\n", fileName);
+			exit(8);
 		}
-
+		
 		// send data which is read from file.
-		if (send(iSocket, vcDataBuffer, dwTempSize, 0) != dwTempSize) {
-			fprintf(stderr, "Socket Send Fail~!!\n");
-			return 0;
+		if (send(sockfd, dataBuffer, tempSize, 0) != tempSize) {
+			fprintf(stderr, "data sending failure\n");
+			exit(8);
 		}
-
+		
 		// wait until ACK will be received.
-		if (recv(iSocket, &bAck, 1, 0) != 1) {
-			fprintf(stderr, "ACK Receive Fail~!!\n");
-			return 0;
+		if (recv(sockfd, &ack, 1, 0) != 1) {
+			fprintf(stderr, "ACK receiving failure\n");
+			exit(8);
 		}
-
-		// print progress.
-		fprintf(stderr, "#");
 	}
-
+	
+	printf("success\n");
+	
 	// close file and socket.
-	fclose(fp);
-	close(iSocket);
-
+	fclose(file);
+	close(sockfd);
+	
 	// print send complete message and wait for Enter key.
-	fprintf(stderr, "\nSend Complete~!! Sent Size = [%d] byte\n", dwSentSize);
-	fprintf(stderr, "Press Enter key to exit...\n");
+	printf("sending complete: sent size: %d bytes\n", sentSize);
+	printf("Press any key to exit.");
 	getchar();
+	
 	return 0;
 }

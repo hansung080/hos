@@ -46,15 +46,15 @@ kernel64:
 # [Note] <chmod 777 $@> is required to solve the permission error caused by the redefinition of O_BINARY in image_maker.c
 $(TARGET): $(TARGET_DEP)
 	@echo
-	@echo image making start.
+	@echo image-maker start.
 	
 	build/output/utils/image_maker/image-maker $@ $^
 	chmod 777 $@
 	
-	@echo image making end.
+	@echo image-maker end.
 	@echo 
 	@echo $(TARGET) has been created successfully.
-	@echo all build complete.
+	@echo all builds complete.
 
 install:
 	make -C src/utils install

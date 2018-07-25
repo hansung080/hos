@@ -26,7 +26,7 @@ void k_main(void) {
 	}
 	
 	// print the first message of kernel32 at line 1.
-	k_printStr(0, y++, "< HansOS Initialization >");
+	k_printStr(0, y++, "*** HansOS Initialization ***");
 	
 	// [Note]
 	// print boot-loader messages here,

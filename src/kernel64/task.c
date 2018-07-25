@@ -626,55 +626,55 @@ void k_idleTask(void) {
 	int i, count;
 	qword taskId;
 	void* threadLink;
-
+	
 	lastMeasureTickCount = k_getTickCount();
 	lastSpendTickInIdleTask = g_scheduler.spendProcessorTimeInIdleTask;
-
+	
 	// infinite loop
 	while (true) {
-
+		
 		//----------------------------------------------------------------------------------------------------
 		// 1. calculate processor load
 		//----------------------------------------------------------------------------------------------------
-
+		
 		currentMeasureTickCount = k_getTickCount();
 		currentSpendTickInIdleTask = g_scheduler.spendProcessorTimeInIdleTask;
-
+		
 		// processor load (%) = 100 - (processor time used by idle task * 100 / processor time used by whole system)
 		if ((currentMeasureTickCount - lastMeasureTickCount) == 0) {
 			g_scheduler.processorLoad = 0;
-
+			
 		} else {
 			g_scheduler.processorLoad = 100 - ((currentSpendTickInIdleTask - lastSpendTickInIdleTask) * 100 / (currentMeasureTickCount - lastMeasureTickCount));
 		}
-
+		
 		lastMeasureTickCount = currentMeasureTickCount;
 		lastSpendTickInIdleTask = currentSpendTickInIdleTask;
-
+		
 		//----------------------------------------------------------------------------------------------------
 		// 2. halt processor by process load
 		//----------------------------------------------------------------------------------------------------
-
+		
 		// halt processor by process load
 		k_haltProcessorByLoad();
-
+		
 		//----------------------------------------------------------------------------------------------------
 		// 3. end the end tasks in wait list
 		//----------------------------------------------------------------------------------------------------
-
+		
 		// If end task exists in wait list, remove end task from wait list, free memory of end task.
 		if (k_getListCount(&(g_scheduler.waitList)) > 0) {
 			while (true) {
-
+				
 				prevFlag = k_lockSystem();
-
+				
 				// remove end task from wait list.
 				task = k_removeListFromHead(&(g_scheduler.waitList));
 				if (task == null) {
 					k_unlockSystem(prevFlag);
 					break;
 				}
-
+				
 				/**
                   [Code Block 1] If end task is process, end all child threads of process which means to move them from ready list to wait list,
                                  wait until child threads in wait list are totally ended, and finally totally end process itself.
@@ -685,58 +685,58 @@ void k_idleTask(void) {
 				 */
 				if (task->flags & TASK_FLAGS_PROCESS) {
 					count = k_getListCount(&(task->childThreadList));
-
+					
 					for (i = 0; i < count; i++) {
 						threadLink = (Tcb*)k_removeListFromHead(&(task->childThreadList));
 						if (threadLink == null) {
 							break;
 						}
-
+						
 						childThread = GETTCBFROMTHREADLINK(threadLink);
-
+						
 						// the reasons why re-put child thread to child thread list, after removing it from child thread list.
 						// - first reason: When thread ends, it removes itself from child thread list in [Code Block 2].
 						// - second reason: Under multi-core processor, If child thread is running on the other cores, it can't be moved to wait list immediately.
 						k_addListToTail(&(task->childThreadList), &(childThread->threadLink));
-
+						
 						// end all child threads (move them from ready list to wait list.)
 						k_endTask(childThread->link.id);
 					}
-
+					
 					// If child thread remains, it waits until all child thread will be totally ended by idle task.
 					if (k_getListCount(&(task->childThreadList)) > 0) {
 						k_addListToTail(&(g_scheduler.waitList), task);
-
+						
 						k_unlockSystem(prevFlag);
 						continue;
-
+						
 					// If all child threads are totally ended, end process itself totally.
 					} else {
 						// [Todo] free code/data area of end process.
 					}
-
+					
 				/**
 				  [Code Block 2] If end task is thread, remove it from child thread list of process with thread in it,
 				                 and totally end thread itself.
 				 */
 				} else if (task->flags & TASK_FLAGS_THREAD) {
 					process = k_getProcessByThread(task);
-
+					
 					if (process != null) {
 						k_removeList(&(process->childThreadList), task->link.id);
 					}
 				}
-
+				
 				// free TCB of end task (If TCB is freed, then also stack is freed automatically.)
 				taskId = task->link.id;
 				k_freeTcb(taskId);
-
+				
 				k_unlockSystem(prevFlag);
-
-				k_printf("IDLE: Task ID[0x%q] is completely ended.\n", taskId);
+				
+				//k_printf("IDLE: Task (0x%q) has completely ended.\n", taskId);
 			}
 		}
-
+		
 		// switch task.
 		k_schedule();
 	}

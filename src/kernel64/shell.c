@@ -18,47 +18,48 @@
 #include "io_apic.h"
 
 static ShellCommandEntry g_commandTable[] = {
-		{"help", "Show Help", k_help},
-		{"cls", "Clear Screen", k_cls},
-		{"totalram", "Show Total RAM Size", k_showTotalRamSize},
-		{"strtod", "String to Decimal/Hex Convert, ex) strtod 19 0x1F", k_strToDecimalHexTest},
-		{"shutdown", "Shutdown and Reboot OS", k_shutdown},
-		{"settimer", "Set PIT Controller Counter0, ex) settimer 1(ms) 1(periodic)", k_setTimer},
-		{"wait", "Wait ms Using PIT, ex) wait 1(ms)", k_waitUsingPit},
-		{"rdtsc", "Read Time Stamp Counter", k_readTimeStampCounter},
-		{"cpuspeed", "Measure Processor Speed", k_measureProcessorSpeed},
-		{"date", "Show Current Data and Time", k_showDateAndTime},
-		{"createtask", "Create Task, ex) createtask 1(type) 1022(count)", k_createTestTask},
-		{"changepriority" ,"Change Task Priority, ex) changepriority 0x300000002(taskId) 0(priority)", k_changeTaskPriority},
-		{"tasklist", "Show Task List", k_showTaskList},
-		{"killtask", "End Task, ex) killtask 0x300000002(taskId) or all", k_killTask},
-		{"cpuload", "Show Processor Load", k_cpuLoad},
-		{"testmutex", "Test Mutex Function", k_testMutex},
-		{"testthread", "Test Thread and Process Function", k_testThread},
-		{"showmatrix", "Show Matrix Screen", k_showMatrix},
-		{"testpie", "Test Pi Calculation", k_testPi},
-		{"dynamicmeminfo", "Show Dynamic Memory Information", k_showDynamicMemInfo},
-		{"testseqalloc", "Test Sequential Allocation & Free", k_testSeqAlloc},
-		{"testranalloc", "Test Random Allocation & Free", k_testRandomAlloc},
-		{"hddinfo", "Show HDD Information", k_showHddInfo},
-		{"readsector", "Read HDD Sector, ex) readsector 0(LBA) 10(count)", k_readSector},
-		{"writesector", "Write HDD Sector, ex) writesector 0(LBA) 10(count)", k_writeSector},
-		{"mounthdd", "Mount HDD", k_mountHdd},
-		{"formathdd", "Format HDD", k_formatHdd},
-		{"filesysteminfo", "Show File System Information", k_showFileSystemInfo},
-		{"createfile", "Create File, ex) createfile a.txt", k_createFileInRootDir},
-		{"deletefile", "Delete File, ex) deletefile a.txt", k_deleteFileInRootDir},
-		{"dir", "Show Root Directory", k_showRootDir},
-		{"writefile", "Write Data to File, ex) writefile a.txt", k_writeDataToFile},
-		{"readfile", "Read Data from File, ex) readfile a.txt", k_readDataFromFile},
-		{"testfileio", "Test File I/O Function", k_testFileIo},
-		{"testperformance", "Test File Read/Write Performance", k_testPerformance},
-		{"flush", "Flush File System Cache", k_flushCache},
-		{"download", "Download Data from Serial, ex) download a.txt", k_downloadFile},
-		{"showmpinfo", "Show MP Configuration Table Information", k_showMpConfigTable},
-		{"startap", "Start Application Processor", k_startAp},
-		{"startsymmetricio", "Start Symmetric IO Mode", k_startSymmetricIoMode},
-		{"showirqintinmap", "Show IRQ to INTIN Map", k_showIrqToIntinMap}
+		{"help", "show help", k_help},
+		{"clear", "clear screen", k_clear},
+		{"ram", "show total RAM size", k_showTotalRamSize},
+		{"teststod", "test string to decimal/hex conversion, usage) teststod <decimal> <hex> ...", k_testStrToDecimalHex},
+		{"reboot", "reboot system", k_reboot},
+		{"timer", "set timer, usage) timer <ms> <periodic>", k_setTimer},
+		{"wait", "wait, usage) wait <ms>", k_waitUsingPit},
+		{"tsc", "read time stamp counter", k_readTimeStampCounter},
+		{"cpus", "show CPU speed", k_measureProcessorSpeed},
+		{"date", "show current date and time", k_showDateAndTime},
+		{"testtask", "test task, usage) testtask <type> <count>", k_createTestTask},
+		{"chpr" ,"change task priority, usage) chpr <taskId> <priority>", k_changeTaskPriority},
+		{"ts", "show task status", k_showTaskList},
+		{"ps", "show task status", k_showTaskList},
+		{"kill", "kill task, usage) kill <taskId>", k_killTask},
+		{"cpul", "show CPU load", k_cpuLoad},
+		{"testmutex", "test mutex", k_testMutex},
+		{"testthread", "test thread", k_testThread},
+		{"matrix", "show Matrix", k_showMatrix},
+		{"testpi", "test Pi calculation", k_testPi},
+		{"dmem", "show dynamic memory info", k_showDynamicMemInfo},
+		{"testdmem", "test dynamic memory, usage) testdmem <type>", k_testDynamicMem},
+		{"hdd", "show HDD info", k_showHddInfo},
+		{"reads", "read HDD sector, usage) reads <lba> <count>", k_readSector},
+		{"writes", "write HDD sector, usage) writes <lba> <count>", k_writeSector},
+		{"format", "format HDD", k_formatHdd},
+		{"mount", "mount HDD", k_mountHdd},
+		{"fs", "show file system info", k_showFileSystemInfo},
+		{"create", "create file, usage) create <fname>", k_createFileInRootDir},
+		{"delete", "delete file, usage) delete <fname>", k_deleteFileInRootDir},
+		{"ls", "show directory", k_showRootDir},
+		{"ll", "show directory", k_showRootDir},
+		{"write", "write file, usage) write <fname>", k_writeDataToFile},
+		{"read", "read file, usage) read <fname>", k_readDataFromFile},
+		{"testfile", "test file IO", k_testFileIo},
+		{"testperf", "test file read/write performance", k_testPerformance},
+		{"flush", "flush file system cache", k_flushCache},
+		{"download", "download file using serial port, usage) download <fname>", k_downloadFile},
+		{"mpconf", "show MP configuration table info", k_showMpConfigTable},
+		{"stap", "start application processor", k_startAp},
+		{"symmod", "start symmetric IO mode", k_startSymmetricIoMode},
+		{"irqmap", "show IRQ to INTIN Map", k_showIrqToIntinMap}
 };
 
 void k_startShell(void) {
@@ -185,9 +186,7 @@ static void k_help(const char* paramBuffer) {
 	int x, y;
 	int len, maxCommandLen = 0;
 
-	k_printf("===============================================================================\n");
-	k_printf("                               HansOS Shell Help                               \n");
-	k_printf("-------------------------------------------------------------------------------\n");
+	k_printf("*** HansOS Shell Help ***\n");
 
 	count = sizeof(g_commandTable) / sizeof(ShellCommandEntry);
 
@@ -201,15 +200,15 @@ static void k_help(const char* paramBuffer) {
 
 	// print help.
 	for (i = 0; i < count; i++) {
-		k_printf("%s", g_commandTable[i].command);
+		k_printf("- %s", g_commandTable[i].command);
 		k_getCursor(&x, &y);
 		k_setCursor(maxCommandLen, y);
-		k_printf(" - %s\n", g_commandTable[i].help);
+		k_printf(" : %s\n", g_commandTable[i].desc);
 
 		// ask a user to print more items, every after 15 items are printed.
 		if ((i != 0) && ((i % 15) == 0)) {
 
-			k_printf("Press any key to continue...('q' is exit):");
+			k_printf("Press any key to continue...('q' is quit):");
 
 			if (k_getch() == 'q') {
 				k_printf("\n");
@@ -219,71 +218,80 @@ static void k_help(const char* paramBuffer) {
 			k_printf("\n");
 		}
 	}
-
-	k_printf("===============================================================================\n");
 }
 
-static void k_cls(const char* paramBuffer) {
+static void k_clear(const char* paramBuffer) {
 	k_clearScreen();
 	k_setCursor(0, 1); // move the cursor to the second line, because the interrupt is printed in the first line.
 }
 
 static void k_showTotalRamSize(const char* paramBuffer) {
-	k_printf("Total RAM Size = %d MB\n", k_getTotalRamSize());
+	k_printf("total RAM size: %d MB\n", k_getTotalRamSize());
 }
 
-static void k_strToDecimalHexTest(const char* paramBuffer) {
+static void k_testStrToDecimalHex(const char* paramBuffer) {
 	ParamList list;
 	char param[100];
 	int len;
 	int count = 0;
 	long value;
-
+	bool first = true;
+	
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
-
+	
 	while (true) {
-
-		// get parameter: Decimal/Hex String
+		// get parameter: decimal or hex
 		len = k_getNextParam(&list, param);
-
+		
+		if (first == true) {
+			first = false;
+			if (len == 0) {
+				k_printf("Usage) teststod <decimal> <hex> ...\n");
+				k_printf("  - decimal: decimal number\n");
+				k_printf("  - hex: hexadecimal number\n");
+				k_printf("  - example: teststod 19 0x1F 256\n");
+				return;
+			}
+		}
+		
 		if (len == 0) {
 			break;
 		}
-
-		k_printf("Parameter %d = '%s', Length = %d, ", count + 1, param, len);
-
+		
+		k_printf("- param %d: '%s', len: %d, ", count + 1, param, len);
+		
 		// if parameter is a hexadecimal number.
 		if (k_memcmp(param, "0x", 2) == 0) {
 			value = k_atoi(param + 2, 16);
-			k_printf("Hex Value = 0x%q\n", value); // add <0x> to the printed number.
-
+			k_printf("hex: 0x%q\n", value); // add <0x> to the printed number.
+			
 		// if parameter is a decimal number.
 		} else {
 			value = k_atoi(param, 10);
-			k_printf("Decimal Value = %d\n", value);
+			k_printf("decimal: %d\n", value);
 		}
-
+		
 		count++;
 	}
 }
 
-static void k_shutdown(const char* paramBuffer) {
-	k_printf("System Shutdown Start...\n");
-
+static void k_reboot(const char* paramBuffer) {
+	k_printf("start system rebooting.\n");
+	
 	// flush file system cache buffer to hard disk.
-	k_printf("Flush File System Cache...\n");
+	k_printf("flush file system cache...");
 	if (k_flushFileSystemCache() == true) {
-		k_printf("Success~!!\n");
-
+		k_printf("success\n");
+		
 	} else {
-		k_printf("Fail~!!\n");
+		k_printf("failure\n");
 	}
-
-	// reboot PC using Keyboard Controller.
-	k_printf("Press any key to reboot PC...\n");
+	
+	// reboot system using Keyboard Controller.
+	k_printf("Press any key to reboot system.");
 	k_getch();
-	k_reboot();
+	k_rebootSystem();
 }
 
 static void k_setTimer(const char* paramBuffer) {
@@ -291,30 +299,38 @@ static void k_setTimer(const char* paramBuffer) {
 	char param[100];
 	long millisecond;
 	bool periodic;
-
+	
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
-
-	// get No.1 parameter: Millisecond
+	
+	// get No.1 parameter: ms
 	if (k_getNextParam(&list, param) == 0) {
-		k_printf("Wrong Usage, ex) settimer 1(ms) 1(periodic)\n");
+		k_printf("Usage) timer <ms> <periodic>\n");
+		k_printf("  - ms: millisecond\n");
+		k_printf("  - periodic: 0 (once)\n");
+		k_printf("  - periodic: 1 (periodic)\n");
+		k_printf("  - default: timer 1 1\n");
 		return;
 	}
-
+	
 	millisecond = k_atoi(param, 10);
-
-	// get No.2 parameter: Periodic
+	
+	// get No.2 parameter: periodic
 	if (k_getNextParam(&list, param) == 0) {
-		k_printf("Wrong Usage, ex) settimer 1(ms) 1(periodic)\n");
+		k_printf("Usage) timer <ms> <periodic>\n");
+		k_printf("  - ms: millisecond\n");
+		k_printf("  - periodic: 0 (once)\n");
+		k_printf("  - periodic: 1 (periodic)\n");
+		k_printf("  - default: timer 1 1\n");
 		return;
 	}
-
+	
 	periodic = k_atoi(param, 10);
-
+	
 	// initialize PIT.
 	k_initPit(MSTOCOUNT(millisecond), periodic);
-
-	k_printf("Time = %d ms, Periodic = %d Change Complete\n", millisecond, periodic);
+	
+	k_printf("set timer: %d ms, %d (%s)\n", millisecond, periodic, (periodic == true) ? "periodic" : "once");
 }
 
 static void k_waitUsingPit(const char* paramBuffer) {
@@ -323,20 +339,22 @@ static void k_waitUsingPit(const char* paramBuffer) {
 	ParamList list;
 	long millisecond;
 	int i;
-
+	
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
-
-	// get No.1 parameter: Millisecond
+	
+	// get No.1 parameter: ms
 	if (k_getNextParam(&list, param) == 0) {
-		k_printf("Wrong Usage, ex) wait 1(ms)\n");
+		k_printf("Usage) wait <ms>\n");
+		k_printf("  - ms: millisecond\n");
+		k_printf("  - example: wait 1\n");
 		return;
 	}
-
+	
 	millisecond = k_atoi(param, 10);
-
-	k_printf("%d ms Sleep Start...\n", millisecond);
-
+	
+	k_printf("wait for %d ms...\n", millisecond);
+	
 	// disable interrupt, and measure time directly using PIT controller.
 	k_disableInterrupt();
 	for (i = 0; i < (millisecond / 30); i++) {
@@ -344,9 +362,9 @@ static void k_waitUsingPit(const char* paramBuffer) {
 	}
 	k_waitUsingDirectPit(MSTOCOUNT(millisecond % 30));
 	k_enableInterrupt();
-
-	k_printf("%d ms Sleep Complete\n", millisecond);
-
+	
+	k_printf("wait complete\n");
+	
 	// restore timer.
 	k_initPit(MSTOCOUNT(1), true);
 }
@@ -356,44 +374,42 @@ static void k_readTimeStampCounter(const char* paramBuffer) {
 
 	tsc = k_readTsc();
 
-	k_printf("Time Stamp Counter = %q\n", tsc);
+	k_printf("time stamp counter: %q\n", tsc);
 }
 
 static void k_measureProcessorSpeed(const char* paramBuffer) {
 	int i;
 	qword lastTsc, totalTsc = 0;
-
-	k_printf("Now Measuring");
-
+	
 	// measure process speed indirectly using the changes of Time Stamp Counter for 10 seconds.
 	k_disableInterrupt();
 	for (i = 0; i < 200; i++) {
 		lastTsc = k_readTsc();
 		k_waitUsingDirectPit(MSTOCOUNT(50));
 		totalTsc += (k_readTsc() - lastTsc);
-		k_printf(".");
 	}
-
+	
 	// restore timer.
 	k_initPit(MSTOCOUNT(1), true);
 	k_enableInterrupt();
-
-	k_printf("\nCPU Speed = %d MHz\n", totalTsc / 10 / 1000 / 1000);
+	
+	k_printf("CPU speed: %d MHz\n", totalTsc / 10 / 1000 / 1000);
 }
 
 static void k_showDateAndTime(const char* paramBuffer) {
 	word year;
 	byte month, dayOfMonth, dayOfWeek;
 	byte hour, minute, second;
-
+	
 	// read current time and date from RTC controller.
 	k_readRtcTime(&hour, &minute, &second);
 	k_readRtcDate(&year, &month, &dayOfMonth, &dayOfWeek);
-
-	k_printf("Date: %d-%d-%d %d:%d:%d (%s)\n", year, month, dayOfMonth, hour, minute, second, k_convertDayOfWeekToStr(dayOfWeek));
+	
+	// print current date and time.
+	k_printf(" %d-%d-%d %d:%d:%d (%s)\n", year, month, dayOfMonth, hour, minute, second, k_convertDayOfWeekToStr(dayOfWeek));
 }
 
-// Test Task 1: print characters moving around the border of screen.
+// test-task-1: print characters moving around the border of screen.
 static void k_testTask1(void) {
 	byte data;
 	int i = 0, x = 0, y = 0, margin, j;
@@ -447,7 +463,7 @@ static void k_testTask1(void) {
 	//k_exitTask();
 }
 
-// Test Task 2: print rotating pinwheels in the position corresponding to the serial number of TCB.ID.
+// test-task-2: print rotating pinwheels in the position corresponding to the serial number of TCB.ID.
 static void k_testTask2(void) {
 	int i = 0, offset;
 	Char* screen = (Char*)CONSOLE_VIDEOMEMORYADDRESS;
@@ -476,47 +492,58 @@ static void k_createTestTask(const char* paramBuffer) {
 	char param[100];
 	long type, count;
 	int i;
-
+	
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
-
-	// get No.1 parameter: Type
+	
+	// get No.1 parameter: type
 	if (k_getNextParam(&list, param) == 0) {
-		k_printf("Wrong Usage, ex) createtask 1(type) 1022(count)\n");
+		k_printf("Usage) testtask <type> <count>\n");
+		k_printf("  - type: 1 (border characters)\n");
+		k_printf("  - type: 2 (rotating pinwheels)\n");
+		k_printf("  - count: 0 ~ 1022 (task count)\n");
+		k_printf("  - example: testtask 1 1022\n");
 		return;
 	}
-
+	
 	type = k_atoi(param, 10);
-
-	// get No.2 parameter: Count
+	
+	// get No.2 parameter: count
 	if (k_getNextParam(&list, param) == 0) {
-		k_printf("Wrong Usage, ex) createtask 1(type) 1022(count)\n");
+		k_printf("Usage) testtask <type> <count>\n");
+		k_printf("  - type: 1 (border characters)\n");
+		k_printf("  - type: 2 (rotating pinwheels)\n");
+		k_printf("  - count: 0 ~ 1022 (task count)\n");
+		k_printf("  - example: testtask 1 1022\n");
 		return;
 	}
-
+	
 	count = k_atoi(param, 10);
-
+	
 	switch (type) {
-	case 1: // Test Task 1: print border characters.
+	case 1: // test-task-1: print border characters.
 		for (i = 0; i < count; i++) {
 			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_testTask1) == null) {
 				break;
 			}
 		}
-
-		k_printf("k_testTask1 Created(%d)\n", i);
+		
+		k_printf("created task-1 count: %d\n", i);
 		break;
-
-	case 2: // Test Task 2: print rotating pinwheels.
-	default:
+		
+	case 2: // test-task-2: print rotating pinwheels.
 		for (i = 0; i < count; i++) {
 			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_testTask2) == null) {
 				break;
 			}
 		}
-
-		k_printf("k_testTask2 Created(%d)\n", i);
+		
+		k_printf("created task-2 count: %d\n", i);
 		break;
+		
+	default:
+		k_printf("invalid type: %d, Type must be 1, 2.\n", type);
+		return;
 	}
 }
 
@@ -526,38 +553,42 @@ static void k_changeTaskPriority(const char* paramBuffer) {
 	char priority_[30];
 	qword taskId;
 	byte priority;
-
+	
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
-
-	// get No.1 parameter: TaskID
+	
+	// get No.1 parameter: taskId
 	if (k_getNextParam(&list, taskId_) == 0) {
-		k_printf("Wrong Usage, ex) changepriority 0x300000002(taskId) 0(priority)\n");
+		k_printf("Usage) chpr <taskId> <priority>\n");
+		k_printf("  - taskId: 8 bytes hexadecimal number\n");
+		k_printf("  - priority: 0 ~ 4 (highest ~ lowest)\n");
+		k_printf("  - example: chpr 0x300000002 0\n");
 		return;
 	}
-
-	// get No.2 parameter: Priority
+	
+	// get No.2 parameter: priority
 	if (k_getNextParam(&list, priority_) == 0) {
-		k_printf("Wrong Usage, ex) changepriority 0x300000002(taskId) 0(priority)\n");
+		k_printf("Usage) chpr <taskId> <priority>\n");
+		k_printf("  - taskId: 8 bytes hexadecimal number\n");
+		k_printf("  - priority: 0 ~ 4 (highest ~ lowest)\n");
+		k_printf("  - example: chpr 0x300000002 0\n");
 		return;
 	}
-
+	
 	if (k_memcmp(taskId_, "0x", 2) == 0) {
 		taskId = k_atoi(taskId_ + 2, 16);
 
 	} else {
 		taskId = k_atoi(taskId_, 10);
 	}
-
+	
 	priority = k_atoi(priority_, 10);
-
-	k_printf("Change Task Priority : TaskID=[0x%q], Priority=[%d] : ", taskId, priority);
-
+	
 	if (k_changePriority(taskId, priority) == true) {
-		k_printf("Success~!!\n");
-
+		k_printf("task priority changing success\n");
+		
 	} else {
-		k_printf("Fail~!!\n");
+		k_printf("task priority changing failure\n");
 	}
 }
 
@@ -566,60 +597,43 @@ static void k_showTaskList(const char* paramBuffer) {
 	Tcb* task;
 	int count = 0;
 	int taskCount;
-	char linePadding[4] = {0, };
-
+	
 	taskCount = k_getTaskCount();
-
-	// align Task Total Count line.
-	if (taskCount < 10) {
-		k_memcpy(linePadding, "===", 3);
-
-	} else if (taskCount < 100) {
-		k_memcpy(linePadding, "==", 2);
-
-	} else if (taskCount < 1000) {
-		k_memcpy(linePadding, "=", 1);
-	}
-
-	k_printf("=========================== Task Total Count [%d] ===========================%s\n", taskCount, linePadding);
-
+	
+	k_printf("*** Task Status (%d) ***\n", taskCount);
+	k_printf("No  TID  PPID  Child  Flags  Priority  S  P/T  MemAddr  MemSize\n");
+	
 	for (i = 0; i < TASK_MAXCOUNT; i++) {
 		task = k_getTcbInTcbPool(i);
-
+		
 		// check if high 32 bits of task ID (TCB allocation count) != 0.
 		if ((task->link.id >> 32) != 0) {
-
-			// ask a user to print more items, every after 5 items are printed.
-			if ((count != 0) && ((count % 5) == 0)) {
-
-				k_printf("Press any key to continue...('q' is exit):");
-
+			
+			// ask a user to print more items, every after 10 items are printed.
+			if ((count != 0) && ((count % 10) == 0)) {
+				
+				k_printf("Press any key to continue...('q' is quit):");
+				
 				if (k_getch() == 'q') {
 					k_printf("\n");
 					break;
 				}
-
+				
 				k_printf("\n");
 			}
-
-			// Task List Print Info.
-			// 1. TID  : Task ID
-			// 2. PRI  : Priority
-			// 3. FG   : Flags
-			// 4. CTH  : Child Thread Count
-			// 5. PPID : Parent Process ID
-			// 6. MA   : Memory Address
-			// 7. MS   : Memory Size
-			// 8. S    : System Task
-			// 9. P/T  : Process/Thread
-			k_printf("[%d] TID=[0x%Q], PRI=[%d], FG=[0x%Q], CTH=[%d]\n"
-					,1 + count++, task->link.id, GETPRIORITY(task->flags), task->flags, k_getListCount(&(task->childThreadList)));
-			k_printf("     PPID=[0x%Q], MA=[0x%Q], MS=[0x%Q], S=[%d], P/T=[%d/%d]\n"
-					,task->parentProcessId, task->memAddr, task->memSize
-					,(task->flags & TASK_FLAGS_SYSTEM) ? 1 : 0
-					,(task->flags & TASK_FLAGS_PROCESS) ? 1 : 0
-					,(task->flags & TASK_FLAGS_THREAD) ? 1 : 0);
-			k_printf("-------------------------------------------------------------------------------\n");
+			
+			k_printf("%d> 0x%Q  0x%Q  %d  0x%Q  %d  %s  %s%s  0x%Q  0x%Q\n"
+					,1 + count++
+					,task->link.id
+					,task->parentProcessId
+					,k_getListCount(&(task->childThreadList))
+					,task->flags
+					,GETPRIORITY(task->flags)
+					,(task->flags & TASK_FLAGS_SYSTEM) ? "S" : "-"
+					,(task->flags & TASK_FLAGS_PROCESS) ? "P" : ""
+					,(task->flags & TASK_FLAGS_THREAD) ? "T" : ""
+					,task->memAddr
+					,task->memSize);
 		}
 	}
 }
@@ -630,51 +644,52 @@ static void k_killTask(const char* paramBuffer) {
 	qword taskId;
 	Tcb* task;
 	int i;
-
+	
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
-
-	// get No.1 parameter: TaskID
+	
+	// get No.1 parameter: taskId
 	if (k_getNextParam(&list, taskId_) == 0) {
-		k_printf("Wrong Usage, ex) killtask 0x300000002(taskId) or all\n");
+		k_printf("Usage) kill <taskId>\n");
+		k_printf("  - taskId: 8 bytes hexadecimal number\n");
+		k_printf("  - example: kill 0x300000002\n");
+		k_printf("  - example: kill all\n");
 		return;
 	}
-
+	
 	// exit a task with specific ID.
 	if (k_memcmp(taskId_, "all", 3) != 0) {
-
+		
 		if (k_memcmp(taskId_, "0x", 2) == 0) {
 			taskId = k_atoi(taskId_ + 2, 16);
-
+			
 		} else {
 			taskId = k_atoi(taskId_, 10);
 		}
-
+		
 		// [Note] To exit the task, it requires only the offset (low 32 bits) of parameter TaskID,
 		//        because parameter TaskID has been overrided with real TaskID from task pool.
 		task = k_getTcbInTcbPool(GETTCBOFFSET(taskId));
 		taskId = task->link.id;
-
+		
 		// exit tasks except not-allocated tasks and system tasks.
 		if (((taskId >> 32) != 0) && ((task->flags & TASK_FLAGS_SYSTEM) == 0)) {
-			k_printf("Kill Task : TaskID=[0x%q] : ", taskId);
-
 			if (k_endTask(taskId) == true) {
-				k_printf("Success~!!\n");
-
+				k_printf("Task (0x%q) has been killed.\n", taskId);
+				
 			} else {
-				k_printf("Fail~!!\n");
+				k_printf("task killing failure: 0x%q\n", taskId);
 			}
-
+			
 		} else {
 			if ((taskId >> 32) == 0) {
-				k_printf("Kill Task Fail : Task does not exist.\n");
-
+				k_printf("task killing failure: Task does not exist.\n");
+				
 			} else if ((task->flags & TASK_FLAGS_SYSTEM) != 0) {
-				k_printf("Kill Task Fail : Task is system task.\n");
-
+				k_printf("task killing failure: System task can not be killed.\n");
+				
 			} else {
-				k_printf("Kill Task Fail\n");
+				k_printf("task killing failure: unknown reason\n");
 			}
 		}
 
@@ -683,16 +698,14 @@ static void k_killTask(const char* paramBuffer) {
 		for (i = 0; i < TASK_MAXCOUNT; i++) {
 			task = k_getTcbInTcbPool(i);
 			taskId = task->link.id;
-
+			
 			// exit tasks except not-allocated tasks and system tasks.
 			if (((taskId >> 32) != 0) && ((task->flags & TASK_FLAGS_SYSTEM) == 0)) {
-				k_printf("Kill Task : TaskID=[0x%q] : ", taskId);
-
 				if (k_endTask(taskId) == true) {
-					k_printf("Success~!!\n");
-
+					k_printf("Task (0x%q) has been killed.\n", taskId);
+					
 				} else {
-					k_printf("Fail~!!\n");
+					k_printf("task killing failure: 0x%q\n", taskId);
 				}
 			}
 		}
@@ -700,7 +713,7 @@ static void k_killTask(const char* paramBuffer) {
 }
 
 static void k_cpuLoad(const char* paramBuffer) {
-	k_printf("Processor Load: %d %%\n", k_getProcessorLoad());
+	k_printf("CPU load: %d %%\n", k_getProcessorLoad());
 }
 
 // for mutex test.
@@ -721,7 +734,7 @@ static void k_printNumberTask(const char* paramBuffer) {
 	for (i = 0; i < 5; i++) {
 		k_lock(&(g_mutex));
 
-		k_printf("Test Mutex : TaskID=[0x%Q] Value=[%d]\n", k_getRunningTask()->link.id, g_adder);
+		k_printf("mutex test: task ID: 0x%Q, value: %d\n", k_getRunningTask()->link.id, g_adder);
 		g_adder++;
 
 		k_unlock(&(g_mutex));
@@ -754,7 +767,7 @@ static void k_testMutex(const char* paramBuffer) {
 		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_printNumberTask);
 	}
 
-	k_printf("Wait for the mutex test until [%d] tasks end...\n", i);
+	k_printf("wait for the mutex test until %d tasks end.\n", i);
 	k_getch();
 }
 
@@ -777,10 +790,10 @@ static void k_testThread(const char* paramBuffer) {
 	process = k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void*)0xEEEEEEEE, 0x1000, (qword)k_createThreadTask);
 
 	if (process != null) {
-		k_printf("Process [0x%Q] Create Success\n", process->link.id);
+		k_printf("thread test success: 1 process (0x%Q) and 3 threads have been created.\n", process->link.id);
 
 	} else {
-		k_printf("Process Create Fail\n");
+		k_printf("thread test failure: process creation failure\n");
 	}
 }
 
@@ -829,7 +842,7 @@ static void k_matrixProcess(void) {
 		k_sleep(k_random() % 5 + 5);
 	}
 
-	k_printf("%d Threads are created.\n", i);
+	k_printf("%d threads have been created.\n", i);
 
 	// exit process after key is received.
 	k_getch();
@@ -841,7 +854,7 @@ static void k_showMatrix(const char* paramBuffer) {
 	process = k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void*)0xE00000, 0xE00000, (qword)k_matrixProcess);
 
 	if (process != null) {
-		k_printf("Matrix Process [0x%Q] Create Success\n", process->link.id);
+		k_printf("Matrix process creation success: 0x%Q\n", process->link.id);
 
 		// wait until process exits.
 		while ((process->link.id >> 32) != 0) {
@@ -849,7 +862,7 @@ static void k_showMatrix(const char* paramBuffer) {
 		}
 
 	} else {
-		k_printf("Matrix Process Create Fail\n");
+		k_printf("Matrix process creation faiure\n");
 	}
 }
 
@@ -890,7 +903,7 @@ static void k_fpuTestTask(void) {
 
 		// If FPU operation has problems, exit a task with a error message.
 		if (value1 != value2) {
-			k_printf("Value is not same~!!, [%f] != [%f]\n", value1, value2);
+			k_printf("FPU operation failure: values are not same, %f != %f\n", value1, value2);
 			break;
 		}
 
@@ -906,8 +919,7 @@ static void k_testPi(const char* paramBuffer) {
 	int i;
 
 	// print Pi after calculating it.
-	k_printf("Pi Calculation Test\n");
-	k_printf("Pi : 355 / 113 = ");
+	k_printf("Pi: ");
 	result = (double)355 / 113;
 	//k_printf("%d.%d%d\n", (qword)result, ((qword)(result * 10) % 10), ((qword)(result * 100) % 10));
 	k_printf("%f\n", result);
@@ -927,74 +939,98 @@ static void k_showDynamicMemInfo(const char* paramBuffer) {
 	endAddredss = startAddr + totalSize;
 	totalRamSize = k_getTotalRamSize();
 
-	k_printf("========================= Dynamic Memory Information ==========================\n");
-	k_printf("Start Address  : 0x%Q byte, %d MB\n", startAddr, startAddr / 1024 / 1024);
-	k_printf("End Address    : 0x%Q byte, %d MB\n", endAddredss, endAddredss / 1024 / 1024);
-	k_printf("Total Size     : 0x%Q byte, %d MB\n", totalSize, totalSize / 1024 / 1024);
-	k_printf("Meta Size      : 0x%Q byte, %d KB\n", metaSize, metaSize / 1024);
-	k_printf("Used Size      : 0x%Q byte, %d KB\n", usedSize, usedSize / 1024);
-	k_printf("-------------------------------------------------------------------------------\n");
-	k_printf("Total RAM Size : 0x%Q byte, %d MB\n", totalRamSize * 1024 * 1024, totalRamSize);
-	k_printf("===============================================================================\n");
+	k_printf("*** Dynamic Memory Info ***\n");
+	k_printf("- start address  : 0x%Q bytes (%d MB)\n", startAddr, startAddr / 1024 / 1024);
+	k_printf("- end address    : 0x%Q bytes (%d MB)\n", endAddredss, endAddredss / 1024 / 1024);
+	k_printf("- total size     : 0x%Q bytes (%d MB)\n", totalSize, totalSize / 1024 / 1024);
+	k_printf("- meta size      : 0x%Q bytes (%d KB)\n", metaSize, metaSize / 1024);
+	k_printf("- used size      : 0x%Q bytes (%d KB)\n", usedSize, usedSize / 1024);
+	k_printf("- total RAM size : 0x%Q bytes (%d MB)\n", totalRamSize * 1024 * 1024, totalRamSize);
 }
 
-static void k_testSeqAlloc(const char* paramBuffer){
+static void k_testDynamicMem(const char* paramBuffer) {
+	ParamList list;
+	char param[100];
+	long type;
+	
+	// initialize parameter.
+	k_initParam(&list, paramBuffer);
+	
+	// get No.1 parameter: type
+	if (k_getNextParam(&list, param) == 0) {
+		k_printf("Usage: testdmem <type>\n");
+		k_printf("  - type: 1 (sequential allocation)\n");
+		k_printf("  - type: 2 (random allocation)\n");
+		k_printf("  - example: testdmem 1\n");
+		return;
+	}
+	
+	type = k_atoi(param, 10);
+	
+	switch (type) {
+	case 1: // sequential allocation
+		k_testSeqAlloc();
+		break;
+		
+	case 2: // random allocation
+		k_testRandomAlloc();
+		break;
+		
+	default:
+		k_printf("invalid type: %d, Type must be 1, 2.", type);
+		return;
+	}
+}
+
+static void k_testSeqAlloc() {
 	DynamicMemManager* manager;
 	long i, j, k;
 	qword* buffer;
-
-	k_printf("====>>>> Dynamic Memory Sequential Test\n");
-
+	
+	k_printf("*** Dynamic Memory Sequential Allocation Test ***\n");
+	
 	manager = k_getDynamicMemManager();
-
+	
 	for (i = 0; i < manager->maxLevelCount; i++) {
-
-		k_printf("Block List [%d] Test Start~!!\n", i);
-
+		
+		k_printf("start block list (%d) test.\n", i);
+		
 		// allocate and compare every size of blocks.
-		k_printf("Allocation and Compare: ");
-
+		k_printf("allocate and compare memory...\n");
+		
 		for (j = 0; j < (manager->smallestBlockCount >> i); j++) {
-
+			
 			buffer = (qword*)k_allocMem(DMEM_MIN_SIZE << i);
 			if (buffer == null) {
-				k_printf("\nAllocation Fail~!!\n");
+				k_printf("test failure: memory allocation failure\n");
 				return;
 			}
-
+			
 			// put value to allocated memory.
 			for (k = 0; k < ((DMEM_MIN_SIZE << i) / 8); k++) {
 				buffer[k] = k;
 			}
-
+			
 			// compare
 			for (k = 0; k < ((DMEM_MIN_SIZE << i) / 8); k++) {
 				if (buffer[k] != k) {
-					k_printf("\nCompare Fail~!!\n");
+					k_printf("test failure: memory comparison failure\n");
 					return;
 				}
 			}
-
-			// print <.> to show the progress.
-			k_printf(".");
 		}
-
+		
 		// free all blocks.
-		k_printf("\nFree: ");
+		k_printf("free memory...\n");
 		for (j = 0; j < (manager->smallestBlockCount >> i); j++) {
 			if (k_freeMem((void*)(manager->startAddr + ((DMEM_MIN_SIZE << i) * j))) == false) {
-				k_printf("\nFree Fail~!!\n");
+				k_printf("test failure: memory freeing failure\n");
 				return;
 			}
-
-			// print <.> to show the progress.
-			k_printf(".");
 		}
-
-		k_printf("\n");
 	}
-
-	k_printf("Test Complete~!!\n");
+	
+	k_printf("test success\n");
 }
 
 static void k_randomAllocTask(void) {
@@ -1021,12 +1057,12 @@ static void k_randomAllocTask(void) {
 
 		} while (allocBuffer == 0);
 
-		k_sprintf(buffer, "|Address=[0x%Q], Size=[0x%Q] Allocation Success~!!", allocBuffer, memSize);
+		k_sprintf(buffer, "| address (0x%Q), size (0x%Q) allocation success", allocBuffer, memSize);
 		k_printStrXy(20, y, buffer);
 		k_sleep(200);
 
 		// divide buffer half, put the same random data to both of them.
-		k_sprintf(buffer, "|Address=[0x%Q], Size=[0x%Q] Data Write...", allocBuffer, memSize);
+		k_sprintf(buffer, "| address (0x%Q), size (0x%Q) write data...", allocBuffer, memSize);
 		k_printStrXy(20, y, buffer);
 
 		for (i = 0; i < (memSize / 2); i++) {
@@ -1037,12 +1073,12 @@ static void k_randomAllocTask(void) {
 		k_sleep(200);
 
 		// verify data.
-		k_sprintf(buffer, "|Address=[0x%Q], Size=[0x%Q] Data Verify...", allocBuffer, memSize);
+		k_sprintf(buffer, "| address (0x%Q), size (0x%Q) verify data...", allocBuffer, memSize);
 		k_printStrXy(20, y, buffer);
 
 		for (i = 0; i < (memSize / 2); i++) {
 			if (allocBuffer[i] != allocBuffer[i+(memSize/2)]) {
-				k_printf("TaskID=[0x%Q] Verify Fail~!!\n", task->link.id);
+				k_printf("test failure: data verification failure: task ID: 0x%Q\n", task->link.id);
 				k_exitTask();
 			}
 		}
@@ -1050,15 +1086,17 @@ static void k_randomAllocTask(void) {
 		k_freeMem(allocBuffer);
 		k_sleep(200);
 	}
-
+	
+	k_printf("test success\n");
+	
 	k_exitTask();
 }
 
-static void k_testRandomAlloc(const char* paramBuffer) {
+static void k_testRandomAlloc() {
 	int i;
-
-	k_printf("====>>>> Dynamic Memory Random Test\n");
-
+	
+	k_printf("*** Dynamic Memory Random Allocation Test ***\n");
+	
 	for (i = 0; i < 1000; i++) {
 		k_createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD, 0, 0, (qword)k_randomAllocTask);
 	}
@@ -1070,31 +1108,29 @@ static void k_showHddInfo(const char* paramBuffer) {
 
 	// read hard disk info.
 	if (k_getHddInfo(&hddInfo) == false) {
-		k_printf("HDD Information Read Fail~!!");
+		k_printf("HDD info reading failure");
 		return;
 	}
 
-	k_printf("======================= Primary Master HDD Information ========================\n");
+	k_printf("*** Primary Master HDD Info ***\n");
 
 	// print model number.
 	k_memcpy(buffer, hddInfo.modelNumber, sizeof(hddInfo.modelNumber));
 	buffer[sizeof(hddInfo.modelNumber) - 1] = '\0';
-	k_printf("Model Number   : %s\n", buffer);
+	k_printf("- model number   : %s\n", buffer);
 
 	// print serial number.
 	k_memcpy(buffer, hddInfo.serialNumber, sizeof(hddInfo.serialNumber));
 	buffer[sizeof(hddInfo.serialNumber) - 1] = '\0';
-	k_printf("Serial Number  : %s\n", buffer);
+	k_printf("- serial number  : %s\n", buffer);
 
 	// print cylinder count, head count, sector count per cylinder.
-	k_printf("Cylinder Count : %d\n", hddInfo.numberOfCylinder);
-	k_printf("Head Count     : %d\n", hddInfo.numberOfHead);
-	k_printf("Sector Count   : %d\n", hddInfo.numberOfSectorPerCylinder);
+	k_printf("- cylinder count : %d\n", hddInfo.numberOfCylinder);
+	k_printf("- head count     : %d\n", hddInfo.numberOfHead);
+	k_printf("- sector count   : %d\n", hddInfo.numberOfSectorPerCylinder);
 
 	// print total sector count.
-	k_printf("Total Sectors  : %d sector, %d MB\n", hddInfo.totalSectors, hddInfo.totalSectors / 2 / 1024);
-
-	k_printf("===============================================================================\n");
+	k_printf("- total sectors  : %d sectors (%d MB)\n", hddInfo.totalSectors, hddInfo.totalSectors / 2 / 1024);
 }
 
 static void k_readSector(const char* paramBuffer) {
@@ -1107,67 +1143,73 @@ static void k_readSector(const char* paramBuffer) {
 	int i, j;
 	byte data;
 	bool exit = false;
-
+	
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
-
-	// get No.1 parameter: LBA
+	
+	// get No.1 parameter: lba
 	if (k_getNextParam(&list, lba_) == 0) {
-		k_printf("Wrong Usage, ex) readsector 0(LBA) 10(count)\n");
+		k_printf("Usage) reads <lba> <count>\n");
+		k_printf("  - lba: logical block address\n");
+		k_printf("  - count: read sector count\n");
+		k_printf("  - example: reads 0 10\n");
 		return;
 	}
-
-	// get No.2 parameter: SectorCount
+	
+	// get No.2 parameter: sectorCount
 	if (k_getNextParam(&list, sectorCount_) == 0) {
-		k_printf("Wrong Usage, ex) readsector 0(LBA) 10(count)\n");
+		k_printf("Usage) reads <lba> <count>\n");
+		k_printf("  - lba: logical block address\n");
+		k_printf("  - count: read sector count\n");
+		k_printf("  - example: reads 0 10\n");
 		return;
 	}
-
+	
 	lba = k_atoi(lba_, 10);
 	sectorCount = k_atoi(sectorCount_, 10);
-
+	
 	// allocate sector-count-sized memory.
 	buffer = (char*)k_allocMem(sectorCount * 512);
-
+	
 	// read sectors
 	if (k_readHddSector(true, true, lba, sectorCount, buffer) == sectorCount) {
-		k_printf("HDD Sector Read : LBA=[%d], Count=[%d] : Success~!!", lba, sectorCount);
-
+		k_printf("HDD sector reading successs: LBA: %d, count: %d", lba, sectorCount);
+		
 		// print memory buffer.
 		for (j = 0; j < sectorCount; j++) {
 			for (i = 0; i < 512; i++) {
 				if (!((j == 0) && (i == 0)) && ((i % 256) == 0)) {
-					k_printf("\nPress any key to continue...('q' is exit):");
+					k_printf("\nPress any key to continue...('q' is quit):");
 					if (k_getch() == 'q') {
 						exit = true;
 						break;
 					}
 				}
-
+				
 				if ((i % 16) == 0) {
-					k_printf("\n[LBA:%d, Offset:%d]\t| ", lba + j, i);
+					k_printf("\n<LBA:%d, offset:%d>\t| ", lba + j, i);
 				}
-
+				
 				// add 0 to the number less than 16 in order to print double digits.
 				data = buffer[j*512+i] & 0xFF;
 				if (data < 16) {
 					k_printf("0");
 				}
-
+				
 				k_printf("%X ", data);
 			}
-
+			
 			if (exit == true) {
 				break;
 			}
 		}
-
+		
 		k_printf("\n");
-
+		
 	} else {
-		k_printf("HDD Sector Read : Fail~!!\n");
+		k_printf("HDD sector reading failure\n");
 	}
-
+	
 	k_freeMem(buffer);
 }
 
@@ -1182,27 +1224,33 @@ static void k_writeSector(const char* paramBuffer) {
 	byte data;
 	bool exit = false;
 	static dword writeCount = 0;
-
+	
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
-
-	// get No.1 parameter: LBA
+	
+	// get No.1 parameter: lba
 	if (k_getNextParam(&list, lba_) == 0) {
-		k_printf("Wrong Usage, ex) writesector 0(LBA) 10(count)\n");
+		k_printf("Usage) writes <lba> <count>\n");
+		k_printf("  - lba: logical block address\n");
+		k_printf("  - count: read sector count\n");
+		k_printf("  - example: writes 0 10\n");
 		return;
 	}
-
-	// get Not.2 parameter: SectorCount
+	
+	// get No.2 parameter: sectorCount
 	if (k_getNextParam(&list, sectorCount_) == 0) {
-		k_printf("Wrong Usage, ex) writesector 0(LBA) 10(count)\n");
+		k_printf("Usage) writes <lba> <count>\n");
+		k_printf("  - lba: logical block address\n");
+		k_printf("  - count: read sector count\n");
+		k_printf("  - example: writes 0 10\n");
 		return;
 	}
-
+	
 	lba = k_atoi(lba_, 10);
 	sectorCount = k_atoi(sectorCount_, 10);
-
+	
 	writeCount++;
-
+	
 	// allocate sector-count-sized memory, put data to it. (Data pattern is created by LBA address (4 bytes) and write count (4 bytes).)
 	buffer = (char*)k_allocMem(sectorCount * 512);
 	for (j = 0; j < sectorCount; j++) {
@@ -1211,81 +1259,80 @@ static void k_writeSector(const char* paramBuffer) {
 			*(dword*)&(buffer[j*512+i+4]) = writeCount;
 		}
 	}
-
+	
 	// write sectors
 	if (k_writeHddSector(true, true, lba, sectorCount, buffer) != sectorCount) {
-		k_printf("HDD Sector Write : Fail~!!\n");
+		k_printf("HDD sector writing failure\n");
 	}
-
-	k_printf("HDD Sector Write : LBA=[%d], Count=[%d] : Success~!!", lba, sectorCount);
-
+	
+	k_printf("HDD sector writing success: LBA: %d, count: %d", lba, sectorCount);
+	
 	// print memory buffer.
 	for (j = 0; j < sectorCount; j++) {
 		for (i = 0; i < 512; i++) {
 			if (!((j == 0) && (i == 0)) && ((i % 256) == 0)) {
-				k_printf("\nPress any key to continue...('q' is exit):");
+				k_printf("\nPress any key to continue...('q' is quit):");
 				if (k_getch() == 'q') {
 					exit = true;
 					break;
 				}
 			}
-
+			
 			if ((i % 16) == 0) {
-				k_printf("\n[LBA:%d, Offset:%d]\t| ", lba + j, i);
+				k_printf("\n<LBA:%d, Offset:%d>\t| ", lba + j, i);
 			}
-
+			
 			// add 0 to the number less than 16 in order to print double digits.
 			data = buffer[j*512+i] & 0xFF;
 			if (data < 16) {
 				k_printf("0");
 			}
-
+			
 			k_printf("%X ", data);
 		}
-
+		
 		if (exit == true) {
 			break;
 		}
 	}
-
+	
 	k_printf("\n");
-
+	
 	k_freeMem(buffer);
-}
-
-static void k_mountHdd(const char* paramBuffer) {
-	if (k_mount() == false) {
-		k_printf("HDD Mount Fail~!!\n");
-		return;
-	}
-
-	k_printf("HDD Mount Success~!!\n");
 }
 
 static void k_formatHdd(const char* paramBuffer) {
 	if (k_format() == false) {
-		k_printf("HDD Format Fail~!!\n");
+		k_printf("HDD format failure\n");
 		return;
 	}
 
-	k_printf("HDD Format Success~!!\n");
+	k_printf("HDD format success\n");
+}
+
+static void k_mountHdd(const char* paramBuffer) {
+	if (k_mount() == false) {
+		k_printf("HDD mount failure\n");
+		return;
+	}
+
+	k_printf("HDD mount success\n");
 }
 
 static void k_showFileSystemInfo(const char* paramBuffer) {
 	FileSystemManager manager;
-
+	
 	k_getFileSystemInfo(&manager);
-
-	k_printf("=========================== File System Information ===========================\n");
-	k_printf("Mounted                          : %s\n",         (manager.mounted == true) ? "true" : "false");
-	k_printf("MBR Sector Count                 : %d sector\n",  (manager.mounted == true) ? 1 : 0);
-	k_printf("Reserved Sector Count            : %d sector\n",  manager.reservedSectorCount);
-	k_printf("Cluster Link Area Start Address  : %d sector\n",  manager.clusterLinkAreaStartAddr);
-	k_printf("Cluster Link Area Size           : %d sector\n",  manager.clusterLinkAreaSize);
-	k_printf("Data Area Start Address          : %d sector\n",  manager.dataAreaStartAddr);
-	k_printf("Total Cluster Count              : %d cluster\n", manager.totalClusterCount);
-	k_printf("Cache Enable                     : %s\n",         (manager.cacheEnabled == true) ? "true" : "false");
-	k_printf("===============================================================================\n");
+	
+	k_printf("*** File System Info ***\n");
+	k_printf("- mounted                          : %s\n",         (manager.mounted == true) ? "true" : "false");
+	k_printf("- MBR sector count                 : %d sectors\n",  (manager.mounted == true) ? 1 : 0);
+	k_printf("- reserved sector count            : %d sectors\n",  manager.reservedSectorCount);
+	k_printf("- cluster link area start address  : %d sectors\n",  manager.clusterLinkAreaStartAddr);
+	k_printf("- cluster link area size           : %d sectors\n",  manager.clusterLinkAreaSize);
+	k_printf("- data area start address          : %d sectors\n",  manager.dataAreaStartAddr);
+	k_printf("- total cluster count              : %d clusters\n", manager.totalClusterCount);
+	k_printf("- cache enable                     : %s\n",         (manager.cacheEnabled == true) ? "true" : "false");
 }
 
 static void k_createFileInRootDir(const char* paramBuffer) {
@@ -1297,23 +1344,25 @@ static void k_createFileInRootDir(const char* paramBuffer) {
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
 
-	// get No.1 parameter: FileName
+	// get No.1 parameter: fname
 	if ((len = k_getNextParam(&list, fileName)) == 0) {
-		k_printf("Wrong Usage, ex) createfile a.txt\n");
+		k_printf("Usage) create <fname>\n");
+		k_printf("  - fname: file name\n");
+		k_printf("  - example: create a.txt");
 		return;
 	}
-
+	
 	fileName[len] = '\0';
-
+	
 	if (len > (FS_MAXFILENAMELENGTH - 1)) {
-		k_printf("Wrong Usage, Too Long File Name\n");
+		k_printf("file creation failure: too long file name\n");
 		return;
 	}
 
 	// open a file.
 	file = fopen(fileName, "w");
 	if (file == null) {
-		k_printf("'%s' File Create Fail~!!\n", fileName);
+		k_printf("file creation failure: file opening failure\n");
 		return;
 	}
 
@@ -1329,22 +1378,24 @@ static void k_deleteFileInRootDir(const char* paramBuffer) {
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
 
-	// get No.1 parameter: FileName
+	// get No.1 parameter: fname
 	if ((len = k_getNextParam(&list, fileName)) == 0) {
-		k_printf("Wrong Usage, ex) deletefile a.txt\n");
+		k_printf("Usage) delete <fname>\n");
+		k_printf("  - fname: file name\n");
+		k_printf("  - example: delete a.txt\n");
 		return;
 	}
 
 	fileName[len] = '\0';
 
 	if (len > (FS_MAXFILENAMELENGTH - 1)) {
-		k_printf("Wrong Usage, Too Long File Name\n");
+		k_printf("file deletion failure: too long file name\n");
 		return;
 	}
 
 	// remove a file.
 	if (remove(fileName) != 0) {
-		k_printf("'%s' File Delete Fail~!!\n", fileName);
+		k_printf("file deletion failure: file removing failure\n");
 		return;
 	}
 }
@@ -1365,7 +1416,7 @@ static void k_showRootDir(const char* paramBuffer) {
 	// open root directory. (ignore directory name(/), because only root directory exists.)
 	dir = opendir("/");
 	if (dir == null) {
-		k_printf("Root Directory Open Fail~!!\n");
+		k_printf("root directory opening failure\n");
 		return;
 	}
 
@@ -1413,11 +1464,11 @@ static void k_showRootDir(const char* paramBuffer) {
 		k_memcpy(buffer, entry->d_name, k_strlen(entry->d_name));
 
 		// set file size to buffer.
-		k_sprintf(tempValue, "%d byte", entry->fileSize);
+		k_sprintf(tempValue, "%d bytes", entry->fileSize);
 		k_memcpy(buffer + 30, tempValue, k_strlen(tempValue));
 
 		// set start cluster index to buffer.
-		k_sprintf(tempValue, "0x%X cluster", entry->startClusterIndex);
+		k_sprintf(tempValue, "0x%X clusters", entry->startClusterIndex);
 		k_memcpy(buffer + 55, tempValue, k_strlen(tempValue));
 
 		// print file list.
@@ -1426,7 +1477,7 @@ static void k_showRootDir(const char* paramBuffer) {
 		// ask a user to print more items, every after 15 items are printed.
 		if ((count != 0) && ((count % 15) == 0)) {
 
-			k_printf("Press any key to continue...('q' is exit):");
+			k_printf("Press any key to continue...('q' is quit):");
 
 			if (k_getch() == 'q') {
 				k_printf("\n");
@@ -1440,9 +1491,9 @@ static void k_showRootDir(const char* paramBuffer) {
 	}
 
 	// print total file count, total file size, free space of hard disk.
-	k_printf("\t\tTotal File Count : %d\n", totalCount);
-	k_printf("\t\tTotal File Size  : %d byte (%d cluster)\n", totalByte, usedClusterCount);
-	k_printf("\t\tFree Space       : %d KB (%d cluster)\n", (manager.totalClusterCount - usedClusterCount) * FS_CLUSTERSIZE / 1024, manager.totalClusterCount - usedClusterCount);
+	k_printf("\t\ttotal file count : %d\n", totalCount);
+	k_printf("\t\ttotal file size  : %d bytes (%d clusters)\n", totalByte, usedClusterCount);
+	k_printf("\t\tfree space       : %d KB (%d clusters)\n", (manager.totalClusterCount - usedClusterCount) * FS_CLUSTERSIZE / 1024, manager.totalClusterCount - usedClusterCount);
 
 	// close root directory.
 	closedir(dir);
@@ -1459,23 +1510,25 @@ static void k_writeDataToFile(const char* paramBuffer) {
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
 
-	// get No.1 parameter: FileName
+	// get No.1 parameter: fname
 	if ((len = k_getNextParam(&list, fileName)) == 0) {
-		k_printf("Wrong Usage, ex) writefile a.txt\n");
+		k_printf("Usage) write <fname>\n");
+		k_printf("  - fname: file name\n");
+		k_printf("  - example: write a.txt\n");
 		return;
 	}
 
 	fileName[len] = '\0';
 
 	if (len > (FS_MAXFILENAMELENGTH - 1)) {
-		k_printf("Wrong Usage, Too Long File Name\n");
+		k_printf("file writing failure: too long file name\n");
 		return;
 	}
 
 	// open a file.
 	file = fopen(fileName, "w");
 	if (file == null) {
-		k_printf("'%s' File Open Fail~!!\n", fileName);
+		k_printf("file writing failure: file opening failure\n");
 		return;
 	}
 
@@ -1498,7 +1551,7 @@ static void k_writeDataToFile(const char* paramBuffer) {
 
 		// write a file.
 		if (fwrite(&key, 1, 1, file) != 1) {
-			k_printf("'%s' File Write Fail~!!\n", fileName);
+			k_printf("file writing failure: file writing failure");
 			break;
 		}
 	}
@@ -1518,23 +1571,25 @@ static void k_readDataFromFile(const char* paramBuffer) {
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
 
-	// get No.1 parameter: FileName
+	// get No.1 parameter: fname
 	if ((len = k_getNextParam(&list, fileName)) == 0) {
-		k_printf("Wrong Usage, ex) readfile a.txt\n");
+		k_printf("Usage) read <fname>\n");
+		k_printf("  - fname:  file name\n");
+		k_printf("  - example: read a.txt\n");
 		return;
 	}
 
 	fileName[len] = '\0';
 
 	if (len > (FS_MAXFILENAMELENGTH - 1)) {
-		k_printf("Wrong Usage, Too Long File Name\n");
+		k_printf("file reading failure: too long file name\n");
 		return;
 	}
 
 	// open a file.
 	file = fopen(fileName, "r");
 	if (file == null) {
-		k_printf("'%s' File Open Fail~!!\n", fileName);
+		k_printf("file reading failure: file opening failure\n");
 		return;
 	}
 
@@ -1555,7 +1610,7 @@ static void k_readDataFromFile(const char* paramBuffer) {
 			// ask a user to print more lines, every after 15 lines are printed.
 			if ((enterCount != 0) && ((enterCount % 15) == 0)) {
 
-				k_printf("Press any key to continue...('q' is exit):");
+				k_printf("Press any key to continue...('q' is quit):");
 
 				if (k_getch() == 'q') {
 					k_printf("\n");
@@ -1581,259 +1636,264 @@ static void k_testFileIo(const char* paramBuffer) {
 	dword byteCount;
 	byte tempBuffer[1024];
 	dword maxFileSize;
-
-	k_printf("====>>>> File I/O Test Start\n");
-
+	bool fail = false;
+	
+	k_printf("*** File IO Test ***\n");
+	
 	// allocate 4MB-sized memory.
 	maxFileSize = 4 * 1024 * 1024;
 	buffer = (byte*)k_allocMem(maxFileSize);
 	if (buffer == null) {
-		k_printf("Memory Allocation Fail~!!\n");
+		k_printf("test failure: memory allocation failure\n");
 		return;
 	}
-
+	
 	// remove the test file.
-	remove("testfileio.bin");
-
+	remove("testfile.tmp");
+	
 	//----------------------------------------------------------------------------------------------------
-	// 1. File Open Fail Test
+	// 1. File Opening Failure Test
 	//----------------------------------------------------------------------------------------------------
-	k_printf("1. File Open Fail Test...");
-
+	k_printf("1> file openning failure test..................................");
+	
 	// Read mode (r) dosen't create a file and return null when the file dosen't exist.
-	file = fopen("testfileio.bin", "r");
+	file = fopen("testfile.tmp", "r");
 	if (file == null) {
-		k_printf("[Pass]\n");
-
+		k_printf("pass\n");
+		
 	} else {
-		k_printf("[Fail]\n");
+		k_printf("fail\n");
 		fclose(file);
 	}
-
+	
 	//----------------------------------------------------------------------------------------------------
-	// 2. File Create Test
+	// 2. File Creation Test
 	//----------------------------------------------------------------------------------------------------
-	k_printf("2. File Create Test...");
-
+	k_printf("2> file creation test..........................................");
+	
 	// Write mode (w) create a file and return a file handle when the file dosen't exist.
-	file = fopen("testfileio.bin", "w");
+	file = fopen("testfile.tmp", "w");
 	if (file != null) {
-		k_printf("[Pass]\n");
-		k_printf("    FileHandle=[0x%Q]\n", file);
-
+		k_printf("pass\n");
+		
 	} else {
-		k_printf("[Fail]\n");
+		k_printf("fail\n");
 	}
-
+	
 	//----------------------------------------------------------------------------------------------------
-	// 3. Sequential Write Test
+	// 3. Sequential Writing Test
 	//----------------------------------------------------------------------------------------------------
-	k_printf("3. Sequential Write Test(Cluster Size)...");
-
+	k_printf("3> sequential writing test (cluster size)......................");
+	fail = false;
+	
 	// write data to a opened file.
 	for (i = 0; i < 100; i++) {
-
+		
 		k_memset(buffer, i, FS_CLUSTERSIZE);
-
+		
 		// write a file.
 		if (fwrite(buffer, 1, FS_CLUSTERSIZE, file) != FS_CLUSTERSIZE) {
-			k_printf("[Fail]\n");
-			k_printf("    %d Cluster Error\n", i);
+			fail = true;
+			k_printf("fail: %d cluster\n", i);
 			break;
 		}
 	}
-
-	if (i >= 100) {
-		k_printf("[Pass]\n");
+	
+	if (fail == false) {
+		k_printf("pass\n");
 	}
-
+	
 	//----------------------------------------------------------------------------------------------------
-	// 4. Sequential Read and Verify Test
+	// 4. Sequential Reading/Verification Test
 	//----------------------------------------------------------------------------------------------------
-	k_printf("4. Sequential Read and Verify Test(Cluster Size)...");
-
+	k_printf("4> sequential reading/verification test (cluster size).........");
+	fail = false;
+	
 	// move to the start of file.
 	fseek(file, -100 * FS_CLUSTERSIZE, SEEK_END);
-
+	
 	// read data from opened file, and verify data.
 	for (i = 0; i < 100; i++) {
-
+		
 		// read a file.
 		if (fread(buffer, 1, FS_CLUSTERSIZE, file) != FS_CLUSTERSIZE) {
-			k_printf("[Fail]\n");
+			fail = true;
+			k_printf("fail\n");
 			break;
 		}
-
+		
 		// verify data.
 		for (j = 0; j < FS_CLUSTERSIZE; j++) {
 			if (buffer[j] != (byte)i) {
-				k_printf("[Fail]\n");
-				k_printf("    %d Cluster Error, [0x%X] != [0x%X]", i, buffer[j], (byte)i);
+				fail = true;
+				k_printf("fail: %d cluster, 0x%X != 0x%X\n", i, buffer[j], (byte)i);
 				break;
 			}
 		}
 	}
-
-	if (i >= 100) {
-		k_printf("[Pass]\n");
+	
+	if (fail == false) {
+		k_printf("pass\n");
 	}
-
+	
 	//----------------------------------------------------------------------------------------------------
-	// 5. Random Write Test
+	// 5. Random Writing Test
 	//----------------------------------------------------------------------------------------------------
-	k_printf("5. Random Write Test\n");
-
+	k_printf("5> random writing test.........................................");
+	fail = false;
+	
 	// put 0 to buffer.
 	k_memset(buffer, 0, maxFileSize);
-
+	
 	// move to the start of file, and read data from file, and copy it to buffer.
 	fseek(file, -100 * FS_CLUSTERSIZE, SEEK_CUR);
 	fread(buffer, 1, maxFileSize, file);
-
+	
 	// write the same data to both file and buffer.
 	for (i = 0; i < 100; i++) {
 		byteCount = (k_random() % (sizeof(tempBuffer) - 1)) + 1;
 		randomOffset = k_random() % (maxFileSize - byteCount);
-		k_printf("    [%d] Offset=[%d], Byte=[%d]...", i, randomOffset, byteCount);
-
+		
 		// write data in the random position of file.
 		fseek(file, randomOffset, SEEK_SET);
 		k_memset(tempBuffer, i, byteCount);
 		if (fwrite(tempBuffer, 1, byteCount, file) != byteCount) {
-			k_printf("[Fail]\n");
+			fail = true;
+			k_printf("fail: [%d] offset: %d, byte: %d\n", i, randomOffset, byteCount);
 			break;
-
-		} else {
-			k_printf("[Pass]\n");
 		}
-
+		
 		// write data in the random position of buffer.
 		k_memset(buffer + randomOffset, i, byteCount);
 	}
-
+	
+	if (fail == false) {
+		k_printf("pass\n");
+	}
+	
 	// move to the end of file and buffer, and write data (1 byte), and make the size 4MB.
 	fseek(file, maxFileSize - 1, SEEK_SET);
 	fwrite(&i, 1, 1, file);
 	buffer[maxFileSize - 1] = (byte)i;
-
+	
 	//----------------------------------------------------------------------------------------------------
-	// 6. Random Read and Verify Test
+	// 6. Random Reading/Verification Test
 	//----------------------------------------------------------------------------------------------------
-	k_printf("6. Random Read and Verify Test\n");
-
+	k_printf("6> random reading/verification test............................");
+	fail = false;
+	
 	// read data from the random position of file and buffer, verify data.
 	for (i = 0; i < 100; i++) {
 		byteCount = (k_random() % (sizeof(tempBuffer) - 1)) + 1;
 		randomOffset = k_random() % (maxFileSize - byteCount);
-		k_printf("    [%d] Offset=[%d], Byte=[%d]...", i, randomOffset, byteCount);
-
+		
 		// read data from the random position of file.
 		fseek(file, randomOffset, SEEK_SET);
 		if (fread(tempBuffer, 1, byteCount, file) != byteCount) {
-			k_printf("[Fail]\n");
-			k_printf("    File Read Fail\n");
+			fail = true;
+			k_printf("fail: file reading failure: [%d] offset: %d, byte: %d\n", i, randomOffset, byteCount);
 			break;
 		}
-
+		
 		// verify data.
 		if (k_memcmp(buffer + randomOffset, tempBuffer, byteCount) != 0) {
-			k_printf("[Fail]\n");
-			k_printf("    Data Verify Fail\n");
+			fail = true;
+			k_printf("fail: data verification failure: [%d] offset: %d, byte: %d\n", i, randomOffset, byteCount);
 			break;
 		}
-
-		k_printf("[Pass]\n");
 	}
-
+	
+	if (fail == false) {
+		k_printf("pass\n");
+	}
+	
 	//----------------------------------------------------------------------------------------------------
-	// 7. Sequential Write, Read and Verify Test(1024 bytes)
+	// 7. Sequential Writing/Reading/Verification Test (1024 bytes)
 	//----------------------------------------------------------------------------------------------------
-	k_printf("7. Sequential Write, Read and Verify Test(1024 bytes)\n");
-
+	k_printf("7> sequential writing/reading/verification test (1024 bytes)...");
+	fail = false;
+	
 	// move to the start of file.
 	fseek(file, -maxFileSize, SEEK_CUR);
-
+	
 	// loop for writing a file. (write data (2MB) from the start of file).
 	for (i = 0; i < (2 * 1024 * 1024 / 1024); i++) {
-		k_printf("    [%d] Offset=[%d], Byte=[%d] Write...", i, i * 1024, 1024);
-
 		// write a file (write data by 1024 bytes).
 		if (fwrite(buffer + (i * 1024), 1, 1024, file) != 1024) {
-			k_printf("[Fail]\n");
+			fail = true;
+			k_printf("fail: file writing failure: [%d] offset: %d, byte: %d\n", i, i * 1024, 1024);
 			break;
-
-		} else {
-			k_printf("[Pass]\n");
 		}
 	}
-
+	
 	// move to the start of file.
 	fseek(file, -maxFileSize, SEEK_SET);
-
+	
 	// read data from a file, and verify it.
 	// verify the whole area (4MB), because wrong data could have been saved by the random write.
 	for (i = 0; i < (maxFileSize / 1024); i++) {
-		k_printf("    [%d] Offset=[%d], Byte=[%d] Read and Verify...", i, i * 1024, 1024);
-
 		// read a file. (read data by 1024 bytes.)
 		if (fread(tempBuffer, 1, 1024, file) != 1024) {
-			k_printf("[Fail]\n");
+			fail = true;
+			k_printf("fail: file reading failure: [%d] offset: %d, byte: %d\n", i, i * 1024, 1024);
 			break;
 		}
-
+		
 		// verify data.
 		if (k_memcmp(buffer + (i * 1024), tempBuffer, 1024) != 0) {
-			k_printf("[Fail]\n");
+			fail = true;
+			k_printf("fail: data verification failure: [%d] offset: %d, byte: %d\n", i, i * 1024, 1024);
 			break;
-
-		} else {
-			k_printf("[Pass]\n");
-		}
+		} 
 	}
-
+	
+	if (fail == false) {
+		k_printf("pass\n");
+	}
+	
 	//----------------------------------------------------------------------------------------------------
-	// 8. File Delete Fail Test
+	// 8. File Deletion Failure Test
 	//----------------------------------------------------------------------------------------------------
-	k_printf("8. File Delete Fail Test...");
-
+	k_printf("8> file deletion failure test..................................");
+	
 	// the file delete test must fails, because the file is open.
-	if (remove("testfileio.bin") != 0) {
-		k_printf("[Pass]\n");
-
+	if (remove("testfile.tmp") != 0) {
+		k_printf("pass\n");
+		
 	} else {
-		k_printf("[Fail]\n");
+		k_printf("fail\n");
 	}
-
+	
 	//----------------------------------------------------------------------------------------------------
-	// 9. File Close Fail Test
+	// 9. File Closing Failure Test
 	//----------------------------------------------------------------------------------------------------
-	k_printf("9. File Close Fail Test...");
-
+	k_printf("9> file closing failure test...................................");
+	
 	// close a file.
 	if (fclose(file) == 0) {
-		k_printf("[Pass]\n");
-
+		k_printf("pass\n");
+		
 	} else {
-		k_printf("[Fail]\n");
+		k_printf("fail\n");
 	}
-
+	
 	//----------------------------------------------------------------------------------------------------
-	// 10. File Delete Test
+	// 10. File Deletion Test
 	//----------------------------------------------------------------------------------------------------
-	k_printf("10. File Delete Test...");
-
+	k_printf("10> file delete test...........................................");
+	
 	// remove a file.
-	if (remove("testfileio.bin") == 0) {
-		k_printf("[Pass]\n");
-
+	if (remove("testfile.tmp") == 0) {
+		k_printf("pass\n");
+		
 	} else {
-		k_printf("[Fail]\n");
+		k_printf("fail\n");
 	}
-
+	
 	// free memory.
 	k_freeMem(buffer);
-
-	k_printf("====>>>> File I/O Test End\n");
+	
+	k_printf("test end\n");
 }
 
 static void k_testPerformance(const char* paramBuffer) {
@@ -1843,151 +1903,149 @@ static void k_testPerformance(const char* paramBuffer) {
 	qword lastTickCount;
 	dword i;
 	byte* buffer;
-
+	
+	k_printf("*** File IO Performance Test ***\n");
+	
 	// set file size (cluster unit: 1MB, byte unit: 16KB)
 	clusterTestFileSize = 1024 * 1024;
 	oneByteTestFileSize = 16 * 1024;
-
+	
 	// allocate memory.
 	buffer = (byte*)k_allocMem(clusterTestFileSize);
 	if (buffer == null) {
-		k_printf("Memory Allocate Fail~!!\n");
+		k_printf("test failure: memory allocation failure\n");
 		return;
 	}
-
+	
 	k_memset(buffer, 0, FS_CLUSTERSIZE);
-
-	k_printf("====>>>> File I/O Performance Test Start\n");
-
+	
 	//----------------------------------------------------------------------------------------------------
-	// 1-1. Sequential Write Test by Cluster Unit
+	// 1-1. Sequential Writing Test by Cluster Unit
 	//----------------------------------------------------------------------------------------------------
-	k_printf("1. Sequential Read/Write Test (Cluster -> 1MB)\n");
-
+	k_printf("1> sequential writing/reading test (cluster -> 1 MB)\n");
+	
 	// remove a file, and create it.
-	remove("performance.txt");
-	file = fopen("performance.txt", "w");
+	remove("testperf.tmp");
+	file = fopen("testperf.tmp", "w");
 	if (file == null) {
-		k_printf("File Open Fail~!!\n");
+		k_printf("test failure: file opening failure\n");
 		k_freeMem(buffer);
 		return;
 	}
-
+	
 	lastTickCount = k_getTickCount();
-
+	
 	// write test by cluster unit.
 	for (i = 0; i < (clusterTestFileSize / FS_CLUSTERSIZE); i++) {
 		if (fwrite(buffer, 1, FS_CLUSTERSIZE, file) != FS_CLUSTERSIZE) {
-			k_printf("File Write Fail~!!\n");
+			k_printf("test failure: file writing failure\n");
 			fclose(file);
-			remove("performance.txt");
+			remove("testperf.tmp");
 			k_freeMem(buffer);
 			return;
 		}
 	}
-
+	
 	// print test time.
-	k_printf("    - Write : %d ms\n", k_getTickCount() - lastTickCount);
-
+	k_printf("    - write : %d ms\n", k_getTickCount() - lastTickCount);
+	
 	//----------------------------------------------------------------------------------------------------
-	// 1-2. Sequential Read Test by Cluster Unit
+	// 1-2. Sequential Reading Test by Cluster Unit
 	//----------------------------------------------------------------------------------------------------
-
+	
 	// move to the start of file.
 	fseek(file, 0, SEEK_SET);
-
+	
 	lastTickCount = k_getTickCount();
-
+	
 	// read test by cluster unit.
 	for (i = 0; i < (clusterTestFileSize / FS_CLUSTERSIZE); i++) {
 		if (fread(buffer, 1, FS_CLUSTERSIZE, file) != FS_CLUSTERSIZE) {
-			k_printf("File Read Fail~!!\n");
+			k_printf("test failure: file reading failure\n");
 			fclose(file);
-			remove("performance.txt");
+			remove("testperf.tmp");
 			k_freeMem(buffer);
 			return;
 		}
 	}
-
+	
 	// print test time.
-	k_printf("    - Read  : %d ms\n", k_getTickCount() - lastTickCount);
-
+	k_printf("    - read  : %d ms\n", k_getTickCount() - lastTickCount);
+	
 	//----------------------------------------------------------------------------------------------------
-	// 2-1. Sequential Write Test by Byte Unit
+	// 2-1. Sequential Writing Test by Byte Unit
 	//----------------------------------------------------------------------------------------------------
-	k_printf("2. Sequential Read/Write Test (Byte -> 16KB)\n");
-
+	k_printf("2> sequential writing/reading test (byte -> 16 KB)\n");
+	
 	// remove a file and create it.
 	fclose(file);
-	remove("performance.txt");
-	file = fopen("performance.txt", "w");
+	remove("testperf.tmp");
+	file = fopen("testperf.tmp", "w");
 	if (file == null) {
-		k_printf("File Open Fail~!!\n");
+		k_printf("test failure: file opening failure\n");
 		k_freeMem(buffer);
 		return;
 	}
-
+	
 	lastTickCount = k_getTickCount();
-
+	
 	// write test by byte unit.
 	for (i = 0; i < oneByteTestFileSize; i++) {
 		if (fwrite(buffer, 1, 1, file) != 1) {
-			k_printf("File Write Fail~!!\n");
+			k_printf("test failure: file writing failure\n");
 			fclose(file);
-			remove("performance.txt");
+			remove("testperf.tmp");
 			k_freeMem(buffer);
 			return;
 		}
 	}
-
+	
 	// print test time.
-	k_printf("    - Write : %d ms\n", k_getTickCount() - lastTickCount);
-
+	k_printf("    - write : %d ms\n", k_getTickCount() - lastTickCount);
+	
 	//----------------------------------------------------------------------------------------------------
-	// 2-2. Sequential Read Test by Byte Unit
+	// 2-2. Sequential Reading Test by Byte Unit
 	//----------------------------------------------------------------------------------------------------
-
+	
 	// move to the start of file.
 	fseek(file, 0, SEEK_SET);
-
+	
 	lastTickCount = k_getTickCount();
-
+	
 	// read test by byte unit.
 	for (i = 0; i < oneByteTestFileSize; i++) {
 		if (fread(buffer, 1, 1, file) != 1) {
-			k_printf("File Read Fail~!!\n");
+			k_printf("test failure: file reading failure\n");
 			fclose(file);
-			remove("performance.txt");
+			remove("testperf.tmp");
 			k_freeMem(buffer);
 			return;
 		}
 	}
-
+	
 	// print test time.
-	k_printf("    - Read  : %d ms\n", k_getTickCount() - lastTickCount);
-
+	k_printf("    - read  : %d ms\n", k_getTickCount() - lastTickCount);
+	
 	// close a file, and delete it, and free memory.
 	fclose(file);
-	remove("performance.txt");
+	remove("testperf.tmp");
 	k_freeMem(buffer);
-
-	k_printf("====>>>> File I/O Performance Test End\n");
 }
 
 static void k_flushCache(const char* paramBuffer) {
 	qword tickCount;
-
+	
 	tickCount = k_getTickCount();
-
-	k_printf("Flush File System Cache...");
+	
+	k_printf("flush file system cache...");
 	if (k_flushFileSystemCache() == true) {
-		k_printf("Success~!!\n");
-
+		k_printf("success\n");
+		
 	} else {
-		k_printf("Fail~!!\n");
+		k_printf("failure\n");
 	}
-
-	k_printf("Flush Time = %d ms\n", k_getTickCount() - tickCount);
+		
+	k_printf("flush time: %d ms\n", k_getTickCount() - tickCount);
 }
 
 static void k_downloadFile(const char* paramBuffer) {
@@ -2000,121 +2058,124 @@ static void k_downloadFile(const char* paramBuffer) {
 	dword tempSize;
 	byte dataBuffer[SERIAL_FIFOMAXSIZE];
 	qword lastReceivedTickCount;
-
+	
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
-
-	// get No.1 parameter: FileName
+	
+	// get No.1 parameter: fname
 	if ((fileNameLen = k_getNextParam(&list, fileName)) == 0) {
-		k_printf("Wrong Usage, ex) download a.txt\n");
+		k_printf("Usage) download <fname>\n");
+		k_printf("  - fname: file name\n");
+		k_printf("  - example: download a.txt");
 		return;
 	}
-
+	
 	fileName[fileNameLen] = '\0';
-
+	
 	if (fileNameLen > (FS_MAXFILENAMELENGTH - 1)) {
-		k_printf("Wrong Usage, Too Long File Name\n");
+		k_printf("file downloading failure: too long file name\n");
 		return;
 	}
-
+	
 	// clear send/receive FIFO.
 	k_clearSerialFifo();
-
+	
 	//----------------------------------------------------------------------------------------------------
 	// receive data length (4 bytes), and send ACK
 	//----------------------------------------------------------------------------------------------------
-	k_printf("Waiting for Data Length...");
+	k_printf("wait for data length...");
 	receivedSize = 0;
 	lastReceivedTickCount = k_getTickCount();
-
+	
 	// loop for receiving data length.
 	while (receivedSize < 4) {
 		// receive data for left bytes.
 		tempSize = k_recvSerialData(((byte*)&dataLen) + receivedSize, 4 - receivedSize);
 		receivedSize += tempSize;
-
+		
 		// wait for a while, if data is not ready to receive.
 		if (tempSize == 0) {
 			k_sleep(0);
-
+			
 			// return if the wait time exceeds 30 seconds.
 			if ((k_getTickCount() - lastReceivedTickCount) > 30000) {
-				k_printf("Time Out~!!\n");
+				k_printf("time out\n");
 				return;
 			}
-
+			
 		} else {
 			lastReceivedTickCount = k_getTickCount();
 		}
 	}
-
-	k_printf("[%d] byte\n", dataLen);
-
+	
+	k_printf("%d bytes\n", dataLen);
+	
 	// received data length successfully, so send ACK.
 	k_sendSerialData("A", 1);
-
+	
 	//----------------------------------------------------------------------------------------------------
 	// save data from serial port to file.
 	//----------------------------------------------------------------------------------------------------
-
+	
 	// create a file.
 	file = fopen(fileName, "w");
 	if (file == null) {
-		k_printf("'%s' File Open Fail~!!\n", fileName);
+		k_printf("%s opening failure\n", fileName);
 		return;
 	}
-
-	k_printf("Data Receive Start...");
+	
+	k_printf("receive data...");
 	receivedSize = 0;
 	lastReceivedTickCount = k_getTickCount();
-
+	
 	// loop for receiving data.
 	while (receivedSize < dataLen) {
 		// receive data.
 		tempSize = k_recvSerialData(dataBuffer, SERIAL_FIFOMAXSIZE);
 		receivedSize += tempSize;
-
+		
 		// If the receive data exists, send ACK and write a file.
 		if (tempSize != 0) {
-
+			
 			// send ACK every when it reaches FIFO max size, and when receiving completes.
 			if (((receivedSize % SERIAL_FIFOMAXSIZE) == 0) || (receivedSize == dataLen)) {
 				k_sendSerialData("A", 1);
-				k_printf("#");
 			}
-
+			
 			// write a file.
 			if (fwrite(dataBuffer, 1, tempSize, file) !=  tempSize) {
-				k_printf("'%s' File Write Fail~!!\n", fileName);
+				k_printf("%s writing failure\n", fileName);
 				break;
 			}
-
+			
 			lastReceivedTickCount = k_getTickCount();
-
+			
 		// If the receive data dosen't exist, wait for a while.
 		} else {
 			k_sleep(0);
-
+			
 			// break if the wait time exceeds 10 seconds.
 			if ((k_getTickCount() - lastReceivedTickCount) > 10000) {
-				k_printf("Time Out~!!\n");
+				k_printf("time out\n");
 				break;
 			}
 		}
 	}
-
+	
+	k_printf("success\n");
+	
 	//----------------------------------------------------------------------------------------------------
 	// check if data is received successfully, and close a file, and flush file system cache
 	//----------------------------------------------------------------------------------------------------
-
+	
 	// check if data is received successfully
 	if (receivedSize != dataLen) {
-		k_printf("\nReceive Fail~!! Received Size = [%d] byte\n", receivedSize);
-
+		k_printf("data length and received size are different: data lengh: %d bytes, received size: %d bytes\n", dataLen, receivedSize);
+		
 	} else {
-		k_printf("\nReceive Complete~!! Received Size = [%d] byte\n", receivedSize);
+		k_printf("receiving complete: received size: %d bytes\n", receivedSize);
 	}
-
+	
 	// close a file, and flush file system cache
 	fclose(file);
 	k_flushFileSystemCache();
@@ -2126,12 +2187,11 @@ static void k_showMpConfigTable(const char* paramBuffer) {
 
 static void k_startAp(const char* paramBuffer) {
 	if (k_startupAp() == false) {
-		k_printf("====>>>> Application Processor Start Fail~!!\n");
+		k_printf("AP starting failure\n");
 		return;
 	}
 	
-	k_printf("====>>>> Application Processor Start Success~!!\n");
-	k_printf("-> Bootstrap Processor(APIC ID:%d) started Application Processor.\n", k_getApicId());
+	k_printf("BSP (%d) has woken up APs.\n", k_getApicId());
 }
 
 static void k_startSymmetricIoMode(const char* paramBuffer) {
@@ -2139,7 +2199,7 @@ static void k_startSymmetricIoMode(const char* paramBuffer) {
 	bool interruptFlag;
 	
 	if (k_analyzeMpConfigTable() == false) {
-		k_printf("fail to analyze MP configuration table\n");
+		k_printf("MP configuration table analysis failure\n");
 		return;
 	}
 	
@@ -2147,36 +2207,20 @@ static void k_startSymmetricIoMode(const char* paramBuffer) {
 	
 	// If it's PIC mode, disable PIC mode using IMCR Register.
 	if (mpManager->usePicMode == true) {
-		k_printf("disable PIC mode\n");
 		k_outPortByte(0x22, 0x70);
 		k_outPortByte(0x23, 0x01);
 	}
 	
-	k_printf("mask PIC interrupt\n");
 	k_maskPicInterrupt(0xFFFF);
-	
-	k_printf("enable global Local APIC\n");
 	k_enableGlobalLocalApic();
-	
-	k_printf("enable software Local APIC\n");
 	k_enableSoftwareLocalApic();
-	
-	k_printf("disable CPU interrupt flag\n");
 	interruptFlag = k_setInterruptFlag(false);
-	
-	k_printf("set 0 priority to Task Priority Register\n");
 	k_setInterruptPriority(0);
-	
-	k_printf("initialize Local Vector Table\n");
 	k_initLocalVectorTable();
-	
-	k_printf("initialize IO Redirection Table\n");
 	k_initIoRedirectionTable();
-	
-	k_printf("restore CPU interrupt flag\n");
 	k_setInterruptFlag(interruptFlag);
 	
-	k_printf("succeed to start symmetric IO mode\n");
+	k_printf("symmetric IO mode switching success\n");
 }
 
 static void k_showIrqToIntinMap(const char* paramBuffer) {

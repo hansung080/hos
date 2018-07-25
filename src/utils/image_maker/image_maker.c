@@ -10,151 +10,150 @@
 #define MY_O_BINARY     0x10000 // O_BINARY causes symbol error on Eclipse, so re-define it by myself.
 #define BYTES_OF_SECTOR 512
 
-int copyFile(int iSrcFd, int iTargetFd);
-int adjustInSectorSize(int iFd, int iSrcSize);
-void writeKernelInfo(int iTargetFd, int iTotalSectorCount, int iKernel32SectorCount);
+int copyFile(int srcfd, int targetfd);
+int adjustInSectorSize(int fd, int srcSize);
+void writeKernelInfo(int targetfd, int totalSectorCount, int kernel32SectorCount);
 
 int main(int argc, const char** argv) {
-	int iSrcFd;
-	int iTargetFd;
-	int iBootLoaderSectorCount;
-	int iKernel32SectorCount;
-	int iKernel64SectorCount;
-	int iSrcSize;
-
+	int srcfd;
+	int targetfd;
+	int bootLoaderSectorCount;
+	int kernel32SectorCount;
+	int kernel64SectorCount;
+	int srcSize;
+	
 	// check parameter count.
 	if (argc != 5) {
-		fprintf(stderr, "[ERROR] Usage: ImageMaker.exe <TargetFile> <SourceFile1> <SourceFile2> <SourceFile3>\n");
-		exit(-1);
+		fprintf(stderr, "[error] Usage) image_maker <target> <src1> <src2> <src3>\n");
+		exit(8);
 	}
-
-	const char* pcTargetFile  = argv[1];
-	const char* pcSrcFile1 = argv[2];
-	const char* pcSrcFile2 = argv[3];
-	const char* pcSrcFile3 = argv[4];
-
+	
+	const char* targetFile = argv[1];
+	const char* srcFile1 = argv[2];
+	const char* srcFile2 = argv[3];
+	const char* srcFile3 = argv[4];
+	
 	// open target file.
-	if ((iTargetFd = open(pcTargetFile, O_RDWR | O_CREAT | O_TRUNC | MY_O_BINARY | S_IREAD | S_IWRITE)) == -1) {
-		fprintf(stderr, "[ERROR] Disk.img open fail.\n");
-		exit(-1);
+	if ((targetfd = open(targetFile, O_RDWR | O_CREAT | O_TRUNC | MY_O_BINARY | S_IREAD | S_IWRITE)) == -1) {
+		fprintf(stderr, "[error] %s opening failure\n", targetFile);
+		exit(8);
 	}
-
+	
 	// open source file 1, copy it, and adjust size.
-	printf("[INFO] Copy %s to %s\n", pcSrcFile1, pcTargetFile);
-	if ((iSrcFd = open(pcSrcFile1, O_RDONLY | MY_O_BINARY)) == -1) {
-		fprintf(stderr, "[ERROR] %s open fail.\n", pcSrcFile1);
-		exit(-1);
+	printf("[info] copy %s to %s\n", srcFile1, targetFile);
+	if ((srcfd = open(srcFile1, O_RDONLY | MY_O_BINARY)) == -1) {
+		fprintf(stderr, "[error] %s opening failure\n", srcFile1);
+		exit(8);
 	}
-
-	iSrcSize = copyFile(iSrcFd, iTargetFd);
-	close(iSrcFd);
-
-	iBootLoaderSectorCount = adjustInSectorSize(iTargetFd, iSrcSize);
-	printf("[INFO] %s: file_size=[%d], sector_count=[%d]\n", pcSrcFile1, iSrcSize, iBootLoaderSectorCount);
-
+	
+	srcSize = copyFile(srcfd, targetfd);
+	close(srcfd);
+	
+	bootLoaderSectorCount = adjustInSectorSize(targetfd, srcSize);
+	printf("[info] %s info: file size: %d, sector count: %d\n", srcFile1, srcSize, bootLoaderSectorCount);
+	
 	// open source file 2, copy it, and adjust size.
-	printf("[INFO] Copy %s to %s\n", pcSrcFile2, pcTargetFile);
-	if ((iSrcFd = open(pcSrcFile2, O_RDONLY | MY_O_BINARY)) == -1) {
-		fprintf(stderr, "[ERROR] %s open fail.\n", pcSrcFile2);
-		exit(-1);
+	printf("[info] copy %s to %s\n", srcFile2, targetFile);
+	if ((srcfd = open(srcFile2, O_RDONLY | MY_O_BINARY)) == -1) {
+		fprintf(stderr, "[error] %s opening failure\n", srcFile2);
+		exit(8);
 	}
-
-	iSrcSize = copyFile(iSrcFd, iTargetFd);
-	close(iSrcFd);
-
-	iKernel32SectorCount = adjustInSectorSize(iTargetFd, iSrcSize);
-	printf("[INFO] %s: file_size=[%d], sector_count=[%d]\n", pcSrcFile2, iSrcSize, iKernel32SectorCount);
-
+	
+	srcSize = copyFile(srcfd, targetfd);
+	close(srcfd);
+	
+	kernel32SectorCount = adjustInSectorSize(targetfd, srcSize);
+	printf("[info] %s info: file size: %d, sector count: %d\n", srcFile2, srcSize, kernel32SectorCount);
+	
 	// open source file 3, copy it, and adjust size.
-	printf("[INFO] Copy %s to %s\n", pcSrcFile3, pcTargetFile);
-	if ((iSrcFd = open(pcSrcFile3, O_RDONLY | MY_O_BINARY)) == -1) {
-		fprintf(stderr, "[ERROR] %s open fail.\n", pcSrcFile3);
-		exit(-1);
+	printf("[info] copy %s to %s\n", srcFile3, targetFile);
+	if ((srcfd = open(srcFile3, O_RDONLY | MY_O_BINARY)) == -1) {
+		fprintf(stderr, "[error] %s opening failure\n", srcFile3);
+		exit(8);
 	}
-
-	iSrcSize = copyFile(iSrcFd, iTargetFd);
-	close(iSrcFd);
-
-	iKernel64SectorCount = adjustInSectorSize(iTargetFd, iSrcSize);
-	printf("[INFO] %s: file_size=[%d], sector_count=[%d]\n", pcSrcFile3, iSrcSize, iKernel64SectorCount);
-
-	// write sector count to target file.
-	printf("[INFO] Start to write kernel information.\n");
-	writeKernelInfo(iTargetFd, iKernel32SectorCount + iKernel64SectorCount, iKernel32SectorCount);
-	printf("[INFO] %s create complete.\n", pcTargetFile);
-
-	close(iTargetFd);
-
+	
+	srcSize = copyFile(srcfd, targetfd);
+	close(srcfd);
+	
+	kernel64SectorCount = adjustInSectorSize(targetfd, srcSize);
+	printf("[info] %s info: file size: %d, sector count: %d\n", srcFile3, srcSize, kernel64SectorCount);
+	
+	// write sector counts to target file.
+	printf("[info] write sector counts to %s\n", targetFile);
+	writeKernelInfo(targetfd, kernel32SectorCount + kernel64SectorCount, kernel32SectorCount);
+	printf("[info] image-maker complete\n");
+	
+	close(targetfd);
+	
 	return 0;
 }
 
-int copyFile(int iSrcFd, int iTargetFd) {
-	int iSrcSize = 0;
-	int iReadSize;
-	int iWriteSize;
-	char vcBuffer[BYTES_OF_SECTOR];
-
+int copyFile(int srcfd, int targetfd) {
+	int srcSize = 0;
+	int readSize;
+	int writeSize;
+	char buffer[BYTES_OF_SECTOR];
+	
 	while (1) {
-		iReadSize = read(iSrcFd, vcBuffer, sizeof(vcBuffer));
-		iWriteSize = write(iTargetFd, vcBuffer, iReadSize);
-
-		if (iReadSize != iWriteSize) {
-			fprintf(stderr, "[ERROR] Read size is not equal to write size.\n");
-			exit(-1);
+		readSize = read(srcfd, buffer, sizeof(buffer));
+		writeSize = write(targetfd, buffer, readSize);
+		
+		if (readSize != writeSize) {
+			fprintf(stderr, "[error] read size != write size\n");
+			exit(8);
 		}
-
-		iSrcSize += iReadSize;
-
-		if (iReadSize != sizeof(vcBuffer)) {
+		
+		srcSize += readSize;
+		
+		if (readSize != sizeof(buffer)) {
 			break;
 		}
 	}
-
-	return iSrcSize;
+	
+	return srcSize;
 }
 
-int adjustInSectorSize(int iFd, int iSrcSize) {
+int adjustInSectorSize(int fd, int srcSize) {
 	int i;
-	int iAjustSize;
-	char cZero;
-	int iSectorCount;
-
-	iAjustSize = iSrcSize % BYTES_OF_SECTOR;
-	cZero = 0x00;
-
-	if (iAjustSize != 0) {
-		iAjustSize = BYTES_OF_SECTOR - iAjustSize;
-		printf("[INFO] Adjust Size(YES): file size=[%lu], fill size=[%u]\n", iSrcSize, iAjustSize);
-
-		for (i = 0; i < iAjustSize; i++) {
-			write(iFd, &cZero, 1);
+	int ajustSize;
+	char zero;
+	int sectorCount;
+	
+	ajustSize = srcSize % BYTES_OF_SECTOR;
+	zero = 0x00;
+	
+	if (ajustSize != 0) {
+		ajustSize = BYTES_OF_SECTOR - ajustSize;
+		printf("[info] align file size: file size: %lu, fill size: %u\n", srcSize, ajustSize);
+		
+		for (i = 0; i < ajustSize; i++) {
+			write(fd, &zero, 1);
 		}
-
+		
 	} else {
-		printf("[INFO] Adjust Size(NO): File size(%lu) is already aligned with a sector size.\n", iSrcSize);
+		printf("[info] already aligned: file size (%lu) has been already aligned with sector size.\n", srcSize);
 	}
-
-	iSectorCount = (iSrcSize + iAjustSize) / BYTES_OF_SECTOR;
-
-	return iSectorCount;
+	
+	sectorCount = (srcSize + ajustSize) / BYTES_OF_SECTOR;
+	
+	return sectorCount;
 }
 
-void writeKernelInfo(int iTargetFd, int iTotalSectorCount, int iKernel32SectorCount) {
-	unsigned short usData;
-	long lPos;
-
+void writeKernelInfo(int targetfd, int totalSectorCount, int kernel32SectorCount) {
+	unsigned short data;
+	long pos;
+	
 	// move file pointer to the physical address (0x7C05) of boot-loader
-	lPos = lseek(iTargetFd, 5, SEEK_SET);
-	if (lPos == -1) {
-		fprintf(stderr, "[ERROR] lseek fail. file_pointer=[%d], errno=[%d], lseek_option=[%d]\n", lPos, errno, SEEK_SET);
-		exit(-1);
+	pos = lseek(targetfd, 5, SEEK_SET);
+	if (pos == -1) {
+		fprintf(stderr, "[error] file seeking failure: file pointer: %d, errno: %d, seek option: %d\n", pos, errno, SEEK_SET);
+		exit(8);
 	}
-
-	usData = (unsigned short)iTotalSectorCount;
-	write(iTargetFd, &usData, 2);
-	usData = (unsigned short)iKernel32SectorCount;
-	write(iTargetFd, &usData, 2);
-
-	printf("[INFO] TOTAL_SECTOR_COUNT(except BootLoader)=[%d]\n", iTotalSectorCount);
-	printf("[INFO] KERNEL32_SECTOR_COUNT=[%d]\n", iKernel32SectorCount);
+	
+	data = (unsigned short)totalSectorCount;
+	write(targetfd, &data, 2);
+	data = (unsigned short)kernel32SectorCount;
+	write(targetfd, &data, 2);
+	
+	printf("[info] total sector count (except boot-loader): %d, kernel32 sector count: %d\n", totalSectorCount, kernel32SectorCount);
 }

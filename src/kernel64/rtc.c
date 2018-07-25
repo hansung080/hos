@@ -46,7 +46,7 @@ void k_readRtcDate(word* year, byte* month, byte* dayOfMonth, byte* dayOfWeek) {
 
 char* k_convertDayOfWeekToStr(byte dayOfWeek) {
 	// dayOfWeek = [1~7: Sunday-Monday-Tuesday-Wednesday-Thursday-Friday-Saturday]
-	static char* vpcDayOfWeekStr[8] = {"Error", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+	static char* vpcDayOfWeekStr[8] = {"Error", "Sun", "Mon", "Tues", "Weds", "Thurs", "Fri", "Sat"};
 
 	if(dayOfWeek >= 8){
 		return vpcDayOfWeekStr[0];

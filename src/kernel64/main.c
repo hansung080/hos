@@ -129,14 +129,14 @@ void k_mainForAp(void) {
 	k_initLocalVectorTable();
 	k_enableInterrupt();
 	
-	k_printf("-> Application Processor(APIC ID:%d) is activated.\n", k_getApicId());
+	k_printf("AP (%d) has been activated.\n", k_getApicId());
 	
-	// print message once per 5 second.
+	// print message once per 1 seconds.
 	tickCount = k_getTickCount();
 	while (true) {
-		if (k_getTickCount() - tickCount > 5000) {
+		if (k_getTickCount() - tickCount > 1000) {
 			tickCount = k_getTickCount();
-			k_printf("-> Application Processor(APIC ID:%d) is working.\n", k_getApicId());
+			k_printf("AP (%d) is working.\n", k_getApicId());
 		}
 	}
 }

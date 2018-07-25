@@ -9,17 +9,17 @@ bool k_findMpFloatingPointerAddr(qword* addr) {
 	qword ebdaAddr;      // extended BIOD data area address
 	qword systemBaseMem; // system base memory size
 	
-	//k_printf("====>>>> MP Floating Point Search\n");
-	//k_printf("1. Extended BIOS Data Area = [0x%X]\n", MP_SEARCH1_EBDA_ADDRESS);
-	//k_printf("2. System Base Memory      = [0x%X]\n", MP_SEARCH2_SYSEMBASEMEMORY);
-	//k_printf("3. BIOS ROM Area           = [0x%X~0x%X]\n", MP_SEARCH3_BIOSROM_STARTADDRESS, MP_SEARCH3_BIOSROM_ENDADDRESS);
+	//k_printf("*** MP Floating Point Searching ***\n");
+	//k_printf("1> extended BIOS data area: 0x%X\n", MP_SEARCH1_EBDA_ADDRESS);
+	//k_printf("2> system base memory     : 0x%X\n", MP_SEARCH2_SYSEMBASEMEMORY);
+	//k_printf("3> BIOS ROM area          : 0x%X~0x%X\n", MP_SEARCH3_BIOSROM_STARTADDRESS, MP_SEARCH3_BIOSROM_ENDADDRESS);
 	
 	/* 1. search MP floating pointer: search it in the starting 1KB-sized range of extended BIOS data area */
 	ebdaAddr = MP_SEARCH1_EBDA_ADDRESS;
 	
 	for (mpFloatingPointer = (char*)ebdaAddr; (qword)mpFloatingPointer <= (ebdaAddr + 1024); mpFloatingPointer++) {
 		if (k_memcmp(mpFloatingPointer, MP_FLOATINGPOINTER_SIGNATURE, 4) == 0) {
-			//k_printf("Search Success : MP Floating Pointer is in address[0x%X] of Extended BIOS Data Area.\n\n", (qword)mpFloatingPointer);
+			//k_printf("searching success: found in address (0x%X) of extended BIOS data area.\n", (qword)mpFloatingPointer);
 			*addr = (qword)mpFloatingPointer;
 			return true;
 		}
@@ -30,7 +30,7 @@ bool k_findMpFloatingPointerAddr(qword* addr) {
 	
 	for (mpFloatingPointer = (char*)(systemBaseMem - 1024); (qword)mpFloatingPointer <= systemBaseMem; mpFloatingPointer++) {
 		if (k_memcmp(mpFloatingPointer, MP_FLOATINGPOINTER_SIGNATURE, 4) == 0) {
-			//k_printf("Search Success : MP Floating Pointer is in address[0x%X] of System Base Memory.\n\n", (qword)mpFloatingPointer);
+			//k_printf("searching success: found in address (0x%X) of system base memory.\n", (qword)mpFloatingPointer);
 			*addr = (qword)mpFloatingPointer;
 			return true;
 		}
@@ -39,13 +39,13 @@ bool k_findMpFloatingPointerAddr(qword* addr) {
 	/* 3. search MP floating pointer: search it in BIOS ROM area */
 	for (mpFloatingPointer = (char*)MP_SEARCH3_BIOSROM_STARTADDRESS; (qword)mpFloatingPointer < (qword)MP_SEARCH3_BIOSROM_ENDADDRESS; mpFloatingPointer++) {
 		if (k_memcmp(mpFloatingPointer, MP_FLOATINGPOINTER_SIGNATURE, 4) == 0) {
-			//k_printf("Search Success : MP Floating Pointer is in address[0x%X] of BIOS ROM Area.\n\n", (qword)mpFloatingPointer);
+			//k_printf("searching success: found in address (0x%X) of BIOS ROM area.\n", (qword)mpFloatingPointer);
 			*addr = (qword)mpFloatingPointer;
 			return true;
 		}
 	}
 	
-	//k_printf("Search Fail\n\n");
+	//k_printf("search failure\n");
 	
 	return false;
 }
@@ -66,8 +66,6 @@ bool k_analyzeMpConfigTable(void) {
 	if (k_findMpFloatingPointerAddr(&mpFloatingPointerAddr) == false) {
 		return false;
 	}
-
-	//k_printf("====>>>> MP Configuration Table Analysis\n");
 
 	// set MP floating pointer
 	mpFloatingPointer = (MpFloatingPointer*)mpFloatingPointerAddr;
@@ -120,13 +118,10 @@ bool k_analyzeMpConfigTable(void) {
 			break;
 
 		default:
-			//k_printf("Analysis Fail : Invalid Entry Type (%d)\n\n", entryType);
 			return false;
 		}
 	}
-
-	//k_printf("Analysis Success\n\n");
-
+	
 	return true;
 }
 
@@ -161,16 +156,16 @@ void k_printMpConfigTable(void) {
 	//----------------------------------------------------------------------------------------------------
 	// print MP configuration table manager info.
 	//----------------------------------------------------------------------------------------------------
-	k_printf("====>>>> MP Configuration Table Summary\n");
+	k_printf("*** MP Configuration Table Summary ***\n");
 
-	k_printf("- MP Floating Pointer Address                     : 0x%Q\n", mpConfigManager->mpFloatingPointer);
-	k_printf("- MP Configuration Table Header Address           : 0x%Q\n", mpConfigManager->mpConfigTableHeader);
-	k_printf("- Base MP Configuration Table Entry Start Address : 0x%Q\n", mpConfigManager->baseEntryStartAddr);
-	k_printf("- Processor Count                                 : %d\n", mpConfigManager->processorCount);
-	k_printf("- PIC Mode Support                                : %s\n", (mpConfigManager->usePicMode == true) ? "true" : "false");
-	k_printf("- ISA Bus ID                                      : %d\n", mpConfigManager->isaBusId);
+	k_printf("- MP floating pointer address                     : 0x%Q\n", mpConfigManager->mpFloatingPointer);
+	k_printf("- MP configuration table header address           : 0x%Q\n", mpConfigManager->mpConfigTableHeader);
+	k_printf("- base MP configuration table entry start address : 0x%Q\n", mpConfigManager->baseEntryStartAddr);
+	k_printf("- processor count                                 : %d\n", mpConfigManager->processorCount);
+	k_printf("- use PIC mode                                    : %s\n", (mpConfigManager->usePicMode == true) ? "true" : "false");
+	k_printf("- ISA bus ID                                      : %d\n", mpConfigManager->isaBusId);
 
-	k_printf("Press any key to continue...('q' is exit):");
+	k_printf("Press any key to continue...('q' is quit):");
 	if (k_getch() == 'q') {
 		k_printf("\n");
 		return;
@@ -180,34 +175,34 @@ void k_printMpConfigTable(void) {
 	//----------------------------------------------------------------------------------------------------
 	// print MP floating pointer info.
 	//----------------------------------------------------------------------------------------------------
-	k_printf("\n====>>> MP Floating Pointer Info\n");
+	k_printf("*** MP Floating Pointer Info ***\n");
 
 	mpFloatingPointer = mpConfigManager->mpFloatingPointer;
 
 	k_memcpy(buffer, mpFloatingPointer->signature, sizeof(mpFloatingPointer->signature));
 	buffer[sizeof(mpFloatingPointer->signature)] = '\0';
-	k_printf("- Signature                      : %s\n", buffer);
-	k_printf("- MP Configuration Table Address : 0x%Q\n", mpFloatingPointer->mpConfigTableAddr);
-	k_printf("- Length                         : %d bytes\n", mpFloatingPointer->len * 16);
-	k_printf("- Revision                       : %d\n", mpFloatingPointer->revision);
-	k_printf("- Checksum                       : 0x%X\n", mpFloatingPointer->checksum);
-	k_printf("- MP Feature Byte 1              : 0x%X ", mpFloatingPointer->mpFeatureByte[0]);
+	k_printf("- signature                      : %s\n", buffer);
+	k_printf("- MP configuration table address : 0x%Q\n", mpFloatingPointer->mpConfigTableAddr);
+	k_printf("- length                         : %d bytes\n", mpFloatingPointer->len * 16);
+	k_printf("- revision                       : %d\n", mpFloatingPointer->revision);
+	k_printf("- checksum                       : 0x%X\n", mpFloatingPointer->checksum);
+	k_printf("- MP feature byte 1              : 0x%X ", mpFloatingPointer->mpFeatureByte[0]);
 	if (mpFloatingPointer->mpFeatureByte[0] == MP_FLOATINGPOINTER_FEATUREBYTE1_USEMPTABLE) {
-		k_printf("(Use MP Configuration Table)\n");
+		k_printf("(use MP configuration table)\n");
 	} else {
-		k_printf("(Use Default Configuration)\n");
+		k_printf("(use default configuration)\n");
 	}
-	k_printf("- MP Feature Byte 2              : 0x%X ", mpFloatingPointer->mpFeatureByte[1]);
+	k_printf("- MP feature byte 2              : 0x%X ", mpFloatingPointer->mpFeatureByte[1]);
 	if (mpFloatingPointer->mpFeatureByte[1] & MP_FLOATINGPOINTER_FEATUREBYTE2_PICMODE) {
-		k_printf("(PIC Mode Support)\n");
+		k_printf("(use PIC mode)\n");
 	} else {
-		k_printf("(Virtual Wire Mode Support)\n");
+		k_printf("(use virtual wire mode)\n");
 	}
-	k_printf("- MP Feature Byte 3              : 0x%X\n", mpFloatingPointer->mpFeatureByte[2]);
-	k_printf("- MP Feature Byte 4              : 0x%X\n", mpFloatingPointer->mpFeatureByte[3]);
-	k_printf("- MP Feature Byte 5              : 0x%X\n", mpFloatingPointer->mpFeatureByte[4]);
+	k_printf("- MP feature byte 3              : 0x%X\n", mpFloatingPointer->mpFeatureByte[2]);
+	k_printf("- MP feature byte 4              : 0x%X\n", mpFloatingPointer->mpFeatureByte[3]);
+	k_printf("- MP feature byte 5              : 0x%X\n", mpFloatingPointer->mpFeatureByte[4]);
 
-	k_printf("Press any key to continue...('q' is exit):");
+	k_printf("Press any key to continue...('q' is quit):");
 	if (k_getch() == 'q') {
 		k_printf("\n");
 		return;
@@ -217,31 +212,31 @@ void k_printMpConfigTable(void) {
 	//----------------------------------------------------------------------------------------------------
 	// print MP configuration table header info.
 	//----------------------------------------------------------------------------------------------------
-	k_printf("\n====>>>> MP Configuration Table Header Info\n");
+	k_printf("*** MP Configuration Table Header Info ***\n");
 
 	mpConfigTableHeader = mpConfigManager->mpConfigTableHeader;
 
 	k_memcpy(buffer, mpConfigTableHeader->signature, sizeof(mpConfigTableHeader->signature));
 	buffer[sizeof(mpConfigTableHeader->signature)] = '\0';
-	k_printf("- Signature                           : %s\n", buffer);
-	k_printf("- Base Table Length                   : %d bytes\n", mpConfigTableHeader->baseTableLen);
-	k_printf("- Revision                            : %d\n", mpConfigTableHeader->revision);
-	k_printf("- Checksum                            : 0x%X\n", mpConfigTableHeader->checksum);
+	k_printf("- signature                           : %s\n", buffer);
+	k_printf("- base table length                   : %d bytes\n", mpConfigTableHeader->baseTableLen);
+	k_printf("- revision                            : %d\n", mpConfigTableHeader->revision);
+	k_printf("- checksum                            : 0x%X\n", mpConfigTableHeader->checksum);
 	k_memcpy(buffer, mpConfigTableHeader->oemIdStr, sizeof(mpConfigTableHeader->oemIdStr));
 	buffer[sizeof(mpConfigTableHeader->oemIdStr)] = '\0';
-	k_printf("- OEM ID String                       : %s\n", buffer);
+	k_printf("- OEM ID string                       : %s\n", buffer);
 	k_memcpy(buffer, mpConfigTableHeader->productIdStr, sizeof(mpConfigTableHeader->productIdStr));
 	buffer[sizeof(mpConfigTableHeader->productIdStr)] = '\0';
-	k_printf("- Product ID String                   : %s\n", buffer);
-	k_printf("- OEM Table Pointer Address           : 0x%X\n", mpConfigTableHeader->oemTablePointerAddr);
-	k_printf("- OEM Table Size                      : %d bytes\n", mpConfigTableHeader->oemTableSize);
-	k_printf("- Entry Count                         : %d\n", mpConfigTableHeader->entryCount);
-	k_printf("- Memory Map IO Address Of Local APIC : 0x%X\n", mpConfigTableHeader->memMapIoAddrOfLocalApic);
-	k_printf("- Extended Table Length               : %d bytes\n", mpConfigTableHeader->extendedTableLen);
-	k_printf("- Extended Table Checksum             : 0x%X\n", mpConfigTableHeader->extendedTableChecksum);
-	k_printf("- Reserved                            : %d\n", mpConfigTableHeader->reserved);
+	k_printf("- product ID string                   : %s\n", buffer);
+	k_printf("- OEM table pointer address           : 0x%X\n", mpConfigTableHeader->oemTablePointerAddr);
+	k_printf("- OEM table size                      : %d bytes\n", mpConfigTableHeader->oemTableSize);
+	k_printf("- entry count                         : %d\n", mpConfigTableHeader->entryCount);
+	k_printf("- memory map IO address of local APIC : 0x%X\n", mpConfigTableHeader->memMapIoAddrOfLocalApic);
+	k_printf("- extended table length               : %d bytes\n", mpConfigTableHeader->extendedTableLen);
+	k_printf("- extended table checksum             : 0x%X\n", mpConfigTableHeader->extendedTableChecksum);
+	k_printf("- reserved                            : %d\n", mpConfigTableHeader->reserved);
 
-	k_printf("Press any key to continue...('q' is exit):");
+	k_printf("Press any key to continue...('q' is quit):");
 	if (k_getch() == 'q') {
 		k_printf("\n");
 		return;
@@ -251,36 +246,36 @@ void k_printMpConfigTable(void) {
 	//----------------------------------------------------------------------------------------------------
 	// print base MP configuration table entry info.
 	//----------------------------------------------------------------------------------------------------
-	k_printf("\n====>>>> Base MP Configuration Table Entry Info (%d Entries)\n", mpConfigTableHeader->entryCount);
+	k_printf("*** Base MP Configuration Table Entry Info (%d entries)\n", mpConfigTableHeader->entryCount);
 
 	baseEntryAddr = mpConfigManager->baseEntryStartAddr;
 
 	for (i = 0; i < mpConfigTableHeader->entryCount; i++) {
 		entryType = *(byte*)baseEntryAddr;
 
-		k_printf("--------[Entry %d]----------------------------------------------------\n", i + 1);
+		k_printf("  < Entry %d >\n", i + 1);
 
 		switch (entryType) {
 		case MP_ENTRYTYPE_PROCESSOR:
 			processorEntry = (ProcessorEntry*)baseEntryAddr;
 
-			k_printf("- Entry Type         : Processor\n");
-			k_printf("- Local APIC ID      : %d\n", processorEntry->localApicId);
-			k_printf("- Local APIC Version : 0x%X\n", processorEntry->localApicVersion);
-			k_printf("- CPU Flags          : 0x%X ", processorEntry->cpuFlags);
+			k_printf("- entry type         : processor\n");
+			k_printf("- local APIC ID      : %d\n", processorEntry->localApicId);
+			k_printf("- local APIC version : 0x%X\n", processorEntry->localApicVersion);
+			k_printf("- CPU flags          : 0x%X ", processorEntry->cpuFlags);
 			if (processorEntry->cpuFlags & MP_PROCESSOR_CPUFLAGS_ENABLE) {
-				k_printf("(Enable, ");
+				k_printf("(enable, ");
 			} else {
-				k_printf("(Disable, ");
+				k_printf("(disable, ");
 			}
 			if (processorEntry->cpuFlags & MP_PROCESSOR_CPUFLAGS_BSP) {
 				k_printf("BSP)\n");
 			} else {
 				k_printf("AP)\n");
 			}
-			k_printf("- CPU Signature      : 0x%X\n", processorEntry->cpuSignature);
-			k_printf("- Feature Flags      : 0x%X\n", processorEntry->featureFlags);
-			k_printf("- Reserved           : 0x%X\n", processorEntry->reserved);
+			k_printf("- CPU signature      : 0x%X\n", processorEntry->cpuSignature);
+			k_printf("- feature flags      : 0x%X\n", processorEntry->featureFlags);
+			k_printf("- reserved           : 0x%X\n", processorEntry->reserved);
 
 			baseEntryAddr += sizeof(ProcessorEntry);
 			break;
@@ -288,11 +283,11 @@ void k_printMpConfigTable(void) {
 		case MP_ENTRYTYPE_BUS:
 		    busEntry = (BusEntry*)baseEntryAddr;
 
-		    k_printf("- Entry Type      : Bus\n");
-		    k_printf("- Bus ID          : %d\n", busEntry->busId);
+		    k_printf("- entry type      : bus\n");
+		    k_printf("- bus ID          : %d\n", busEntry->busId);
 		    k_memcpy(buffer, busEntry->busTypeStr, sizeof(busEntry->busTypeStr));
 		    buffer[sizeof(busEntry->busTypeStr)] = '\0';
-		    k_printf("- Bus Type String : %s\n", buffer);
+		    k_printf("- bus type string : %s\n", buffer);
 
 			baseEntryAddr += sizeof(BusEntry);
 			break;
@@ -300,16 +295,16 @@ void k_printMpConfigTable(void) {
 		case MP_ENTRYTYPE_IOAPIC:
 			ioApicEntry = (IoApicEntry*)baseEntryAddr;
 
-			k_printf("- Entry Type            : IO APIC\n");
+			k_printf("- entry type            : IO APIC\n");
 			k_printf("- IO APIC ID            : %d\n", ioApicEntry->ioApicId);
-			k_printf("- IO APIC Version       : 0x%X\n", ioApicEntry->ioApicVersion);
-			k_printf("- IO APIC Flags         : 0x%X ", ioApicEntry->ioApicFlags);
+			k_printf("- IO APIC version       : 0x%X\n", ioApicEntry->ioApicVersion);
+			k_printf("- IO APIC flags         : 0x%X ", ioApicEntry->ioApicFlags);
 			if (ioApicEntry->ioApicFlags & MP_IOAPIC_FLAGS_ENABLE) {
-				k_printf("(Enable)\n");
+				k_printf("(enable)\n");
 			} else {
-				k_printf("(Disable)\n");
+				k_printf("(disable)\n");
 			}
-			k_printf("- Memory Map IO Address : 0x%X\n", ioApicEntry->memMapIoAddr);
+			k_printf("- memory map IO address : 0x%X\n", ioApicEntry->memMapIoAddr);
 
 			baseEntryAddr += sizeof(IoApicEntry);
 			break;
@@ -317,16 +312,16 @@ void k_printMpConfigTable(void) {
 		case MP_ENTRYTYPE_IOINTERRUPTASSIGNMENT:
 			ioInterruptAssignEntry = (IoInterruptAssignEntry*)baseEntryAddr;
 
-			k_printf("- EntryType          : IO Interrupt Assignment\n");
-			k_printf("- Interrupt Type     : 0x%X ", ioInterruptAssignEntry->interruptType);
+			k_printf("- entry type         : IO interrupt assignment\n");
+			k_printf("- interrupt type     : 0x%X ", ioInterruptAssignEntry->interruptType);
 			k_printf("(%s)\n", interruptType[ioInterruptAssignEntry->interruptType]);
-			k_printf("- Interrupt Flags    : 0x%X ", ioInterruptAssignEntry->interruptFlags);
+			k_printf("- interrupt flags    : 0x%X ", ioInterruptAssignEntry->interruptFlags);
 			k_printf("(%s, %s)\n", interruptPolarity[ioInterruptAssignEntry->interruptFlags & 0x03]
 								, interruptTrigger[(ioInterruptAssignEntry->interruptFlags >> 2) & 0x03]);
-			k_printf("- Src BUS ID         : %d\n", ioInterruptAssignEntry->srcBusId);
-			k_printf("- Src BUS IRQ        : %d\n", ioInterruptAssignEntry->srcBusIrq);
-			k_printf("- Dest IO APIC ID    : %d\n", ioInterruptAssignEntry->destIoApicId);
-			k_printf("- Dest IO APIC INTIN : %d\n", ioInterruptAssignEntry->destIoApicIntin);
+			k_printf("- src bus ID         : %d\n", ioInterruptAssignEntry->srcBusId);
+			k_printf("- src bus IRQ        : %d\n", ioInterruptAssignEntry->srcBusIrq);
+			k_printf("- dest IO APIC ID    : %d\n", ioInterruptAssignEntry->destIoApicId);
+			k_printf("- dest IO APIC INTIN : %d\n", ioInterruptAssignEntry->destIoApicIntin);
 
 			baseEntryAddr += sizeof(IoInterruptAssignEntry);
 			break;
@@ -334,37 +329,37 @@ void k_printMpConfigTable(void) {
 		case MP_ENTRYTYPE_LOCALINTERRUPTASSIGNMENT:
 			localInterruptAssignEntry = (LocalInterruptAssignEntry*)baseEntryAddr;
 
-			k_printf("- Entry Type             : Local Interrupt Assignment\n");
-			k_printf("- Interrupt Type         : 0x%X ", localInterruptAssignEntry->interruptType);
+			k_printf("- entry type             : local interrupt assignment\n");
+			k_printf("- interrupt type         : 0x%X ", localInterruptAssignEntry->interruptType);
 			k_printf("(%s)\n", interruptType[localInterruptAssignEntry->interruptType]);
-			k_printf("- Interrupt Flags        : 0x%X ", localInterruptAssignEntry->interruptFlags);
+			k_printf("- interrupt flags        : 0x%X ", localInterruptAssignEntry->interruptFlags);
 			k_printf("(%s, %s)\n", interruptPolarity[localInterruptAssignEntry->interruptFlags & 0x03]
 								, interruptTrigger[(localInterruptAssignEntry->interruptFlags >> 2) & 0x03]);
-			k_printf("- Src BUS ID             : %d\n", localInterruptAssignEntry->srcBusId);
-			k_printf("- Src BUS IRQ            : %d\n", localInterruptAssignEntry->srcBusIrq);
-			k_printf("- Dest Local APIC ID     : %d\n", localInterruptAssignEntry->destLocalApicId);
-			k_printf("- Dest Local APIC LINTIN : %d\n", localInterruptAssignEntry->destLocalApicLintin);
+			k_printf("- src bus ID             : %d\n", localInterruptAssignEntry->srcBusId);
+			k_printf("- src bus IRQ            : %d\n", localInterruptAssignEntry->srcBusIrq);
+			k_printf("- dest local APIC ID     : %d\n", localInterruptAssignEntry->destLocalApicId);
+			k_printf("- dest local APIC LINTIN : %d\n", localInterruptAssignEntry->destLocalApicLintin);
 
 			baseEntryAddr += sizeof(LocalInterruptAssignEntry);
 			break;
 
 		default:
-			k_printf("Invaild Entry Type (%d)\n", entryType);
+			k_printf("invaild entry type: %d\n", entryType);
 			break;
 		}
 
-		// ask a user to print more entries, every after 3 entries are printed.
-		if ((i != 0) && (((i + 1) % 3) == 0)) {
-			k_printf("Press any key to continue...('q' is exit):");
+		// ask a user to print more entries, every after 2 entries are printed.
+		if ((i != 0) && (((i + 1) % 2) == 0)) {
+			k_printf("Press any key to continue...('q' is quit):");
 			if (k_getch() == 'q') {
 				k_printf("\n");
 				return;
 			}
 			k_printf("\n");
+		} else {
+			k_printf("\n");
 		}
 	}
-
-	k_printf("--------[Entry End]---------------------------------------------------\n");
 }
 
 int k_getProcessorCount(void) {

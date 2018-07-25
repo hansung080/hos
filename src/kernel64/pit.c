@@ -2,15 +2,15 @@
 #include "asm_util.h"
 
 void k_initPit(word count, bool periodic) {
-
+	
 	// send Once Command to Control Register.
 	k_outPortByte(PIT_PORT_CONTROL, PIT_COUNTER0_ONCE);
-
+	
 	if (periodic == true) {
 		// send Periodic Command to Control Register.
 		k_outPortByte(PIT_PORT_CONTROL, PIT_COUNTER0_PERIODIC);
 	}
-
+	
 	// write initialization value to Counter-0 ordered by LSB to MSB
 	k_outPortByte(PIT_PORT_COUNTER0, count);
 	k_outPortByte(PIT_PORT_COUNTER0, count >> 8);

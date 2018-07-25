@@ -12,7 +12,7 @@ typedef void (*CommandFunc)(const char* pcParam);
 
 typedef struct k_ShellCommandEntry {
 	char* command;
-	char* help;
+	char* desc;
 	CommandFunc func;
 } ShellCommandEntry;
 
@@ -32,10 +32,10 @@ int k_getNextParam(ParamList* list, char* param);
 
 // Command Functions
 static void k_help(const char* paramBuffer);
-static void k_cls(const char* paramBuffer);
+static void k_clear(const char* paramBuffer);
 static void k_showTotalRamSize(const char* paramBuffer);
-static void k_strToDecimalHexTest(const char* paramBuffer);
-static void k_shutdown(const char* paramBuffer);
+static void k_testStrToDecimalHex(const char* paramBuffer);
+static void k_reboot(const char* paramBuffer);
 static void k_setTimer(const char* paramBuffer);
 static void k_waitUsingPit(const char* paramBuffer);
 static void k_readTimeStampCounter(const char* paramBuffer);
@@ -59,14 +59,15 @@ static void k_showMatrix(const char* paramBuffer);
 static void k_fpuTestTask(void);
 static void k_testPi(const char* paramBuffer);
 static void k_showDynamicMemInfo(const char* paramBuffer);
-static void k_testSeqAlloc(const char* paramBuffer);
+static void k_testDynamicMem(const char* paramBuffer);
+static void k_testSeqAlloc();
 static void k_randomAllocTask(void);
-static void k_testRandomAlloc(const char* paramBuffer);
+static void k_testRandomAlloc();
 static void k_showHddInfo(const char* paramBuffer);
 static void k_readSector(const char* paramBuffer);
 static void k_writeSector(const char* paramBuffer);
-static void k_mountHdd(const char* paramBuffer);
 static void k_formatHdd(const char* paramBuffer);
+static void k_mountHdd(const char* paramBuffer);
 static void k_showFileSystemInfo(const char* paramBuffer);
 static void k_createFileInRootDir(const char* paramBuffer);
 static void k_deleteFileInRootDir(const char* paramBuffer);
