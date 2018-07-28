@@ -4,7 +4,7 @@
 #include "types.h"
 
 #define SHELL_MAXCOMMANDBUFFERCOUNT 300
-#define SHELL_PROMPTMESSAGE         "hans$"
+#define SHELL_PROMPTMESSAGE         "hans$ "
 
 typedef void (*CommandFunc)(const char* pcParam);
 
@@ -17,9 +17,9 @@ typedef struct k_ShellCommandEntry {
 } ShellCommandEntry;
 
 typedef struct k_ParamList {
-	const char* buffer; // parameter list buffer
-	int len;            // parameter list buffer length
-	int currentPos;     // current parameter position.
+	const char* buffer; // parameter buffer
+	int len;            // parameter buffer length
+	int currentIndex;   // current index in parameter buffer
 } ParamList;
 
 #pragma pack(pop)

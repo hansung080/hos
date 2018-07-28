@@ -53,7 +53,7 @@ static ShellCommandEntry g_commandTable[] = {
 		{"write", "write file, usage) write <fname>", k_writeDataToFile},
 		{"read", "read file, usage) read <fname>", k_readDataFromFile},
 		{"testfile", "test file IO", k_testFileIo},
-		{"testperf", "test file read/write performance", k_testPerformance},
+		{"testperf", "test file IO performance", k_testPerformance},
 		{"flush", "flush file system cache", k_flushCache},
 		{"download", "download file using serial port, usage) download <fname>", k_downloadFile},
 		{"mpconf", "show MP configuration table info", k_showMpConfigTable},
@@ -63,18 +63,18 @@ static ShellCommandEntry g_commandTable[] = {
 };
 
 void k_startShell(void) {
-	char commandBuffer[SHELL_MAXCOMMANDBUFFERCOUNT];
+	char commandBuffer[SHELL_MAXCOMMANDBUFFERCOUNT] = {'\0', };
 	int commandBufferIndex = 0;
 	byte key;
 	int x, y;
-
+	
 	k_printf(SHELL_PROMPTMESSAGE);
-
+	
 	// shell main loop
 	while (true) {
 		// wait until a key is received.
 		key = k_getch();
-
+		
 		// process Backspace key.
 		if (key == KEY_BACKSPACE) {
 			if (commandBufferIndex > 0) {
@@ -83,32 +83,32 @@ void k_startShell(void) {
 				k_setCursor(x - 1, y);
 				commandBufferIndex--;
 			}
-
+			
 		// process Enter key.
 		} else if (key == KEY_ENTER) {
 			k_printf("\n");
-
+			
 			// execute command.
 			if (commandBufferIndex > 0) {
 				commandBuffer[commandBufferIndex] = '\0';
 				k_executeCommand(commandBuffer);
 			}
-
+			
 			// initialize screen and command buffer.
-			k_printf("%s", SHELL_PROMPTMESSAGE);
-			k_memset(commandBuffer, '\0', SHELL_MAXCOMMANDBUFFERCOUNT);
+			k_printf(SHELL_PROMPTMESSAGE);
+			k_memset(commandBuffer, '\0', sizeof(commandBuffer));
 			commandBufferIndex = 0;
-
+			
 		// ignore Shift, Caps Lock, Num Lock, Scroll Lock key.
 		} else if (key == KEY_LSHIFT || key == KEY_RSHIFT || key == KEY_CAPSLOCK || key == KEY_NUMLOCK || key == KEY_SCROLLLOCK) {
 			;
-
+			
 		// process other keys.
 		} else {
 			if (key == KEY_TAB) {
 				key = ' ';
 			}
-
+			
 			if (commandBufferIndex < SHELL_MAXCOMMANDBUFFERCOUNT) {
 				commandBuffer[commandBufferIndex++] = key;
 				k_printf("%c", key);
@@ -118,65 +118,80 @@ void k_startShell(void) {
 }
 
 void k_executeCommand(const char* commandBuffer) {
-	int i, spaceIndex;
-	int commandBufferLen, commandLen;
+	char trimmedBuffer[SHELL_MAXCOMMANDBUFFERCOUNT] = {'\0', };
+	int i, j = 0, spaceIndex;
+	int commandLen;
 	int count;
-
-	commandBufferLen = k_strlen(commandBuffer);
-
-	// get space position (command length)
-	for (spaceIndex = 0; spaceIndex < commandBufferLen; spaceIndex++) {
-		if (commandBuffer[spaceIndex] == ' ') {
+	
+	for (i = 0; commandBuffer[i] != '\0'; i++) {
+		if (commandBuffer[i] == ' ' && (j == 0 || trimmedBuffer[j - 1] == ' ')) {
+			continue;
+		}
+		
+		trimmedBuffer[j++] = commandBuffer[i];
+	}
+	
+	// If trimmed buffer length (j) <= 0, return.
+	if (j <= 0) {
+		return;
+	}
+	
+	// get space index (command length).
+	for (spaceIndex = 0; spaceIndex < j; spaceIndex++) {
+		if (trimmedBuffer[spaceIndex] == ' ') {
 			break;
 		}
 	}
-
+	
 	count = sizeof(g_commandTable) / sizeof(ShellCommandEntry);
-
+	
 	for (i = 0; i < count; i++) {
 		commandLen = k_strlen(g_commandTable[i].command);
-
+		
 		// call a command function, if length and content of the command are right.
-		if ((commandLen == spaceIndex) && (k_memcmp(g_commandTable[i].command, commandBuffer, spaceIndex) == 0)) {
-			g_commandTable[i].func(commandBuffer + spaceIndex + 1); // call a command function, and pass parameters.
+		if ((commandLen == spaceIndex) && (k_memcmp(g_commandTable[i].command, trimmedBuffer, spaceIndex) == 0)) {
+			g_commandTable[i].func(trimmedBuffer + spaceIndex + 1); // call a command function, and pass parameters.
 			break;
 		}
 	}
-
+	
 	// print error if the command dosen't exist in the command table.
 	if (i >= count) {
-		k_printf("'%s' is not found.\n", commandBuffer);
+		char command[spaceIndex + 1];
+		k_memset(command, 0, spaceIndex + 1);
+		k_memcpy(command, trimmedBuffer, spaceIndex);
+		k_printf("%s not found\n", command);
 	}
 }
 
 void k_initParam(ParamList* list, const char* paramBuffer) {
 	list->buffer = paramBuffer;
 	list->len = k_strlen(paramBuffer);
-	list->currentPos = 0;
+	list->currentIndex = 0;
 }
 
 int k_getNextParam(ParamList* list, char* param) {
-	int i;
+	int spaceIndex;
 	int len;
-
-	if (list->currentPos >= list->len) {
+	
+	if (list->currentIndex >= list->len) {
 		return 0;
 	}
-
-	// get space position (parameter length).
-	for (i = list->currentPos; i < list->len; i++) {
-		if(list->buffer[i] == ' '){
+	
+	// get space index (parameter length).
+	for (spaceIndex = list->currentIndex; spaceIndex < list->len; spaceIndex++) {
+		if (list->buffer[spaceIndex] == ' ') {
 			break;
 		}
 	}
-
+	
 	// copy parameter and update position.
-	k_memcpy(param, list->buffer + list->currentPos, i);
-	len = i - list->currentPos;
+	k_memcpy(param, list->buffer + list->currentIndex, spaceIndex);
+	len = spaceIndex - list->currentIndex;
 	param[len] = '\0';
-	list->currentPos += len + 1;
-
-	// return the current parameter length.
+	list->currentIndex += len + 1;
+	
+	// return current parameter length.
 	return len;
 }
 
@@ -208,7 +223,7 @@ static void k_help(const char* paramBuffer) {
 		// ask a user to print more items, every after 15 items are printed.
 		if ((i != 0) && ((i % 15) == 0)) {
 
-			k_printf("Press any key to continue...('q' is quit):");
+			k_printf("Press any key to continue...('q' is quit): ");
 
 			if (k_getch() == 'q') {
 				k_printf("\n");
@@ -612,7 +627,7 @@ static void k_showTaskList(const char* paramBuffer) {
 			// ask a user to print more items, every after 10 items are printed.
 			if ((count != 0) && ((count % 10) == 0)) {
 				
-				k_printf("Press any key to continue...('q' is quit):");
+				k_printf("Press any key to continue...('q' is quit): ");
 				
 				if (k_getch() == 'q') {
 					k_printf("\n");
@@ -999,7 +1014,6 @@ static void k_testSeqAlloc() {
 		k_printf("allocate and compare memory...\n");
 		
 		for (j = 0; j < (manager->smallestBlockCount >> i); j++) {
-			
 			buffer = (qword*)k_allocMem(DMEM_MIN_SIZE << i);
 			if (buffer == null) {
 				k_printf("test failure: memory allocation failure\n");
@@ -1179,7 +1193,7 @@ static void k_readSector(const char* paramBuffer) {
 		for (j = 0; j < sectorCount; j++) {
 			for (i = 0; i < 512; i++) {
 				if (!((j == 0) && (i == 0)) && ((i % 256) == 0)) {
-					k_printf("\nPress any key to continue...('q' is quit):");
+					k_printf("\nPress any key to continue...('q' is quit): ");
 					if (k_getch() == 'q') {
 						exit = true;
 						break;
@@ -1271,7 +1285,7 @@ static void k_writeSector(const char* paramBuffer) {
 	for (j = 0; j < sectorCount; j++) {
 		for (i = 0; i < 512; i++) {
 			if (!((j == 0) && (i == 0)) && ((i % 256) == 0)) {
-				k_printf("\nPress any key to continue...('q' is quit):");
+				k_printf("\nPress any key to continue...('q' is quit): ");
 				if (k_getch() == 'q') {
 					exit = true;
 					break;
@@ -1359,14 +1373,14 @@ static void k_createFileInRootDir(const char* paramBuffer) {
 		return;
 	}
 
-	// open a file.
+	// open file.
 	file = fopen(fileName, "w");
 	if (file == null) {
 		k_printf("file creation failure: file opening failure\n");
 		return;
 	}
 
-	// close a file.
+	// close file.
 	fclose(file);
 }
 
@@ -1393,7 +1407,7 @@ static void k_deleteFileInRootDir(const char* paramBuffer) {
 		return;
 	}
 
-	// remove a file.
+	// remove file.
 	if (remove(fileName) != 0) {
 		k_printf("file deletion failure: file removing failure\n");
 		return;
@@ -1477,7 +1491,7 @@ static void k_showRootDir(const char* paramBuffer) {
 		// ask a user to print more items, every after 15 items are printed.
 		if ((count != 0) && ((count % 15) == 0)) {
 
-			k_printf("Press any key to continue...('q' is quit):");
+			k_printf("Press any key to continue...('q' is quit): ");
 
 			if (k_getch() == 'q') {
 				k_printf("\n");
@@ -1525,19 +1539,19 @@ static void k_writeDataToFile(const char* paramBuffer) {
 		return;
 	}
 
-	// open a file.
+	// open file.
 	file = fopen(fileName, "w");
 	if (file == null) {
 		k_printf("file writing failure: file opening failure\n");
 		return;
 	}
 
-	// loop for writing a file.
+	// loop for writing file.
 	enterCount = 0;
 	while (true) {
 		key = k_getch();
 
-		// press Enter key 3 times continuously to finish writing a file.
+		// press Enter key 3 times continuously to finish writing file.
 		if (key == KEY_ENTER) {
 			enterCount++;
 			if (enterCount >= 3) {
@@ -1549,14 +1563,14 @@ static void k_writeDataToFile(const char* paramBuffer) {
 
 		k_printf("%c", key);
 
-		// write a file.
+		// write file.
 		if (fwrite(&key, 1, 1, file) != 1) {
 			k_printf("file writing failure: file writing failure");
 			break;
 		}
 	}
 
-	// close a file.
+	// close file.
 	fclose(file);
 }
 
@@ -1586,17 +1600,17 @@ static void k_readDataFromFile(const char* paramBuffer) {
 		return;
 	}
 
-	// open a file.
+	// open file.
 	file = fopen(fileName, "r");
 	if (file == null) {
 		k_printf("file reading failure: file opening failure\n");
 		return;
 	}
 
-	// loop for reading a file.
+	// loop for reading file.
 	enterCount = 0;
 	while (true) {
-		// read a file.
+		// read file.
 		if (fread(&key, 1, 1, file) != 1) {
 			break;
 		}
@@ -1610,7 +1624,7 @@ static void k_readDataFromFile(const char* paramBuffer) {
 			// ask a user to print more lines, every after 15 lines are printed.
 			if ((enterCount != 0) && ((enterCount % 15) == 0)) {
 
-				k_printf("Press any key to continue...('q' is quit):");
+				k_printf("Press any key to continue...('q' is quit): ");
 
 				if (k_getch() == 'q') {
 					k_printf("\n");
@@ -1623,7 +1637,7 @@ static void k_readDataFromFile(const char* paramBuffer) {
 		}
 	}
 
-	// close a file.
+	// close file.
 	fclose(file);
 }
 
@@ -1638,7 +1652,7 @@ static void k_testFileIo(const char* paramBuffer) {
 	dword maxFileSize;
 	bool fail = false;
 	
-	k_printf("*** File IO Test ***\n");
+	k_printf("*** File IO Test (10 tests) ***\n");
 	
 	// allocate 4MB-sized memory.
 	maxFileSize = 4 * 1024 * 1024;
@@ -1648,7 +1662,7 @@ static void k_testFileIo(const char* paramBuffer) {
 		return;
 	}
 	
-	// remove the test file.
+	// remove file before test.
 	remove("testfile.tmp");
 	
 	//----------------------------------------------------------------------------------------------------
@@ -1656,7 +1670,7 @@ static void k_testFileIo(const char* paramBuffer) {
 	//----------------------------------------------------------------------------------------------------
 	k_printf("1> file openning failure test..................................");
 	
-	// Read mode (r) dosen't create a file and return null when the file dosen't exist.
+	// Read mode (r) dosen't create file and return null when the file dosen't exist.
 	file = fopen("testfile.tmp", "r");
 	if (file == null) {
 		k_printf("pass\n");
@@ -1671,7 +1685,7 @@ static void k_testFileIo(const char* paramBuffer) {
 	//----------------------------------------------------------------------------------------------------
 	k_printf("2> file creation test..........................................");
 	
-	// Write mode (w) create a file and return a file handle when the file dosen't exist.
+	// Write mode (w) create file and return file handle when the file dosen't exist.
 	file = fopen("testfile.tmp", "w");
 	if (file != null) {
 		k_printf("pass\n");
@@ -1691,7 +1705,7 @@ static void k_testFileIo(const char* paramBuffer) {
 		
 		k_memset(buffer, i, FS_CLUSTERSIZE);
 		
-		// write a file.
+		// write file.
 		if (fwrite(buffer, 1, FS_CLUSTERSIZE, file) != FS_CLUSTERSIZE) {
 			fail = true;
 			k_printf("fail: %d cluster\n", i);
@@ -1715,7 +1729,7 @@ static void k_testFileIo(const char* paramBuffer) {
 	// read data from opened file, and verify data.
 	for (i = 0; i < 100; i++) {
 		
-		// read a file.
+		// read file.
 		if (fread(buffer, 1, FS_CLUSTERSIZE, file) != FS_CLUSTERSIZE) {
 			fail = true;
 			k_printf("fail\n");
@@ -1816,9 +1830,9 @@ static void k_testFileIo(const char* paramBuffer) {
 	// move to the start of file.
 	fseek(file, -maxFileSize, SEEK_CUR);
 	
-	// loop for writing a file. (write data (2MB) from the start of file).
+	// loop for writing file. (write data (2MB) from the start of file).
 	for (i = 0; i < (2 * 1024 * 1024 / 1024); i++) {
-		// write a file (write data by 1024 bytes).
+		// write file (write data by 1024 bytes).
 		if (fwrite(buffer + (i * 1024), 1, 1024, file) != 1024) {
 			fail = true;
 			k_printf("fail: file writing failure: [%d] offset: %d, byte: %d\n", i, i * 1024, 1024);
@@ -1829,10 +1843,10 @@ static void k_testFileIo(const char* paramBuffer) {
 	// move to the start of file.
 	fseek(file, -maxFileSize, SEEK_SET);
 	
-	// read data from a file, and verify it.
+	// read data from file, and verify it.
 	// verify the whole area (4MB), because wrong data could have been saved by the random write.
 	for (i = 0; i < (maxFileSize / 1024); i++) {
-		// read a file. (read data by 1024 bytes.)
+		// read file. (read data by 1024 bytes.)
 		if (fread(tempBuffer, 1, 1024, file) != 1024) {
 			fail = true;
 			k_printf("fail: file reading failure: [%d] offset: %d, byte: %d\n", i, i * 1024, 1024);
@@ -1869,7 +1883,7 @@ static void k_testFileIo(const char* paramBuffer) {
 	//----------------------------------------------------------------------------------------------------
 	k_printf("9> file closing failure test...................................");
 	
-	// close a file.
+	// close file.
 	if (fclose(file) == 0) {
 		k_printf("pass\n");
 		
@@ -1880,9 +1894,9 @@ static void k_testFileIo(const char* paramBuffer) {
 	//----------------------------------------------------------------------------------------------------
 	// 10. File Deletion Test
 	//----------------------------------------------------------------------------------------------------
-	k_printf("10> file delete test...........................................");
+	k_printf("10> file deletion test.........................................");
 	
-	// remove a file.
+	// remove file.
 	if (remove("testfile.tmp") == 0) {
 		k_printf("pass\n");
 		
@@ -1892,8 +1906,6 @@ static void k_testFileIo(const char* paramBuffer) {
 	
 	// free memory.
 	k_freeMem(buffer);
-	
-	k_printf("test end\n");
 }
 
 static void k_testPerformance(const char* paramBuffer) {
@@ -1904,7 +1916,7 @@ static void k_testPerformance(const char* paramBuffer) {
 	dword i;
 	byte* buffer;
 	
-	k_printf("*** File IO Performance Test ***\n");
+	k_printf("*** File IO Performance Test (2 tests) ***\n");
 	
 	// set file size (cluster unit: 1MB, byte unit: 16KB)
 	clusterTestFileSize = 1024 * 1024;
@@ -1924,7 +1936,7 @@ static void k_testPerformance(const char* paramBuffer) {
 	//----------------------------------------------------------------------------------------------------
 	k_printf("1> sequential writing/reading test (cluster -> 1 MB)\n");
 	
-	// remove a file, and create it.
+	// remove file, and create it.
 	remove("testperf.tmp");
 	file = fopen("testperf.tmp", "w");
 	if (file == null) {
@@ -1947,7 +1959,7 @@ static void k_testPerformance(const char* paramBuffer) {
 	}
 	
 	// print test time.
-	k_printf("    - write : %d ms\n", k_getTickCount() - lastTickCount);
+	k_printf("  - write : %d ms\n", k_getTickCount() - lastTickCount);
 	
 	//----------------------------------------------------------------------------------------------------
 	// 1-2. Sequential Reading Test by Cluster Unit
@@ -1970,14 +1982,14 @@ static void k_testPerformance(const char* paramBuffer) {
 	}
 	
 	// print test time.
-	k_printf("    - read  : %d ms\n", k_getTickCount() - lastTickCount);
+	k_printf("  - read  : %d ms\n", k_getTickCount() - lastTickCount);
 	
 	//----------------------------------------------------------------------------------------------------
 	// 2-1. Sequential Writing Test by Byte Unit
 	//----------------------------------------------------------------------------------------------------
 	k_printf("2> sequential writing/reading test (byte -> 16 KB)\n");
 	
-	// remove a file and create it.
+	// remove file and create it.
 	fclose(file);
 	remove("testperf.tmp");
 	file = fopen("testperf.tmp", "w");
@@ -2001,7 +2013,7 @@ static void k_testPerformance(const char* paramBuffer) {
 	}
 	
 	// print test time.
-	k_printf("    - write : %d ms\n", k_getTickCount() - lastTickCount);
+	k_printf("  - write : %d ms\n", k_getTickCount() - lastTickCount);
 	
 	//----------------------------------------------------------------------------------------------------
 	// 2-2. Sequential Reading Test by Byte Unit
@@ -2024,9 +2036,9 @@ static void k_testPerformance(const char* paramBuffer) {
 	}
 	
 	// print test time.
-	k_printf("    - read  : %d ms\n", k_getTickCount() - lastTickCount);
+	k_printf("  - read  : %d ms\n", k_getTickCount() - lastTickCount);
 	
-	// close a file, and delete it, and free memory.
+	// close file, and delete it, and free memory.
 	fclose(file);
 	remove("testperf.tmp");
 	k_freeMem(buffer);
@@ -2117,7 +2129,7 @@ static void k_downloadFile(const char* paramBuffer) {
 	// save data from serial port to file.
 	//----------------------------------------------------------------------------------------------------
 	
-	// create a file.
+	// create file.
 	file = fopen(fileName, "w");
 	if (file == null) {
 		k_printf("%s opening failure\n", fileName);
@@ -2134,7 +2146,7 @@ static void k_downloadFile(const char* paramBuffer) {
 		tempSize = k_recvSerialData(dataBuffer, SERIAL_FIFOMAXSIZE);
 		receivedSize += tempSize;
 		
-		// If the receive data exists, send ACK and write a file.
+		// If the receive data exists, send ACK and write file.
 		if (tempSize != 0) {
 			
 			// send ACK every when it reaches FIFO max size, and when receiving completes.
@@ -2142,7 +2154,7 @@ static void k_downloadFile(const char* paramBuffer) {
 				k_sendSerialData("A", 1);
 			}
 			
-			// write a file.
+			// write file.
 			if (fwrite(dataBuffer, 1, tempSize, file) !=  tempSize) {
 				k_printf("%s writing failure\n", fileName);
 				break;
@@ -2165,7 +2177,7 @@ static void k_downloadFile(const char* paramBuffer) {
 	k_printf("success\n");
 	
 	//----------------------------------------------------------------------------------------------------
-	// check if data is received successfully, and close a file, and flush file system cache
+	// check if data is received successfully, and close file, and flush file system cache
 	//----------------------------------------------------------------------------------------------------
 	
 	// check if data is received successfully
@@ -2176,7 +2188,7 @@ static void k_downloadFile(const char* paramBuffer) {
 		k_printf("receiving complete: received size: %d bytes\n", receivedSize);
 	}
 	
-	// close a file, and flush file system cache
+	// close file, and flush file system cache
 	fclose(file);
 	k_flushFileSystemCache();
 }

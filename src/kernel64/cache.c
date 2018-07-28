@@ -178,7 +178,7 @@ CacheBuffer* k_getVictimInCacheBuffer(int cacheTableIndex) {
 
 	// handle error when searching fails.
 	if (oldIndex == -1) {
-		k_printf("cache error: can not get victim in cache buffer.\n");
+		k_printf("cache error: can not get victim in cache buffer\n");
 		return null;
 	}
 

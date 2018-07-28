@@ -165,7 +165,7 @@ void k_printMpConfigTable(void) {
 	k_printf("- use PIC mode                                    : %s\n", (mpConfigManager->usePicMode == true) ? "true" : "false");
 	k_printf("- ISA bus ID                                      : %d\n", mpConfigManager->isaBusId);
 
-	k_printf("Press any key to continue...('q' is quit):");
+	k_printf("Press any key to continue...('q' is quit): ");
 	if (k_getch() == 'q') {
 		k_printf("\n");
 		return;
@@ -202,7 +202,7 @@ void k_printMpConfigTable(void) {
 	k_printf("- MP feature byte 4              : 0x%X\n", mpFloatingPointer->mpFeatureByte[3]);
 	k_printf("- MP feature byte 5              : 0x%X\n", mpFloatingPointer->mpFeatureByte[4]);
 
-	k_printf("Press any key to continue...('q' is quit):");
+	k_printf("Press any key to continue...('q' is quit): ");
 	if (k_getch() == 'q') {
 		k_printf("\n");
 		return;
@@ -236,7 +236,7 @@ void k_printMpConfigTable(void) {
 	k_printf("- extended table checksum             : 0x%X\n", mpConfigTableHeader->extendedTableChecksum);
 	k_printf("- reserved                            : %d\n", mpConfigTableHeader->reserved);
 
-	k_printf("Press any key to continue...('q' is quit):");
+	k_printf("Press any key to continue...('q' is quit): ");
 	if (k_getch() == 'q') {
 		k_printf("\n");
 		return;
@@ -350,7 +350,7 @@ void k_printMpConfigTable(void) {
 
 		// ask a user to print more entries, every after 2 entries are printed.
 		if ((i != 0) && (((i + 1) % 2) == 0)) {
-			k_printf("Press any key to continue...('q' is quit):");
+			k_printf("Press any key to continue...('q' is quit): ");
 			if (k_getch() == 'q') {
 				k_printf("\n");
 				return;

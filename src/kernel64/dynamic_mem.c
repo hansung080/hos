@@ -1,6 +1,7 @@
 #include "dynamic_mem.h"
 #include "util.h"
 #include "sync.h"
+#include "console.h"
 
 static DynamicMemManager g_dynamicMemManager;
 
@@ -127,17 +128,20 @@ void* k_allocMem(qword size) {
 	// search buddy block size which is the closest one to the allocating memory size.
 	alignedSize = k_getBuddyBlockSize(size);
 	if (alignedSize == 0) {
+		k_printf("dynamic memory error: can not get buddy block size\n");
 		return null;
 	}
 
 	// fail if free memory is not enough.
-	if ((g_dynamicMemManager.startAddr + g_dynamicMemManager.usedSize + alignedSize) > g_dynamicMemManager.endAddr){
+	if ((g_dynamicMemManager.startAddr + g_dynamicMemManager.usedSize + alignedSize) > g_dynamicMemManager.endAddr) {
+		k_printf("dynamic memory error: not enough free memory\n");
 		return null;
 	}
 
 	// allocate buddy block, and return bit map offset of block list of the allocated block.
 	offset = k_allocBuddyBlock(alignedSize);
 	if (offset == -1) {
+		k_printf("dynamic memory error: buddy block allocation error\n");
 		return null;
 	}
 
@@ -311,6 +315,7 @@ bool k_freeMem(void* addr) {
 	int bitmapOffset;    // bit map offset of free block
 
 	if (addr == null) {
+		k_printf("dynamic memory error: address is null\n");
 		return false;
 	}
 
@@ -320,6 +325,7 @@ bool k_freeMem(void* addr) {
 
 	// fail if it has not been allocated.
 	if (g_dynamicMemManager.allocedBlockListIndex[sizeArrayOffset] == 0xFF) {
+		k_printf("dynamic memory error: not allocated memory\n");
 		return false;
 	}
 
@@ -338,7 +344,9 @@ bool k_freeMem(void* addr) {
 		g_dynamicMemManager.usedSize -= blockSize;
 		return true;
 	}
-
+	
+	k_printf("dynamic memory error: buddy block freeing error\n");
+	
 	return false;
 }
 

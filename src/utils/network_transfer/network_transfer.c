@@ -37,7 +37,7 @@ int main(int argc, const char** argv) {
 	
 	// check file name.
 	if (argc < 2) {
-		printf("input file name:");
+		printf("input file name: ");
 		gets(fileName);
 		
 	} else {

@@ -20,7 +20,7 @@
 
 #define KEY_MAPPINGTABLEMAXCOUNT 89
 
-// keys not in ASCII code (but, ENTER, TAB is in ASCII code)
+// keys not in ASCII code (but, ENTER and TAB are in ASCII code)
 #define KEY_NONE        0x00
 #define KEY_ENTER       '\n'
 #define KEY_TAB         '\t'
