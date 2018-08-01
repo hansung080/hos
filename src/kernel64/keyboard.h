@@ -2,6 +2,7 @@
 #define __KEYBOARD_H__
 
 #include "types.h"
+#include "sync.h"
 
 /**
   < Registers and Port I/O Functions of Keyboard Controller >
@@ -70,6 +71,8 @@ typedef struct k_KeyMappingEntry {
 } KeyMappingEntry;
 
 typedef struct k_KeyboardManager {
+	Spinlock spinlock;
+	
 	// combined key info
 	bool shiftDown;
 	bool capslockOn;

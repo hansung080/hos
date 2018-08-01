@@ -5,7 +5,7 @@
 #include "pit.h"
 #include "util.h"
 
-volatile int g_awakeApCount = 0;  // awake AP count
+volatile int g_awakeApCount = 0; // awake AP count
 volatile qword g_apicIdAddr = 0; // Local APIC ID Register address
 
 bool k_startupAp(void) {

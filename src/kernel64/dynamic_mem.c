@@ -78,6 +78,9 @@ void k_initDynamicMem(void) {
 	g_dynamicMemManager.startAddr = DMEM_START_ADDRESS + (metaBlockCount * DMEM_MIN_SIZE);
 	g_dynamicMemManager.endAddr = DMEM_START_ADDRESS + k_calcDynamicMemSize();
 	g_dynamicMemManager.usedSize = 0;
+	
+	// initialize spinlock.
+	k_initSpinlock(&(g_dynamicMemManager.spinlock));
 }
 
 static qword k_calcDynamicMemSize(void) {
@@ -178,7 +181,6 @@ static int k_allocBuddyBlock(qword alignedSize) {
 	int blockListIndex; // block list index matching block size
 	int freeOffset;     // bit map offset of existing block
 	int i;
-	bool prevInterruptFlag;
 
 	// search block list index matching block size.
 	blockListIndex = k_getBlockListIndexOfMatchSize(alignedSize);
@@ -186,7 +188,7 @@ static int k_allocBuddyBlock(qword alignedSize) {
 		return -1;
 	}
 
-	prevInterruptFlag = k_lockSystem();
+	k_lockSpin(&(g_dynamicMemManager.spinlock));
 
 	// search EXIST block going up from matching block list to the highest block list.
 	for (i = blockListIndex; i < g_dynamicMemManager.maxLevelCount; i++) {
@@ -200,7 +202,7 @@ static int k_allocBuddyBlock(qword alignedSize) {
 
 	// fail if EXIST blocks don't exist, after searching finishes
 	if (freeOffset == -1) {
-		k_unlockSystem(prevInterruptFlag);
+		k_unlockSpin(&(g_dynamicMemManager.spinlock));
 		return -1;
 	}
 
@@ -223,7 +225,7 @@ static int k_allocBuddyBlock(qword alignedSize) {
 		}
 	}
 
-	k_unlockSystem(prevInterruptFlag);
+	k_unlockSpin(&(g_dynamicMemManager.spinlock));
 
 	return freeOffset;
 }
@@ -354,9 +356,8 @@ static bool k_freeBuddyBlock(int blockListIndex, int blockOffset) {
 	int buddyBlockOffset;   // buddy block offset
 	int i;                  // index
 	byte flag;              // buddy block state flag
-	bool prevInterruptFlag; // previous interrupt flag
 
-	prevInterruptFlag = k_lockSystem();
+	k_lockSpin(&(g_dynamicMemManager.spinlock));
 
 	// combine blocks going up from free block list to the highest block list.
 	for (i = blockListIndex; i < g_dynamicMemManager.maxLevelCount; i++) {
@@ -390,7 +391,7 @@ static bool k_freeBuddyBlock(int blockListIndex, int blockOffset) {
 		blockOffset = blockOffset / 2;
 	}
 
-	k_unlockSystem(prevInterruptFlag);
+	k_unlockSpin(&(g_dynamicMemManager.spinlock));
 	return true;
 }
 

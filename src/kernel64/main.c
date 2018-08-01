@@ -19,12 +19,12 @@ void k_mainForAp(void);
 
 void k_main(void) {
 	// compare BSP flag.
-	if (BSP_FLAG == BSP_FLAG_AP) {
+	if (BSPFLAG == BSPFLAG_AP) {
 		k_mainForAp();
 	}
 	
 	// set [0:AP] to BSP flag, because booting is finished by BSP.
-	BSP_FLAG = BSP_FLAG_AP;
+	BSPFLAG = BSPFLAG_AP;
 	
 	// initialize console.
 	k_initConsole(0, 12);
@@ -136,7 +136,7 @@ void k_mainForAp(void) {
 	while (true) {
 		if (k_getTickCount() - tickCount > 1000) {
 			tickCount = k_getTickCount();
-			k_printf("AP (%d) is working.\n", k_getApicId());
+			//k_printf("AP (%d) is working.\n", k_getApicId());
 		}
 	}
 }

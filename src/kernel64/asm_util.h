@@ -17,6 +17,7 @@ qword k_readRflags(void);
 qword k_readTsc(void);
 void k_switchContext(Context* currentContext, Context* nextContext);
 void k_halt(void);
+void k_pause(void);
 bool k_testAndSet(volatile byte* dest, byte cmp, byte src);
 void k_initFpu(void);
 void k_saveFpuContext(void* fpuContext);

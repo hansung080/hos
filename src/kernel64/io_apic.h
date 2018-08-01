@@ -85,5 +85,6 @@ void k_writeIoRedirectionTable(int intin, const IoRedirectionTable* table);
 void k_maskAllInterruptsInIoApic(void);
 void k_initIoRedirectionTable(void);
 void k_printIrqToIntinMap(void);
+void k_routeIrqToApic(int irq, byte apicId);
 
 #endif // __IO_APIC_H__

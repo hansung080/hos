@@ -14,8 +14,8 @@ global k_isr15, k_isrFpuError, k_isrAlignmentCheck, k_isrMachineCheck, k_isrSimd
 global k_isrEtcException
 
 ; Interrupt Handling ISR (17)
-global k_isrTimer, k_isrKeyboard, k_isrSlavePic, k_isrSerial2, k_isrSerial1
-global k_isrParallel2, k_isrFloppy, k_isrParallel1, k_isrRtc, k_isrReserved
+global k_isrTimer, k_isrKeyboard, k_isrSlavePic, k_isrSerialPort2, k_isrSerialPort1
+global k_isrParallelPort2, k_isrFloppyDisk, k_isrParallelPort1, k_isrRtc, k_isrReserved
 global k_isrNotUsed1, k_isrNotUsed2, k_isrMouse, k_isrCoprocessor, k_isrHdd1
 global k_isrHdd2, k_isrEtcInterrupt
 
@@ -86,7 +86,7 @@ global k_isrHdd2, k_isrEtcInterrupt
 %endmacro
 
 ;====================================================================================================
-; Exeption Handling ISR (21): #0 ~ #19, #20 ~ #31
+; Exception Handling ISR (21): #0 ~ #19, #20 ~ #31
 ;====================================================================================================
 ; #0 : Divide Error ISR
 k_isrDivideError:
@@ -346,7 +346,7 @@ k_isrSlavePic:
 	iretq                         ; restore context saved by processor, and return to the code where had be running.
 
 ; #35 : Serial Port 2 (COM Port 2) ISR
-k_isrSerial2:
+k_isrSerialPort2:
 	KSAVECONTEXT                  ; save context and switch segment selectors.
 
 	mov rdi, 35                   ; set vector number to first parameter.
@@ -356,7 +356,7 @@ k_isrSerial2:
 	iretq                         ; restore context saved by processor, and return to the code where had be running.
 
 ; #36 : Serial Port 1 (COM Port 1) ISR
-k_isrSerial1:
+k_isrSerialPort1:
 	KSAVECONTEXT                  ; save context and switch segment selectors.
 
 	mov rdi, 36                   ; set vector number to first parameter.
@@ -366,7 +366,7 @@ k_isrSerial1:
 	iretq                         ; restore context saved by processor, and return to the code where had be running.
 
 ; #37 : Parallel Port 2 (Print Port 2) ISR
-k_isrParallel2:
+k_isrParallelPort2:
 	KSAVECONTEXT                  ; save context and switch segment selectors.
 
 	mov rdi, 37                   ; set vector number to first parameter.
@@ -376,7 +376,7 @@ k_isrParallel2:
 	iretq                         ; restore context saved by processor, and return to the code where had be running.
 
 ; #38 : Floppy Disk Controller ISR
-k_isrFloppy:
+k_isrFloppyDisk:
 	KSAVECONTEXT                  ; save context and switch segment selectors.
 
 	mov rdi, 38                   ; set vector number to first parameter.
@@ -386,7 +386,7 @@ k_isrFloppy:
 	iretq                         ; restore context saved by processor, and return to the code where had be running.
 
 ; #39 : Parallel Port 1 (Print Port 1) ISR
-k_isrParallel1:
+k_isrParallelPort1:
 	KSAVECONTEXT                  ; save context and switch segment selectors.
 
 	mov rdi, 39                   ; set vector number to first parameter.

@@ -14,7 +14,7 @@
 
 // MP floating pointer - MP feature byte 1~5 (1 byte * 5)
 #define MP_FLOATINGPOINTER_FEATUREBYTE1_USEMPTABLE 0x00 // use MP configuration table (0:use MP configuration table, !0:use default configuration defined in MultiProcessor Specification)
-#define MP_FLOATINGPOINTER_FEATUREBYTE2_PICMODE    0x80 // support PIC mode(bit 7=1: support PIC mode, bit 7=0: support virtual wire mode, bit 6~0: reserved)
+#define MP_FLOATINGPOINTER_FEATUREBYTE2_PICMODE    0x80 // use PIC mode(bit 7=1: use PIC mode, bit 7=0: use virtual wire mode, bit 6~0: reserved)
 
 // base MP configuration table entry - entry type (1 byte)
 #define MP_ENTRYTYPE_PROCESSOR                0 // processor entry
@@ -147,7 +147,7 @@ typedef struct k_MpConfigManager {
 	MpConfigTableHeader* mpConfigTableHeader; // MP configuration table header address
 	qword baseEntryStartAddr;                 // base MP configuration table entry start address
 	int processorCount;                       // processor count: [Ref] processor means processor of multiprocessor or processor's core of multi-core processor.
-	bool usePicMode;                          // PIC mode support flag
+	bool picMode;                             // PIC mode flag
 	byte isaBusId;                            // ISA bus ID
 } MpConfigManager;
 

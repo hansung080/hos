@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "task.h"
+#include "sync.h"
 
 // dynamic memory area start address (0x1100000, 17MB)
 // - aligned with 1MB unit (set it to the multiple of 1MB, rounding up)
@@ -24,6 +25,7 @@ typedef struct k_Bitmap {
 } Bitmap;
 
 typedef struct k_DynamicMemManager {
+	Spinlock spinlock;           // spinlock
 	int maxLevelCount;           // block list count: level count
 	int smallestBlockCount;      // smallest block count
 	qword usedSize;              // allocated memory size: used memory size

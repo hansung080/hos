@@ -122,19 +122,19 @@ int k_memcmp(const void* dest, const void* src, int size) {
 	return 0;
 }
 
-bool k_setInterruptFlag(bool enableInterrupt) {
+bool k_setInterruptFlag(bool interruptFlag) {
 	qword rflags;
 
 	rflags = k_readRflags();
 
-	if (enableInterrupt == true) {
+	if (interruptFlag == true) {
 		k_enableInterrupt();
 
 	} else {
 		k_disableInterrupt();
 	}
 
-	// check IF(bit 9) of RFLAGS Register, and return previous interrupt status.
+	// check IF(bit 9) of RFLAGS Register, and return previous interrupt flag.
 	if (rflags & 0x0200) {
 		return true;
 	}

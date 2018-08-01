@@ -16,6 +16,7 @@
 #include "pic.h"
 #include "local_apic.h"
 #include "io_apic.h"
+#include "interrupt_handlers.h"
 
 static ShellCommandEntry g_commandTable[] = {
 		{"help", "show help", k_help},
@@ -58,8 +59,10 @@ static ShellCommandEntry g_commandTable[] = {
 		{"download", "download file using serial port, usage) download <fname>", k_downloadFile},
 		{"mpconf", "show MP configuration table info", k_showMpConfigTable},
 		{"stap", "start application processor", k_startAp},
-		{"symmod", "start symmetric IO mode", k_startSymmetricIoMode},
-		{"irqmap", "show IRQ to INTIN Map", k_showIrqToIntinMap}
+		{"stsim", "start symmetric IO mode", k_startSymmetricIoMode},
+		{"irqmap", "show IRQ to INTIN Map", k_showIrqToIntinMap},
+		{"intcnt", "show interrupt count by core * IRQ, usage) intcnt <irq>", k_showInterruptCounts},
+		{"stilb", "start interrupt load balancing", k_startInterruptLoadBalancing}
 };
 
 void k_startShell(void) {
@@ -747,12 +750,12 @@ static void k_printNumberTask(const char* paramBuffer) {
 
 	// print mutex test number.
 	for (i = 0; i < 5; i++) {
-		k_lock(&(g_mutex));
+		k_lock(&g_mutex);
 
 		k_printf("mutex test: task ID: 0x%Q, value: %d\n", k_getRunningTask()->link.id, g_adder);
 		g_adder++;
 
-		k_unlock(&(g_mutex));
+		k_unlock(&g_mutex);
 
 		// add this code to increase processor usage.
 		for (j = 0; j < 30000; j++);
@@ -973,7 +976,7 @@ static void k_testDynamicMem(const char* paramBuffer) {
 	
 	// get No.1 parameter: type
 	if (k_getNextParam(&list, param) == 0) {
-		k_printf("Usage: testdmem <type>\n");
+		k_printf("Usage) testdmem <type>\n");
 		k_printf("  - type: 1 (sequential allocation)\n");
 		k_printf("  - type: 2 (random allocation)\n");
 		k_printf("  - example: testdmem 1\n");
@@ -2218,7 +2221,7 @@ static void k_startSymmetricIoMode(const char* paramBuffer) {
 	mpManager = k_getMpConfigManager();
 	
 	// If it's PIC mode, disable PIC mode using IMCR Register.
-	if (mpManager->usePicMode == true) {
+	if (mpManager->picMode == true) {
 		k_outPortByte(0x22, 0x70);
 		k_outPortByte(0x23, 0x01);
 	}
@@ -2229,6 +2232,7 @@ static void k_startSymmetricIoMode(const char* paramBuffer) {
 	interruptFlag = k_setInterruptFlag(false);
 	k_setInterruptPriority(0);
 	k_initLocalVectorTable();
+	k_setSymmetricIoMode(true);
 	k_initIoRedirectionTable();
 	k_setInterruptFlag(interruptFlag);
 	
@@ -2237,5 +2241,138 @@ static void k_startSymmetricIoMode(const char* paramBuffer) {
 
 static void k_showIrqToIntinMap(const char* paramBuffer) {
 	k_printIrqToIntinMap();
+}
+
+static void k_showInterruptCounts(const char* paramBuffer) {
+	ParamList list;
+	char param[100];
+	int irq;
+	int irqLen;
+	int irqStart = 0;
+	int irqEnd = INTERRUPT_MAXVECTORCOUNT;
+	InterruptManager* interruptManager;
+	int i, j;
+	int coreCount;
+	char buffer[20] = {0, };
+	int remainLen;
+	int lineCount;
+	
+	// initialize parameter.
+	k_initParam(&list, paramBuffer);
+	
+	// get No.1 parameter: irq
+	irqLen = k_getNextParam(&list, param);
+	if (irqLen != 0) {
+		irq = k_atoi(param, 10);
+		
+		if ((irq < 0) || (irq >= INTERRUPT_MAXVECTORCOUNT)) {
+			k_printf("Usage) intcnt <irq>\n");
+			k_printf("  - irq: 0 (timer)\n");
+			k_printf("  - irq: 1 (PS/2 keyboard)\n");
+			k_printf("  - irq: 2 (slave PIC controller)\n");
+			k_printf("  - irq: 3 (serial port 2)\n");
+			k_printf("  - irq: 4 (serial port 1)\n");
+			k_printf("  - irq: 5 (parallel port 2)\n");
+			k_printf("  - irq: 6 (floppy disk controller)\n");
+			k_printf("  - irq: 7 (parallel port 1)\n");
+			k_printf("  - irq: 8 (RTC)\n");
+			k_printf("  - irq: 9 (reserved)\n");
+			k_printf("  - irq: 10 (not used 1)\n");
+			k_printf("  - irq: 11 (not used 2)\n");
+			k_printf("  - irq: 12 (PS/2 mouse)\n");
+			k_printf("  - irq: 13 (coprocessor)\n");
+			k_printf("  - irq: 14 (hard disk 1)\n");
+			k_printf("  - irq: 15 (hard disk 2)\n");
+			k_printf("  - example: intcnt\n");
+			k_printf("  - example: intcnt 0\n");
+			return;
+		}
+		
+		irqStart = irq;
+		irqEnd = irq + 1;
+	}
+	
+	coreCount = k_getProcessorCount();
+	
+	if (irqLen == 0) {
+		k_printf("*** Interrupt Count by Core * IRQ ***\n");
+		k_printf("===============================================================================\n");
+		
+		/* print header */
+		// print 4 cores in a line, and allocate 15 cells in a core.
+		for (i = 0; i < coreCount; i++) {
+			if (i == 0) {
+				k_printf("IRQ No\t\t");
+				
+			} else if ((i % 4) == 0) {
+				k_printf("\n      \t\t");
+			}
+			
+			k_sprintf(buffer, "core %d", i);
+			k_printf(buffer);
+			
+			// put spaces to remain cells out of 15 cells.
+			remainLen = 15 - k_strlen(buffer);
+			k_memset(buffer, ' ', remainLen);
+			buffer[remainLen] = '\0';
+			k_printf(buffer);
+		}
+		
+		k_printf("\n");
+	}
+	
+	/* print content (interrupt count) */
+	k_memset(buffer, 0, sizeof(buffer));
+	lineCount = 0;
+	interruptManager = k_getInterruptManager();
+	for (i = irqStart; i < irqEnd; i++) {
+		// print 4 cores in a line, and allocate 15 cells in a core.
+		for (j = 0; j < coreCount; j++) {
+			if (j == 0) {
+				// ask a user to print more lines, every after more than 10 lines are printed.
+				if ((lineCount != 0) && (lineCount > 10)) {
+					k_printf("Press any key to continue...('q' is quit): ");
+					if (k_getch() == 'q') {
+						k_printf("\n");
+						return;
+					}
+					
+					lineCount = 0;
+					k_printf("\n");
+				}
+				
+				k_printf("-------------------------------------------------------------------------------\n");
+				k_printf("IRQ %d\t\t", i);
+				lineCount += 2;
+				
+			} else if ((j % 4) == 0) {
+				k_printf("\n      \t\t");
+				lineCount++;
+			}
+			
+			k_sprintf(buffer, "0x%Q", interruptManager->interruptCounts[j][i]);
+			k_printf(buffer);
+			
+			// put spaces to remain cells out of 15 cells.
+			remainLen = 15 - k_strlen(buffer);
+			k_memset(buffer, ' ', remainLen);
+			buffer[remainLen] = '\0';
+			k_printf(buffer);
+		}
+		
+		k_printf("\n");
+	}
+	
+	if (irqLen == 0) {
+		k_printf("===============================================================================\n");
+		
+	} else {
+		k_printf("-------------------------------------------------------------------------------\n");
+	}
+}
+
+static void k_startInterruptLoadBalancing(const char* paramBuffer) {
+	k_setInterruptLoadBalancing(true);
+	k_printf("interrupt load balancing success\n");
 }
 

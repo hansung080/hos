@@ -53,11 +53,11 @@ bool k_waitAckAndPutOtherScanCode(void) {
 
 bool k_activateKeyboard(void) {
 	int i, j;
-	bool prevFlag;
 	bool result;
-
-	prevFlag = k_lockSystem();
-
+	bool interruptFlag;
+	
+	interruptFlag = k_setInterruptFlag(false);
+	
 	// activate keyboard device of Keyboard Controller: send [0xAE:Keyboard Device Enable Command] to Control Register.
 	k_outPortByte(0x64, 0xAE);
 
@@ -73,7 +73,7 @@ bool k_activateKeyboard(void) {
 	// check ACK: wait until ACK is received.
 	result = k_waitAckAndPutOtherScanCode();
 
-	k_unlockSystem(prevFlag);
+	k_setInterruptFlag(interruptFlag);
 
 	return result;
 }
@@ -89,11 +89,11 @@ byte k_getKeyboardScanCode(void) {
 
 bool k_changeKeyboardLed(bool capslockOn, bool numlockOn, bool scrolllockOn) {
 	int i, j;
-	bool prevFlag;
 	bool result;
-
-	prevFlag = k_lockSystem();
-
+	bool interruptFlag;
+	
+	interruptFlag = k_setInterruptFlag(false);
+	
 	for (i = 0; i < 0xFFFF; i++) {
 		if (k_isInputBufferFull() == false) {
 			break;
@@ -113,11 +113,10 @@ bool k_changeKeyboardLed(bool capslockOn, bool numlockOn, bool scrolllockOn) {
 	result = k_waitAckAndPutOtherScanCode();
 
 	if (result == false) {
-		k_unlockSystem(prevFlag);
+		k_setInterruptFlag(interruptFlag);
 		return false;
 	}
-
-
+	
 	// send Keyboard LED Status Change Data: send [CapsLock(bit 2) | NumLock(bit 1) | ScrollLock(bit 0)] to Input Buffer.
 	k_outPortByte(0x60, (capslockOn << 2) | (numlockOn << 1) | (scrolllockOn));
 
@@ -130,7 +129,7 @@ bool k_changeKeyboardLed(bool capslockOn, bool numlockOn, bool scrolllockOn) {
 	// check ACK: wait until ACK is received.
 	result = k_waitAckAndPutOtherScanCode();
 
-	k_unlockSystem(prevFlag);
+	k_setInterruptFlag(interruptFlag);
 
 	return result;
 }
@@ -449,7 +448,10 @@ bool k_convertScanCodeToAsciiCode(byte scanCode, byte* asciiCode, byte* flags) {
 bool k_initKeyboard(void) {
 	// initialize key queue.
 	k_initQueue(&g_keyQueue, g_keyQueueBuffer, KEY_MAXQUEUECOUNT, sizeof(Key));
-
+	
+	// initialize spinlock.
+	k_initSpinlock(&(g_keyboardManager.spinlock));
+	
 	// activate keyboard.
 	return k_activateKeyboard();
 }
@@ -457,19 +459,18 @@ bool k_initKeyboard(void) {
 bool k_convertScanCodeAndPutQueue(byte scanCode) {
 	Key key;
 	bool result = false;
-	bool prevFlag;
 
 	key.scanCode = scanCode;
 
 	// convert scan code to ASCII code.
 	if (k_convertScanCodeToAsciiCode(scanCode, &(key.asciiCode), &(key.flags)) == true) {
 
-		prevFlag = k_lockSystem();
+		k_lockSpin(&(g_keyboardManager.spinlock));
 
 		// put data to key queue.
 		result = k_putQueue(&g_keyQueue, &key);
 
-		k_unlockSystem(prevFlag);
+		k_unlockSpin(&(g_keyboardManager.spinlock));
 
 	}
 
@@ -478,18 +479,17 @@ bool k_convertScanCodeAndPutQueue(byte scanCode) {
 
 bool k_getKeyFromKeyQueue(Key* key) {
 	bool result = false;
-	bool prevFlag;
 
 	if (k_isQueueEmpty(&g_keyQueue) == true) {
 		return false;
 	}
 
-	prevFlag = k_lockSystem();
+	k_lockSpin(&(g_keyboardManager.spinlock));
 
 	// get data from key queue.
 	result = k_getQueue(&g_keyQueue, key);
 
-	k_unlockSystem(prevFlag);
+	k_unlockSpin(&(g_keyboardManager.spinlock));
 
 	return result;
 }

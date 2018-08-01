@@ -72,9 +72,9 @@ bool k_analyzeMpConfigTable(void) {
 	g_mpConfigManager.mpFloatingPointer = mpFloatingPointer;
 	mpConfigTableHeader = (MpConfigTableHeader*)((qword)mpFloatingPointer->mpConfigTableAddr & 0xFFFFFFFF);
 
-	// set PIC mode support flag
+	// set PIC mode flag
 	if (mpFloatingPointer->mpFeatureByte[1] & MP_FLOATINGPOINTER_FEATUREBYTE2_PICMODE) {
-		g_mpConfigManager.usePicMode = true;
+		g_mpConfigManager.picMode = true;
 	}
 
 	// set MP configuration table header, base MP configuration table entry start address.
@@ -162,7 +162,7 @@ void k_printMpConfigTable(void) {
 	k_printf("- MP configuration table header address           : 0x%Q\n", mpConfigManager->mpConfigTableHeader);
 	k_printf("- base MP configuration table entry start address : 0x%Q\n", mpConfigManager->baseEntryStartAddr);
 	k_printf("- processor count                                 : %d\n", mpConfigManager->processorCount);
-	k_printf("- use PIC mode                                    : %s\n", (mpConfigManager->usePicMode == true) ? "true" : "false");
+	k_printf("- PIC mode                                        : %s\n", (mpConfigManager->picMode == true) ? "true" : "false");
 	k_printf("- ISA bus ID                                      : %d\n", mpConfigManager->isaBusId);
 
 	k_printf("Press any key to continue...('q' is quit): ");

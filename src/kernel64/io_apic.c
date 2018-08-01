@@ -3,6 +3,7 @@
 #include "pic.h"
 #include "util.h"
 #include "console.h"
+#include "multiprocessor.h"
 
 static IoApicManager g_ioApicManager;
 
@@ -129,10 +130,11 @@ void k_initIoRedirectionTable(void) {
 			if (ioInterruptAssignEntry->srcBusId == mpManager->isaBusId && ioInterruptAssignEntry->interruptType == MP_INTERRUPTTYPE_INT) {
 				// If it's IRQ 0 (timer), broadcast interrupt to all Local APICs in order to use it to scheduler.
 				// If it's not, send interrupt to BSP APIC.
-				if (ioInterruptAssignEntry->srcBusIrq == 0) {
-					dest = 0xFF; // 0xFF is broadcast.
+				if (ioInterruptAssignEntry->srcBusIrq == IRQ_TIMER) {
+					dest = APICID_BROADCAST; // broadcast
+					
 				} else {
-					dest = 0x00; // 0x00 is BSP APIC ID.
+					dest = APICID_BSP; // BSP APIC ID
 				}
 				
 				/**
@@ -180,5 +182,18 @@ void k_printIrqToIntinMap(void) {
 	for (i = 0; i < IOAPIC_MAXIRQTOINTINMAPCOUNT; i++) {
 		k_printf("- IRQ %d : INTIN %d\n", i, g_ioApicManager.irqToIntinMap[i]);
 	}
+}
+
+void k_routeIrqToApic(int irq, byte apicId) {
+	int i;
+	IoRedirectionTable table;
+	
+	if (irq >= IOAPIC_MAXIRQTOINTINMAPCOUNT) {
+		return;
+	}
+	
+	k_readIoRedirectionTable(g_ioApicManager.irqToIntinMap[irq], &table);
+	table.dest = apicId;
+	k_writeIoRedirectionTable(g_ioApicManager.irqToIntinMap[irq], &table);
 }
 

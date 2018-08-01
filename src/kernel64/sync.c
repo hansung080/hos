@@ -2,7 +2,9 @@
 #include "util.h"
 #include "task.h"
 #include "asm_util.h"
+#include "multiprocessor.h"
 
+#if 0
 bool k_lockSystem(void) {
 	return k_setInterruptFlag(false);
 }
@@ -10,6 +12,7 @@ bool k_lockSystem(void) {
 void k_unlockSystem(bool interruptFlag) {
 	k_setInterruptFlag(interruptFlag);
 }
+#endif
 
 void k_initMutex(Mutex* mutex) {
 	mutex->lockFlag = false;
@@ -18,44 +21,117 @@ void k_initMutex(Mutex* mutex) {
 }
 
 void k_lock(Mutex* mutex) {
-
-	// If it's already locked and it's locked by itself (current running task), increase lock count and return.
+	// If it's already locked, process below.
 	if (k_testAndSet(&(mutex->lockFlag), false, true) == false) {
-		// If it's locked by itself, increase lock count and return.
+		// If it's locked by itself (current task), increase lock count and return.
 		if (mutex->taskId == k_getRunningTask()->link.id) {
 			mutex->lockCount++;
 			return;
 		}
-
+		
 		// If it's locked by other tasks, wait until it will be unlocked.
 		while (k_testAndSet(&(mutex->lockFlag), false, true) == false) {
 			// hand processor over to other tasks while waiting in order to prevent unnecessary usage of processor.
 			k_schedule();
 		}
 	}
-
+	
 	// If it's unlocked, lock it.
-	// set <mutex->lockFlag = true> in k_testAndSet function using atomic operation.
+	// already set <mutex->lockFlag = true> in k_testAndSet using atomic operation.
 	mutex->lockCount = 1;
 	mutex->taskId = k_getRunningTask()->link.id;
 }
 
 void k_unlock(Mutex* mutex) {
-
 	// If it's already unlocked or it's locked by other tasks, return.
 	if ((mutex->lockFlag == false) || (mutex->taskId != k_getRunningTask()->link.id)) {
 		return;
 	}
-
+	
 	// If it's locked more than twice, decrease lock count and return.
 	if (mutex->lockCount > 1) {
 		mutex->lockCount--;
 		return;
 	}
-
+	
 	// If it's locked once, unlock it.
 	// Setting lock flag to false must be done at the last.
 	mutex->taskId = TASK_INVALIDID;
 	mutex->lockCount = 0;
 	mutex->lockFlag = false;
 }
+
+void k_initSpinlock(Spinlock* spinlock) {
+	spinlock->lockFlag = false;
+	spinlock->lockCount = 0;
+	spinlock->apicId = APICID_INVALID;
+	spinlock->interruptFlag = false;
+}
+
+void k_lockSpin(Spinlock* spinlock) {
+	bool interruptFlag;
+	
+	// disable interrupt
+	interruptFlag = k_setInterruptFlag(false);
+	
+	// If it's already locked, process below.
+	if (k_testAndSet(&(spinlock->lockFlag), false, true) == false) {
+		// If it's locked by itself (current core), increase lock count and return.
+		if (spinlock->apicId == k_getApicId()) {
+			spinlock->lockCount++;
+			return;
+		}
+		
+		// If it's locked by other tasks, wait until it will be unlocked.
+		while (k_testAndSet(&(spinlock->lockFlag), false, true) == false) {
+			/**
+			  Spinlock do not do task switching here, but do retrying to get lock.
+			  That's because spinlock can be used in interrupt handler,
+			  and interrupt handler have to be processed quickly.
+			*/
+			
+			// loop here to prevent memory bus from being locked by repeating k_testAndSet.
+			while (spinlock->lockFlag == true) {
+				k_pause();
+			}
+		}
+	}
+	
+	// If it's unlocked, lock it.
+	// already set <spinlock->lockFlag = true> in k_testAndSet using atomic operation.
+	spinlock->lockCount = 1;
+	spinlock->apicId = k_getApicId();
+	spinlock->interruptFlag = interruptFlag;
+}
+
+void k_unlockSpin(Spinlock* spinlock) {
+	bool interruptFlag;
+	
+	// disable interrupt
+	interruptFlag = k_setInterruptFlag(false);
+	
+	// If it's already unlocked or it's locked by other cores, return.
+	if ((spinlock->lockFlag == false) || (spinlock->apicId != k_getApicId())) {
+		k_setInterruptFlag(interruptFlag);
+		return;
+	}
+	
+	// If it's locked more than twice, decrease lock count and return.
+	if (spinlock->lockCount > 1) {
+		spinlock->lockCount--;
+		return;
+	}
+	
+	// If it's locked once, unlock it.
+	// back up interrupt flag before setting lock flag to false.
+	interruptFlag = spinlock->interruptFlag;
+	
+	// Setting lock flag to false must be done at the last.
+	spinlock->apicId = APICID_INVALID;
+	spinlock->lockCount = 0;
+	spinlock->interruptFlag = false;
+	spinlock->lockFlag = false;
+	
+	k_setInterruptFlag(interruptFlag);
+}
+

@@ -7,7 +7,7 @@ global k_loadGdt, k_loadTss, k_loadIdt
 global k_enableInterrupt, k_disableInterrupt, k_readRflags
 global k_readTsc
 global k_switchContext
-global k_halt
+global k_halt, k_pause
 global k_testAndSet
 global k_initFpu, k_saveFpuContext, k_loadFpuContext, k_setTs, k_clearTs
 global k_enableGlobalLocalApic
@@ -117,13 +117,13 @@ k_loadIdt:
 ; param  : void
 ; return : void
 k_enableInterrupt:
-	sti ; start interrupt.
+	sti ; start interrupt only in the current core.
 	ret
 
 ; param  : void
 ; return : void
 k_disableInterrupt:
-	cli ; close interrupt.
+	cli ; close interrupt only in the current core.
 	ret
 
 ; param  : void
@@ -257,9 +257,16 @@ k_switchContext:
 ; param  : void
 ; return : void
 k_halt:
-	; make processor halted.
+	; halt processor.
 	hlt
 	hlt
+	ret
+
+; param  : void
+; return : void
+k_pause:
+	; pause processor.
+	pause
 	ret
 
 ; param  : volatile byte* dest(RDI), byte cmp(RSI), byte src(RDX)

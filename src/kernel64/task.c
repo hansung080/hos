@@ -74,15 +74,14 @@ Tcb* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAdd
 	Tcb* task;    // task to create (task means process or thread)
 	Tcb* process; // process with current task in it (It means process which has created the task, or it means parent process.)
 	void* stackAddr;
-	bool prevFlag;
 
-	prevFlag = k_lockSystem();
+	k_lockSpin(&(g_scheduler.spinlock));
 
 	// allocate task.
 	task = k_allocTcb();
 
 	if (task == null) {
-		k_unlockSystem(prevFlag);
+		k_unlockSpin(&(g_scheduler.spinlock));
 		return null;
 	}
 
@@ -91,7 +90,7 @@ Tcb* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAdd
 
 	if (process == null) {
 		k_freeTcb(task->link.id);
-		k_unlockSystem(prevFlag);
+		k_unlockSpin(&(g_scheduler.spinlock));
 		return null;
 	}
 
@@ -140,7 +139,7 @@ Tcb* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAdd
 	// set thread ID equaled to task ID.
 	task->threadLink.id = task->link.id;
 
-	k_unlockSystem(prevFlag);
+	k_unlockSpin(&(g_scheduler.spinlock));
 
 	// set stack address of task. (use TCB ID offset as stack pool offset.)
 	stackAddr = (void*)(TASK_STACKPOOLADDRESS + (TASK_STACKSIZE * GETTCBOFFSET(task->link.id)));
@@ -154,12 +153,12 @@ Tcb* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAdd
 	// initialize FPU used flag.
 	task->fpuUsed = false;
 
-	prevFlag = k_lockSystem();
+	k_lockSpin(&(g_scheduler.spinlock));
 
 	// add task to ready list in order to make it scheduled.
 	k_addTaskToReadyList(task);
 
-	k_unlockSystem(prevFlag);
+	k_unlockSpin(&(g_scheduler.spinlock));
 
 	return task;
 }
@@ -230,27 +229,27 @@ void k_initScheduler(void) {
 
 	// initialize last FPU-used task ID.
 	g_scheduler.lastFpuUsedTaskId = TASK_INVALIDID;
+	
+	// initialize spinlock.
+	k_initSpinlock(&(g_scheduler.spinlock));
 }
 
 void k_setRunningTask(Tcb* task) {
-	bool prevFlag;
-
-	prevFlag = k_lockSystem();
+	k_lockSpin(&(g_scheduler.spinlock));
 
 	g_scheduler.runningTask = task;
 
-	k_unlockSystem(prevFlag);
+	k_unlockSpin(&(g_scheduler.spinlock));
 }
 
 Tcb* k_getRunningTask(void) {
 	Tcb* runningTask;
-	bool prevFlag;
 
-	prevFlag = k_lockSystem();
+	k_lockSpin(&(g_scheduler.spinlock));
 
 	runningTask = g_scheduler.runningTask;
 
-	k_unlockSystem(prevFlag);
+	k_unlockSpin(&(g_scheduler.spinlock));
 
 	return runningTask;
 }
@@ -329,13 +328,12 @@ static Tcb* k_removeTaskFromReadyList(qword taskId) {
 
 bool k_changePriority(qword taskId, byte priority) {
 	Tcb* target;
-	bool prevFlag;
 
 	if (priority >= TASK_MAXREADYLISTCOUNT) {
 		return false;
 	}
 
-	prevFlag = k_lockSystem();
+	k_lockSpin(&(g_scheduler.spinlock));
 
 	target = g_scheduler.runningTask;
 
@@ -361,31 +359,84 @@ bool k_changePriority(qword taskId, byte priority) {
 		}
 	}
 
-	k_unlockSystem(prevFlag);
+	k_unlockSpin(&(g_scheduler.spinlock));
 
 	return true;
 }
 
+/**
+  < Context Switching >
+  [Ref] - interrupt switching: context switching between task and interrupt handler.
+        - task switching: context switching between task and task.
+  
+  1. interrupt switching: It occurs when interrupts occur.
+  
+     registers  processor/ISR   IST
+     -----         --->        -----
+     | A |                     | A |
+     -----         <---        -----
+     
+     - process task A.
+     - save task A context from registers to IST by processor and ISR.
+     - process interrupt handler.
+     - restore task A context from IST to registers by processor and ISR.
+     - process task A.
+     
+  2. task switching: It occurs when task requests such as waiting, sleeping, and etc.
+  
+     registers    k_schedule   TCB pool
+     ----------     --->       -------
+     | A -> B |                | ... |
+     ----------     <---       |  A  |
+                               |  B  |
+                               | ... |
+                               -------
+     - process task A.
+     - save task A context from registers to TCB pool by k_schedule.
+     - restore task B context from TCB pool to registers by k_schedule.
+     - process task B.
+  
+  3. interrupt switching and task switching: It occurs when timer interrupt occurs.
+  
+     registers    processor/ISR     IST      k_scheduleInInterrupt   TCB pool
+     ----------      --->       ----------          --->             -------
+     | A -> B |                 | A -> B |                           | ... |
+     ----------      <---       ----------          <---             |  A  |
+                                                                     |  B  |
+                                                                     | ... |
+                                                                     -------
+     - process task A.
+     - save task A context from registers to IST by processor and ISR.
+     - process timer interrupt handler.
+     - save task A context from IST to TCB pool by k_scheduleInInterrupt.
+     - restore task B context from TCB pool to IST by k_scheduleInInterrupt.
+     - restore task B context from IST to registers by processor and ISR.
+     - process task B.
+*/
+
 void k_schedule(void) {
 	Tcb* runningTask, * nextTask;
-	bool prevFlag;
-
+	bool interruptFlag;
+	
 	if (k_getReadyTaskCount() < 1) {
 		return;
 	}
-
-	prevFlag = k_lockSystem();
+	
+	// disable interrupt in order to prevent task switching while processing task switching.
+	interruptFlag = k_setInterruptFlag(false);
+	k_lockSpin(&(g_scheduler.spinlock));
 
 	nextTask = k_getNextTaskToRun();
 	if (nextTask == null) {
-		k_unlockSystem(prevFlag);
+		k_unlockSpin(&(g_scheduler.spinlock));
+		k_setInterruptFlag(interruptFlag);
 		return;
 	}
 
 	/**
       < Task Switching in Task >
-      - save context: registers -> context memory of running task (processed by k_switchContext function)
-      - restore context: context memory of next context -> registers (processed by k_switchContext function)
+      - save context: registers -> context memory of running task (processed by k_switchContext)
+      - restore context: context memory of next context -> registers (processed by k_switchContext)
 	 */
 
 	runningTask = g_scheduler.runningTask;
@@ -403,42 +454,43 @@ void k_schedule(void) {
 	} else {
 		k_clearTs();
 	}
-
+	
 	// If it's switched from end task, move end task to wait list, switch task.
 	if ((runningTask->flags & TASK_FLAGS_ENDTASK) == TASK_FLAGS_ENDTASK) {
 		k_addListToTail(&(g_scheduler.waitList), runningTask);
+		k_unlockSpin(&(g_scheduler.spinlock));
 		k_switchContext(null, &(nextTask->context));
 
 	// If it's switched from normal task, move normal task to ready list, switch task.
 	} else {
 		k_addTaskToReadyList(runningTask);
+		k_unlockSpin(&(g_scheduler.spinlock));
 		k_switchContext(&(runningTask->context), &(nextTask->context));
 	}
-
+	
 	// update process time.
 	g_scheduler.processorTime = TASK_PROCESSORTIME;
-
-	k_unlockSystem(prevFlag);
+	
+	k_setInterruptFlag(interruptFlag);
 }
 
 bool k_scheduleInInterrupt(void) {
 	Tcb* runningTask, * nextTask;
 	char* contextAddr;
-	bool prevFlag;
 
-	prevFlag = k_lockSystem();
+	k_lockSpin(&(g_scheduler.spinlock));
 
 	nextTask = k_getNextTaskToRun();
 	if (nextTask == null) {
-		k_unlockSystem(prevFlag);
+		k_unlockSpin(&(g_scheduler.spinlock));
 		return false;
 	}
 
 	/**
-	  < Task Switching in Interrupt >
+	  < Task Switching in Interrupt Handler >
 	  - save context: registers -> context memory of IST (processed by processor and ISR)
-	                  context memory of IST -> context memory of running task (processed by k_memcpy function)
-	  - restore context: context memory of next task -> context memory of IST (processed by k_memcpy function)
+	                  context memory of IST -> context memory of running task (processed by k_memcpy)
+	  - restore context: context memory of next task -> context memory of IST (processed by k_memcpy)
 	                     context memory of IST -> registers (processed by processor and ISR)
 	 */
 
@@ -461,7 +513,7 @@ bool k_scheduleInInterrupt(void) {
 		k_addTaskToReadyList(runningTask);
 	}
 
-	k_unlockSystem(prevFlag);
+	k_unlockSpin(&(g_scheduler.spinlock));
 
 	// If next task is not last FPU-used task, set CR0.TS=1.
 	if (g_scheduler.lastFpuUsedTaskId != nextTask->link.id) {
@@ -496,9 +548,8 @@ bool k_isProcessorTimeExpired(void) {
 bool k_endTask(qword taskId) {
 	Tcb* target;
 	byte priority;
-	bool prevFlag;
 
-	prevFlag = k_lockSystem();
+	k_lockSpin(&(g_scheduler.spinlock));
 
 	target = g_scheduler.runningTask;
 
@@ -507,7 +558,7 @@ bool k_endTask(qword taskId) {
 		target->flags |= TASK_FLAGS_ENDTASK;
 		SETPRIORITY(target->flags, TASK_FLAGS_WAIT);
 
-		k_unlockSystem(prevFlag);
+		k_unlockSpin(&(g_scheduler.spinlock));
 
 		// switch task
 		k_schedule();
@@ -526,7 +577,7 @@ bool k_endTask(qword taskId) {
 				SETPRIORITY(target->flags, TASK_FLAGS_WAIT);
 			}
 
-			k_unlockSystem(prevFlag);
+			k_unlockSpin(&(g_scheduler.spinlock));
 
 			return true;
 		}
@@ -536,7 +587,7 @@ bool k_endTask(qword taskId) {
 		k_addListToTail(&(g_scheduler.waitList), target);
 	}
 
-	k_unlockSystem(prevFlag);
+	k_unlockSpin(&(g_scheduler.spinlock));
 
 	return true;
 }
@@ -548,31 +599,29 @@ void k_exitTask(void) {
 int k_getReadyTaskCount(void) {
 	int totalCount = 0;
 	int i;
-	bool prevFlag;
 
-	prevFlag = k_lockSystem();
+	k_lockSpin(&(g_scheduler.spinlock));
 
 	for (i = 0; i < TASK_MAXREADYLISTCOUNT; i++) {
 		totalCount += k_getListCount(&(g_scheduler.readyLists[i]));
 	}
 
-	k_unlockSystem(prevFlag);
+	k_unlockSpin(&(g_scheduler.spinlock));
 
 	return totalCount;
 }
 
 int k_getTaskCount(void) {
 	int totalCount;
-	bool prevFlag;
 
 	// total task count = ready task count + end-waiting task count + current running task count
 	totalCount = k_getReadyTaskCount();
 
-	prevFlag = k_lockSystem();
+	k_lockSpin(&(g_scheduler.spinlock));
 
 	totalCount += k_getListCount(&(g_scheduler.waitList)) + 1;
 
-	k_unlockSystem(prevFlag);
+	k_unlockSpin(&(g_scheduler.spinlock));
 
 	return totalCount;
 }
@@ -622,7 +671,6 @@ void k_idleTask(void) {
 	Tcb* task, * childThread, * process;
 	qword lastMeasureTickCount, lastSpendTickInIdleTask;
 	qword currentMeasureTickCount, currentSpendTickInIdleTask;
-	bool prevFlag;
 	int i, count;
 	qword taskId;
 	void* threadLink;
@@ -665,13 +713,12 @@ void k_idleTask(void) {
 		// If end task exists in wait list, remove end task from wait list, free memory of end task.
 		if (k_getListCount(&(g_scheduler.waitList)) > 0) {
 			while (true) {
-				
-				prevFlag = k_lockSystem();
+				k_lockSpin(&(g_scheduler.spinlock));
 				
 				// remove end task from wait list.
 				task = k_removeListFromHead(&(g_scheduler.waitList));
 				if (task == null) {
-					k_unlockSystem(prevFlag);
+					k_unlockSpin(&(g_scheduler.spinlock));
 					break;
 				}
 				
@@ -707,7 +754,7 @@ void k_idleTask(void) {
 					if (k_getListCount(&(task->childThreadList)) > 0) {
 						k_addListToTail(&(g_scheduler.waitList), task);
 						
-						k_unlockSystem(prevFlag);
+						k_unlockSpin(&(g_scheduler.spinlock));
 						continue;
 						
 					// If all child threads are totally ended, end process itself totally.
@@ -731,7 +778,7 @@ void k_idleTask(void) {
 				taskId = task->link.id;
 				k_freeTcb(taskId);
 				
-				k_unlockSystem(prevFlag);
+				k_unlockSpin(&(g_scheduler.spinlock));
 				
 				//k_printf("IDLE: Task (0x%q) has completely ended.\n", taskId);
 			}

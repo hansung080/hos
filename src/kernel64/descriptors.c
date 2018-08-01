@@ -72,15 +72,23 @@ void k_initIdt(void) {
 	Idtr* idtr;
 	IdtEntry* entry;
 	int i;
-
+	
 	// create IDTR.
 	idtr = (Idtr*)IDTR_STARTADDRESS;
 	entry = (IdtEntry*)(IDTR_STARTADDRESS + sizeof(Idtr));
 	idtr->limit = IDT_TABLESIZE - 1;
 	idtr->baseAddr = (qword)entry;
-
-	// create IDT (100 IDT gate descriptors): put ISR to 0~99 vectors of IDT.
-	// Exception Handling ISR(21): #0 ~ #19, #20 ~ #31
+	
+	/**
+	  < IDT >
+	  - vector 0 ~ 31    : exception handlers
+	  - vector 32 ~ 47   : interrupt handlers (interrupt from ISA bus)
+	  - vector 48 ~ 99   : interrupt hanlders (etc interrupt)
+	  - vector 100 ~ 255 : HansOS do not use
+	*/
+	
+	// create IDT (100 IDT gate descriptors): put ISR to 0 ~ 99 vectors of IDT.
+	// Exception Handling ISR (21): #0 ~ #19, #20 ~ #31
 	k_setIdtEntry(&(entry[0]),  k_isrDivideError,               GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 	k_setIdtEntry(&(entry[1]),  k_isrDebug,                     GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 	k_setIdtEntry(&(entry[2]),  k_isrNmi,                       GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
@@ -104,16 +112,16 @@ void k_initIdt(void) {
 	for (i = 20; i < 32; i++) {
 		k_setIdtEntry(&(entry[i]), k_isrEtcException,           GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 	}
-
-	// Interrupt Handling ISR(17): #32 ~ #47, #48 ~ #99
+	
+	// Interrupt Handling ISR (17): #32 ~ #47, #48 ~ #99
 	k_setIdtEntry(&(entry[32]), k_isrTimer,                     GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 	k_setIdtEntry(&(entry[33]), k_isrKeyboard,                  GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 	k_setIdtEntry(&(entry[34]), k_isrSlavePic,                  GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[35]), k_isrSerial2,                   GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[36]), k_isrSerial1,                   GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[37]), k_isrParallel2,                 GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[38]), k_isrFloppy,                    GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[39]), k_isrParallel1,                 GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[35]), k_isrSerialPort2,               GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[36]), k_isrSerialPort1,               GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[37]), k_isrParallelPort2,             GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[38]), k_isrFloppyDisk,                GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[39]), k_isrParallelPort1,             GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 	k_setIdtEntry(&(entry[40]), k_isrRtc,                       GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 	k_setIdtEntry(&(entry[41]), k_isrReserved,                  GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 	k_setIdtEntry(&(entry[42]), k_isrNotUsed1,                  GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);

@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "list.h"
+#include "sync.h"
 
 // count and size of context registers
 #define TASK_REGISTERCOUNT 24 // 24 = 5 (SS, RSP, RFLAGS, CS, RIP) + 19 (registers saved in ISR)
@@ -121,6 +122,7 @@ typedef struct k_TcbPoolManager {
 } TcbPoolManager;
 
 typedef struct k_Scheduler {
+	Spinlock spinlock;                         // spinlock
 	Tcb* runningTask;                          // current running task
 	int processorTime;                         // process time for current running task to use
 	List readyLists[TASK_MAXREADYLISTCOUNT];   // ready lists: Tasks which are waiting to run, are in the lists identified by task priority.
@@ -147,7 +149,7 @@ Tcb* k_getRunningTask(void);
 static Tcb* k_getNextTaskToRun(void); // get next running task from ready list.
 static bool k_addTaskToReadyList(Tcb* task); // add task to ready list.
 void k_schedule(void); // task switching in task.
-bool k_scheduleInInterrupt(void); // task switching in interrupt.
+bool k_scheduleInInterrupt(void); // task switching in interrupt handler.
 void k_decreaseProcessorTime(void);
 bool k_isProcessorTimeExpired(void);
 static Tcb* k_removeTaskFromReadyList(qword taskId); // remove task from ready list.

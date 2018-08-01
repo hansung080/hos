@@ -82,5 +82,7 @@ static void k_showMpConfigTable(const char* paramBuffer);
 static void k_startAp(const char* paramBuffer);
 static void k_startSymmetricIoMode(const char* paramBuffer);
 static void k_showIrqToIntinMap(const char* paramBuffer);
+static void k_showInterruptCounts(const char* paramBuffer);
+static void k_startInterruptLoadBalancing(const char* paramBuffer);
 
 #endif // __SHELL_H__
