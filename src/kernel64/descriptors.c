@@ -7,7 +7,7 @@ void k_initGdtAndTss(void) {
 	GdtEntry8* entry;
 	Tss* tss;
 	int i;
-
+	
 	// create GDTR.
 	gdtr = (Gdtr*)GDTR_STARTADDRESS;
 	entry = (GdtEntry8*)(GDTR_STARTADDRESS + sizeof(Gdtr));
@@ -15,10 +15,10 @@ void k_initGdtAndTss(void) {
 	gdtr->baseAddr = (qword)entry;
 	gdtr->padding1 = 0;
 	gdtr->padding2 = 0;
-
+	
 	// set TSS address.
 	tss = (Tss*)((qword)entry + GDT_TABLESIZE);
-
+	
 	// create GDT (null/code/data/TSS segment descriptor).
 	k_setGdtEntry8(&(entry[0]), 0, 0, 0, 0, 0);
 	k_setGdtEntry8(&(entry[1]), 0x00000000, 0xFFFFF, GDT_FLAGS_UPPER_CODE, GDT_FLAGS_LOWER_KERNELCODE, GDT_TYPE_CODE);
@@ -26,7 +26,7 @@ void k_initGdtAndTss(void) {
 	for (i = 0; i < MAXPROCESSORCOUNT; i++) { // create TSS segment descriptors as many as max processor count.
 		k_setGdtEntry16((GdtEntry16*)&(entry[GDT_MAXENTRY8COUNT + (i * 2)]), (qword)tss + (i * sizeof(Tss)), sizeof(Tss) - 1, GDT_FLAGS_UPPER_TSS, GDT_FLAGS_LOWER_TSS, GDT_TYPE_TSS);
 	}
-
+	
 	// create TSS.
 	k_initTss(tss);
 }
@@ -53,17 +53,17 @@ void k_setGdtEntry16(GdtEntry16* entry, qword baseAddr, dword limit, byte upperF
 
 void k_initTss(Tss* tss) {
 	int i;
-
+	
 	// create TSS segments as many as max processor count.
 	for (i = 0; i < MAXPROCESSORCOUNT; i++) {
 		k_memset(tss, 0, sizeof(Tss));
-
+		
 		// allocate from the end of IST. (IST must be aligned with 16 bytes.)
 		tss->ist[0] = IST_STARTADDRESS + IST_SIZE - (IST_SIZE / MAXPROCESSORCOUNT * i);
-
+		
 		// set IO map base address more than Limit field of TSS segment descriptor, in order not to use IO map.
 		tss->ioMapBaseAddr = 0xFFFF;
-
+		
 		tss++;
 	}
 }

@@ -19,17 +19,17 @@ void k_initPit(word count, bool periodic) {
 word k_readCounter0(void) {
 	byte highByte, lowByte;
 	word temp = 0;
-
+	
 	// send Latch Command to Control Register in order to read current value of Counter-0.
 	k_outPortByte(PIT_PORT_CONTROL, PIT_COUNTER0_LATCH);
-
+	
 	// read current value from Counter-0 ordered by LSB to MSB.
 	lowByte = k_inPortByte(PIT_PORT_COUNTER0);
 	highByte = k_inPortByte(PIT_PORT_COUNTER0);
-
+	
 	temp = highByte;
 	temp = (temp << 8) | lowByte;
-
+	
 	return temp;
 }
 
@@ -42,10 +42,10 @@ word k_readCounter0(void) {
 void k_waitUsingDirectPit(word count) {
 	word lastCounter0;
 	word currentCounter0;
-
+	
 	// set PIT Controller in oder to repeat counting from 0 to 0xFFFF.
 	k_initPit(0, true);
-
+	
 	// wait until it exceeds count.
 	lastCounter0 = k_readCounter0();
 	while (true) {

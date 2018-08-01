@@ -84,14 +84,14 @@ typedef struct k_Tcb {
 	// Task Info Fields
 	//--------------------------------------------------
 	ListLink link;           // scheduler link: It consists of next task position (link.next) and task ID (link.id).
-	                         //               : task ID consists of TCB allocation count (high 32 bits) and TCB offset (low 32 bits).
-	                         //               : [Note] ListLink must be positioned at the first of the structure.
+	                         //                 task ID consists of TCB allocation count (high 32 bits) and TCB offset (low 32 bits).
+	                         //                 [Note] ListLink must be positioned at the first of the structure.
 	qword flags;             // task flag: bit 63 is end task flag.
-                             //          : bit 62 is system task flag.
-	                         //          : bit 61 is processor flag.
-	                         //          : bit 60 is thread flag.
-	                         //          : bit 59 is idle task flag.
-	                         //          : bit 7~0 is task priority.
+                             //            bit 62 is system task flag.
+	                         //            bit 61 is processor flag.
+	                         //            bit 60 is thread flag.
+	                         //            bit 59 is idle task flag.
+	                         //            bit 7~0 is task priority.
 	void* memAddr;           // start address of process memory area (code, data area)
 	qword memSize;           // size of process memory area (code, data area)
 	//--------------------------------------------------

@@ -7,13 +7,13 @@ START:
 	mov ax, 0x1000 ; entry point memory address of kernel32 (0x10000)
 	mov ds, ax
 	mov es, ax
-
+	
 	; compare BSP flag
 	mov ax, 0x0000
 	mov es, ax
 	cmp byte [es:0x7C09], 0x00 ; If BSP flag == [0:AP], move to AP start point.
 	je .AP_STARTPOINT
-
+	
 	; enable A20 gate
 	mov ax, 0x2401        ; function number (0x2401: enable A20 gate)
 	int 0x15              ; interrupt vector table index (0x15: BIOS Service->System Service)
@@ -45,11 +45,11 @@ PROTECTED_MODE:
 	mov ss, ax
 	mov esp, 0xFFFE
 	mov ebp, 0xFFFE
-
+	
 	; compare BSP flag
 	cmp byte [es:0x7C09], 0x00 ; If BSP flag == [0:AP], move to AP start point.
 	je .AP_STARTPOINT
-
+	
 	push (SWITCH_SUCCESS_MESSAGE - $$ + 0x10000)
 	push 4
 	push 0
@@ -67,17 +67,17 @@ PRINT_MESSAGE:
 	push eax
 	push ecx
 	push edx
-
+	
 	mov eax, dword [ebp + 12]
 	mov esi, 160
 	mul esi
 	mov edi, eax
-
+	
 	mov eax, dword [ebp + 8]
 	mov esi, 2
 	mul esi
 	add edi, eax
-
+	
 	mov esi, dword [ebp + 16]
 
 .MESSAGE_LOOP:
@@ -114,7 +114,7 @@ GDT:
 		db 0x00
 		db 0x00
 		db 0x00
-
+	
 	IA32E_CODE_DESCRIPTOR: ; kernel64 code segment descriptor (8 bytes)
 		dw 0xFFFF    ; Limit=0xFFFF
 		dw 0x0000    ; BaseAddress=0x0000
@@ -122,7 +122,7 @@ GDT:
 		db 0x9A      ; P=1, DPL=00, S=1, Type=0xA:CodeSegment (Execute/Read)
 		db 0xAF      ; G=1, D/B=0, L=1, AVL=0, Limit=0xF
 		db 0x00      ; BaseAddress=0x00
-
+	
 	IA32E_DATA_DESCRIPTOR: ; kernel64 data segment descriptor (8 bytes)
 		dw 0xFFFF    ; Limit=0xFFFF
 		dw 0x0000    ; BaseAddress=0x0000
@@ -130,7 +130,7 @@ GDT:
 		db 0x92      ; P=1, DPL=00, S=1, Type=0x2:DataSegment (Read/Write)
 		db 0xAF      ; G=1, D/B=0, L=1, AVL=0, Limit=0xF
 		db 0x00      ; BaseAddress=0x00
-
+	
 	PROTECT_CODE_DESCRIPTOR: ; kernel32 code segment descriptor (8 bytes)
 		dw 0xFFFF    ; Limit=0xFFFF
 		dw 0x0000    ; BaseAddress=0x0000
@@ -138,7 +138,7 @@ GDT:
 		db 0x9A      ; P=1, DPL=00, S=1, Type=0xA:CodeSegment (Execute/Read)
 		db 0xCF      ; G=1, D/B=1, L=0, AVL=0, Limit=0xF
 		db 0x00      ; BaseAddress=0x00
-
+	
 	PROTECT_DATA_DESCRIPTOR: ; kernel32 data segment descriptor (8 bytes)
 		dw 0xFFFF    ; Limit=0xFFFF
 		dw 0x0000    ; BaseAddress=0x0000
@@ -146,7 +146,7 @@ GDT:
 		db 0x92      ; P=1, DPL=00, S=1, Type=0x2:DataSegment (Read/Write)
 		db 0xCF      ; G=1, D/B=1, L=0, AVL=0, Limit=0xF
 		db 0x00      ; BaseAddress=0x00
-
+	
 GDT_END:
 
 SWITCH_SUCCESS_MESSAGE: db '- switch to protected mode...................pass', 0

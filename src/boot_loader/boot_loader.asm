@@ -14,14 +14,14 @@ START:
 	mov ds, ax
 	mov ax, 0xB800 ; video memory address (0xB8000)
 	mov es, ax
-
+	
 	mov ax, 0x0000
 	mov ss, ax
 	mov sp, 0xFFFE
 	mov bp, 0xFFFE
-
+	
 	mov byte [BOOT_DRIVE], dl
-
+	
 	mov si, 0
 
 .SCREEN_CLEAR_LOOP:
@@ -30,13 +30,13 @@ START:
 	add si, 2
 	cmp si, 80*25*2
 	jl .SCREEN_CLEAR_LOOP
-
+	
 	push MESSAGE1
 	push 0
 	push 0
 	call PRINT_MESSAGE
 	add sp, 6
-
+	
 	push IMAGE_LOADING_MESSAGE
 	push 1
 	push 0
@@ -48,7 +48,7 @@ RESET_DISK:
 	mov dl, byte [BOOT_DRIVE] ; drive number
 	int 0x13                  ; interrupt vector table index (0x13: BIOS Service->Disk I/O Service)
 	jc HANDLE_DISK_ERROR      ; exception handling
-
+	
 	mov ah, 0x08               ; function number (0x08: read disk parameters)
 	mov dl, byte [BOOT_DRIVE]  ; drive number
 	int 0x13                   ; interrunt vector table index (0x13: BIOS Service->Disk I/O Service)
@@ -58,7 +58,7 @@ RESET_DISK:
 	and al, 0x3f               ; -
 	mov byte [LAST_SECTOR], al ; last sector number (CL low 6 bits)
 	mov byte [LAST_TRACK], ch  ; last track number (CH 8 bits + CL high 2 bits)
-
+	
 	mov si, 0x1000             ; memory address for the read sectors (ES:BX, 0x10000)
 	mov es, si
 	mov bx, 0x0000
@@ -68,7 +68,7 @@ READ_DATA:
 	cmp di, 0
 	je READ_END
 	sub di, 1
-
+	
 	mov ah, 0x02                 ; function number (0x02: read sectors)
 	mov al, 0x01                 ; read sector count
 	mov ch, byte [TRACK_NUMBER]  ; read track number
@@ -77,16 +77,16 @@ READ_DATA:
 	mov dl, byte [BOOT_DRIVE]    ; drive number
 	int 0x13                     ; interrupt vector table index (0x13: BIOS Service->Disk I/O Service)
 	jc HANDLE_DISK_ERROR         ; exception handling
-
+	
 	add si, 0x0020
 	mov es, si
-
+	
 	mov al, byte [SECTOR_NUMBER]
 	add al, 1
 	mov byte [SECTOR_NUMBER], al
 	cmp al, byte [LAST_SECTOR]
 	jbe READ_DATA
-
+	
 	add byte [HEAD_NUMBER], 1
 	mov byte [SECTOR_NUMBER], 0x01
 	mov al, byte [LAST_HEAD]
@@ -105,7 +105,7 @@ READ_END:
 	push 20
 	call PRINT_MESSAGE
 	add sp, 6
-
+	
 	jmp 0x1000:0x0000 ; set <0x1000> to CS segment register, and move to the address <0x10000>.
 
 HANDLE_DISK_ERROR:
@@ -114,7 +114,7 @@ HANDLE_DISK_ERROR:
 	push 20
 	call PRINT_MESSAGE
 	add sp, 6
-
+	
 	jmp $
 
 PRINT_MESSAGE:
@@ -126,20 +126,20 @@ PRINT_MESSAGE:
 	push ax
 	push cx
 	push dx
-
+	
 	mov ax, 0xB800
 	mov es, ax
-
+	
 	mov ax, word [bp+6]
 	mov si, 160
 	mul si
 	mov di, ax
-
+	
 	mov ax, word [bp+4]
 	mov si, 2
 	mul si
 	add di, ax
-
+	
 	mov si, word [bp+8]
 
 .MESSAGE_LOOP:

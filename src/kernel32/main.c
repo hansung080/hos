@@ -99,9 +99,9 @@ void k_main(void) {
 void k_printStr(int x, int y, const char* str) {
 	Char* screen = (Char*)0xB8000;
 	int i;
-
+	
 	screen += (y*80) + x;
-
+	
 	for (i = 0; str[i] != null; i++) {
 		screen[i].char_ = str[i];
 	}
@@ -109,33 +109,33 @@ void k_printStr(int x, int y, const char* str) {
 
 bool k_isMemEnough(void) {
 	dword* currentAddr = (dword*)0x100000; // 1 MB
-
+	
 	while ((dword)currentAddr < 0x4000000) { // 64 MB
 		*currentAddr = 0x12345678;
-
+		
 		if (*currentAddr != 0x12345678) {
 			return false;
 		}
-
+		
 		currentAddr += (0x100000 / 4); // increase by 1 MB.
 	}
-
+	
 	return true;
 }
 
 bool k_initKernel64Area(void) {
 	dword* currentAddr = (dword*)0x100000; // 1 MB
-
+	
 	while ((dword)currentAddr < 0x600000) { // 6 MB
 		*currentAddr = 0x00;
-
+		
 		if (*currentAddr != 0x00) {
 			return false;
 		}
-
+		
 		currentAddr++;
 	}
-
+	
 	return true;
 }
 
@@ -143,13 +143,13 @@ void k_copyKernel64To2MB(void) {
 	word totalSectorCount, kernel32SectorCount;
 	dword* srcAddr, * destAddr;
 	int i;
-
+	
 	totalSectorCount = *((word*)0x7C05);
 	kernel32SectorCount = *((word*)0x7C07);
-
+	
 	srcAddr = (dword*)(0x10000 + (kernel32SectorCount * 512));
 	destAddr = (dword*)0x200000;
-
+	
 	for (int i = 0; i < (((totalSectorCount - kernel32SectorCount) * 512) / 4); i++) {
 		*destAddr = *srcAddr;
 		destAddr++;

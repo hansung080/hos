@@ -59,64 +59,64 @@ bool k_analyzeMpConfigTable(void) {
 	qword baseEntryAddr;
 	ProcessorEntry* processorEntry;
 	BusEntry* busEntry;
-
+	
 	k_memset(&g_mpConfigManager, 0, sizeof(MpConfigManager));
 	g_mpConfigManager.isaBusId = 0xFF;
-
+	
 	if (k_findMpFloatingPointerAddr(&mpFloatingPointerAddr) == false) {
 		return false;
 	}
-
+	
 	// set MP floating pointer
 	mpFloatingPointer = (MpFloatingPointer*)mpFloatingPointerAddr;
 	g_mpConfigManager.mpFloatingPointer = mpFloatingPointer;
 	mpConfigTableHeader = (MpConfigTableHeader*)((qword)mpFloatingPointer->mpConfigTableAddr & 0xFFFFFFFF);
-
+	
 	// set PIC mode flag
 	if (mpFloatingPointer->mpFeatureByte[1] & MP_FLOATINGPOINTER_FEATUREBYTE2_PICMODE) {
 		g_mpConfigManager.picMode = true;
 	}
-
+	
 	// set MP configuration table header, base MP configuration table entry start address.
 	g_mpConfigManager.mpConfigTableHeader = mpConfigTableHeader;
 	g_mpConfigManager.baseEntryStartAddr = mpFloatingPointer->mpConfigTableAddr + sizeof(MpConfigTableHeader);
-
+	
 	// set processor count, ISA bus ID.
 	baseEntryAddr = g_mpConfigManager.baseEntryStartAddr;
 	for (i = 0; i < mpConfigTableHeader->entryCount; i++) {
 		entryType = *(byte*)baseEntryAddr;
-
+	
 		switch (entryType) {
 		case MP_ENTRYTYPE_PROCESSOR:
 			processorEntry = (ProcessorEntry*)baseEntryAddr;
 			if (processorEntry->cpuFlags & MP_PROCESSOR_CPUFLAGS_ENABLE) {
 				g_mpConfigManager.processorCount++;
 			}
-
+			
 			baseEntryAddr += sizeof(ProcessorEntry);
 			break;
-
+			
 		case MP_ENTRYTYPE_BUS:
-		    busEntry = (BusEntry*)baseEntryAddr;
-		    if (k_memcmp(busEntry->busTypeStr, MP_BUS_TYPESTRING_ISA, k_strlen(MP_BUS_TYPESTRING_ISA)) == 0) {
-		    	g_mpConfigManager.isaBusId = busEntry->busId;
-		    }
-
+			busEntry = (BusEntry*)baseEntryAddr;
+			if (k_memcmp(busEntry->busTypeStr, MP_BUS_TYPESTRING_ISA, k_strlen(MP_BUS_TYPESTRING_ISA)) == 0) {
+				g_mpConfigManager.isaBusId = busEntry->busId;
+			}
+			
 			baseEntryAddr += sizeof(BusEntry);
 			break;
-
+			
 		case MP_ENTRYTYPE_IOAPIC:
 			baseEntryAddr += sizeof(IoApicEntry);
 			break;
-
+			
 		case MP_ENTRYTYPE_IOINTERRUPTASSIGNMENT:
 			baseEntryAddr += sizeof(IoInterruptAssignEntry);
 			break;
-
+			
 		case MP_ENTRYTYPE_LOCALINTERRUPTASSIGNMENT:
 			baseEntryAddr += sizeof(LocalInterruptAssignEntry);
 			break;
-
+			
 		default:
 			return false;
 		}
@@ -146,39 +146,39 @@ void k_printMpConfigTable(void) {
 	char* interruptType[4] = {"INT", "NMI", "SMI", "ExtINT"};
 	char* interruptPolarity[4] = {"Conform", "Active High", "Reserved", "Active Low"};
 	char* interruptTrigger[4] = {"Conform", "Edge-Trigger", "Reserved", "Level-Trigger"};
-
+	
 	// call MP configuration table analysis function.
 	mpConfigManager = k_getMpConfigManager();
 	if (mpConfigManager->baseEntryStartAddr == 0 && k_analyzeMpConfigTable() == false) {
 		return;
 	}
-
+	
 	//----------------------------------------------------------------------------------------------------
 	// print MP configuration table manager info.
 	//----------------------------------------------------------------------------------------------------
 	k_printf("*** MP Configuration Table Summary ***\n");
-
+	
 	k_printf("- MP floating pointer address                     : 0x%Q\n", mpConfigManager->mpFloatingPointer);
 	k_printf("- MP configuration table header address           : 0x%Q\n", mpConfigManager->mpConfigTableHeader);
 	k_printf("- base MP configuration table entry start address : 0x%Q\n", mpConfigManager->baseEntryStartAddr);
 	k_printf("- processor count                                 : %d\n", mpConfigManager->processorCount);
 	k_printf("- PIC mode                                        : %s\n", (mpConfigManager->picMode == true) ? "true" : "false");
 	k_printf("- ISA bus ID                                      : %d\n", mpConfigManager->isaBusId);
-
+	
 	k_printf("Press any key to continue...('q' is quit): ");
 	if (k_getch() == 'q') {
 		k_printf("\n");
 		return;
 	}
 	k_printf("\n");
-
+	
 	//----------------------------------------------------------------------------------------------------
 	// print MP floating pointer info.
 	//----------------------------------------------------------------------------------------------------
 	k_printf("*** MP Floating Pointer Info ***\n");
-
+	
 	mpFloatingPointer = mpConfigManager->mpFloatingPointer;
-
+	
 	k_memcpy(buffer, mpFloatingPointer->signature, sizeof(mpFloatingPointer->signature));
 	buffer[sizeof(mpFloatingPointer->signature)] = '\0';
 	k_printf("- signature                      : %s\n", buffer);
@@ -201,21 +201,21 @@ void k_printMpConfigTable(void) {
 	k_printf("- MP feature byte 3              : 0x%X\n", mpFloatingPointer->mpFeatureByte[2]);
 	k_printf("- MP feature byte 4              : 0x%X\n", mpFloatingPointer->mpFeatureByte[3]);
 	k_printf("- MP feature byte 5              : 0x%X\n", mpFloatingPointer->mpFeatureByte[4]);
-
+	
 	k_printf("Press any key to continue...('q' is quit): ");
 	if (k_getch() == 'q') {
 		k_printf("\n");
 		return;
 	}
 	k_printf("\n");
-
+	
 	//----------------------------------------------------------------------------------------------------
 	// print MP configuration table header info.
 	//----------------------------------------------------------------------------------------------------
 	k_printf("*** MP Configuration Table Header Info ***\n");
-
+	
 	mpConfigTableHeader = mpConfigManager->mpConfigTableHeader;
-
+	
 	k_memcpy(buffer, mpConfigTableHeader->signature, sizeof(mpConfigTableHeader->signature));
 	buffer[sizeof(mpConfigTableHeader->signature)] = '\0';
 	k_printf("- signature                           : %s\n", buffer);
@@ -235,30 +235,30 @@ void k_printMpConfigTable(void) {
 	k_printf("- extended table length               : %d bytes\n", mpConfigTableHeader->extendedTableLen);
 	k_printf("- extended table checksum             : 0x%X\n", mpConfigTableHeader->extendedTableChecksum);
 	k_printf("- reserved                            : %d\n", mpConfigTableHeader->reserved);
-
+	
 	k_printf("Press any key to continue...('q' is quit): ");
 	if (k_getch() == 'q') {
 		k_printf("\n");
 		return;
 	}
 	k_printf("\n");
-
+	
 	//----------------------------------------------------------------------------------------------------
 	// print base MP configuration table entry info.
 	//----------------------------------------------------------------------------------------------------
 	k_printf("*** Base MP Configuration Table Entry Info (%d entries)\n", mpConfigTableHeader->entryCount);
-
+	
 	baseEntryAddr = mpConfigManager->baseEntryStartAddr;
-
+	
 	for (i = 0; i < mpConfigTableHeader->entryCount; i++) {
 		entryType = *(byte*)baseEntryAddr;
-
+		
 		k_printf("  < Entry %d >\n", i + 1);
-
+		
 		switch (entryType) {
 		case MP_ENTRYTYPE_PROCESSOR:
 			processorEntry = (ProcessorEntry*)baseEntryAddr;
-
+			
 			k_printf("- entry type         : processor\n");
 			k_printf("- local APIC ID      : %d\n", processorEntry->localApicId);
 			k_printf("- local APIC version : 0x%X\n", processorEntry->localApicVersion);
@@ -276,25 +276,25 @@ void k_printMpConfigTable(void) {
 			k_printf("- CPU signature      : 0x%X\n", processorEntry->cpuSignature);
 			k_printf("- feature flags      : 0x%X\n", processorEntry->featureFlags);
 			k_printf("- reserved           : 0x%X\n", processorEntry->reserved);
-
+			
 			baseEntryAddr += sizeof(ProcessorEntry);
 			break;
-
+			
 		case MP_ENTRYTYPE_BUS:
-		    busEntry = (BusEntry*)baseEntryAddr;
-
-		    k_printf("- entry type      : bus\n");
-		    k_printf("- bus ID          : %d\n", busEntry->busId);
-		    k_memcpy(buffer, busEntry->busTypeStr, sizeof(busEntry->busTypeStr));
-		    buffer[sizeof(busEntry->busTypeStr)] = '\0';
-		    k_printf("- bus type string : %s\n", buffer);
-
+			busEntry = (BusEntry*)baseEntryAddr;
+			
+			k_printf("- entry type      : bus\n");
+			k_printf("- bus ID          : %d\n", busEntry->busId);
+			k_memcpy(buffer, busEntry->busTypeStr, sizeof(busEntry->busTypeStr));
+			buffer[sizeof(busEntry->busTypeStr)] = '\0';
+			k_printf("- bus type string : %s\n", buffer);
+			
 			baseEntryAddr += sizeof(BusEntry);
 			break;
-
+			
 		case MP_ENTRYTYPE_IOAPIC:
 			ioApicEntry = (IoApicEntry*)baseEntryAddr;
-
+			
 			k_printf("- entry type            : IO APIC\n");
 			k_printf("- IO APIC ID            : %d\n", ioApicEntry->ioApicId);
 			k_printf("- IO APIC version       : 0x%X\n", ioApicEntry->ioApicVersion);
@@ -305,13 +305,13 @@ void k_printMpConfigTable(void) {
 				k_printf("(disable)\n");
 			}
 			k_printf("- memory map IO address : 0x%X\n", ioApicEntry->memMapIoAddr);
-
+			
 			baseEntryAddr += sizeof(IoApicEntry);
 			break;
-
+			
 		case MP_ENTRYTYPE_IOINTERRUPTASSIGNMENT:
 			ioInterruptAssignEntry = (IoInterruptAssignEntry*)baseEntryAddr;
-
+			
 			k_printf("- entry type         : IO interrupt assignment\n");
 			k_printf("- interrupt type     : 0x%X ", ioInterruptAssignEntry->interruptType);
 			k_printf("(%s)\n", interruptType[ioInterruptAssignEntry->interruptType]);
@@ -322,13 +322,13 @@ void k_printMpConfigTable(void) {
 			k_printf("- src bus IRQ        : %d\n", ioInterruptAssignEntry->srcBusIrq);
 			k_printf("- dest IO APIC ID    : %d\n", ioInterruptAssignEntry->destIoApicId);
 			k_printf("- dest IO APIC INTIN : %d\n", ioInterruptAssignEntry->destIoApicIntin);
-
+			
 			baseEntryAddr += sizeof(IoInterruptAssignEntry);
 			break;
-
+			
 		case MP_ENTRYTYPE_LOCALINTERRUPTASSIGNMENT:
 			localInterruptAssignEntry = (LocalInterruptAssignEntry*)baseEntryAddr;
-
+			
 			k_printf("- entry type             : local interrupt assignment\n");
 			k_printf("- interrupt type         : 0x%X ", localInterruptAssignEntry->interruptType);
 			k_printf("(%s)\n", interruptType[localInterruptAssignEntry->interruptType]);
@@ -339,15 +339,15 @@ void k_printMpConfigTable(void) {
 			k_printf("- src bus IRQ            : %d\n", localInterruptAssignEntry->srcBusIrq);
 			k_printf("- dest local APIC ID     : %d\n", localInterruptAssignEntry->destLocalApicId);
 			k_printf("- dest local APIC LINTIN : %d\n", localInterruptAssignEntry->destLocalApicLintin);
-
+			
 			baseEntryAddr += sizeof(LocalInterruptAssignEntry);
 			break;
-
+			
 		default:
 			k_printf("invaild entry type: %d\n", entryType);
 			break;
 		}
-
+		
 		// ask a user to print more entries, every after 2 entries are printed.
 		if ((i != 0) && (((i + 1) % 2) == 0)) {
 			k_printf("Press any key to continue...('q' is quit): ");
@@ -367,7 +367,7 @@ int k_getProcessorCount(void) {
 	if (g_mpConfigManager.processorCount == 0) {
 		return 1;
 	}
-
+	
 	return g_mpConfigManager.processorCount;
 }
 

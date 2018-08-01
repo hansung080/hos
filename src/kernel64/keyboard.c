@@ -6,22 +6,22 @@
 #include "sync.h"
 
 bool k_isOutputBufferFull(void) {
-
+	
 	// check OUTB(bit 0) of Status Register.
 	if (k_inPortByte(0x64) & 0x01) {
 		return true;
 	}
-
+	
 	return false;
 }
 
 bool k_isInputBufferFull(void) {
-
+	
 	// check INPB(bit 1) of Status Register.
 	if (k_inPortByte(0x64) & 0x02) {
 		return true;
 	}
-
+	
 	return false;
 }
 
@@ -29,25 +29,25 @@ bool k_waitAckAndPutOtherScanCode(void) {
 	int i, j;
 	byte data;
 	bool result = false;
-
+	
 	for (j = 0; j < 100; j++) {
 		for (i = 0; i < 0xFFFF; i++) {
 			if (k_isOutputBufferFull() == true) {
 				break;
 			}
 		}
-
+		
 		// check if data which is read from Output Buffer == [0xFA:ACK].
 		data = k_inPortByte(0x60);
 		if (data == 0xFA) {
 			result = true;
 			break;
-
+			
 		} else {
 			k_convertScanCodeAndPutQueue(data);
 		}
 	}
-
+	
 	return result;
 }
 
@@ -60,21 +60,21 @@ bool k_activateKeyboard(void) {
 	
 	// activate keyboard device of Keyboard Controller: send [0xAE:Keyboard Device Enable Command] to Control Register.
 	k_outPortByte(0x64, 0xAE);
-
+	
 	for (i = 0; i < 0xFFFF; i++) {
 		if (k_isInputBufferFull() == false) {
 			break;
 		}
 	}
-
+	
 	// activate keyboard: send [0xF4:Keyboard Enable Command] to Input Buffer.
 	k_outPortByte(0x60, 0xF4);
-
+	
 	// check ACK: wait until ACK is received.
 	result = k_waitAckAndPutOtherScanCode();
-
+	
 	k_setInterruptFlag(interruptFlag);
-
+	
 	return result;
 }
 
@@ -82,7 +82,7 @@ byte k_getKeyboardScanCode(void) {
 	while (k_isOutputBufferFull() == false) {
 		;
 	}
-
+	
 	// return data (scan code) which is read from Output Buffer.
 	return k_inPortByte(0x60);
 }
@@ -99,19 +99,19 @@ bool k_changeKeyboardLed(bool capslockOn, bool numlockOn, bool scrolllockOn) {
 			break;
 		}
 	}
-
+	
 	// send Keyboard LED Status Change Command: send [0xED:Keyboard LED Status Change Command] to Input Buffer.
 	k_outPortByte(0x60, 0xED);
-
+	
 	for (i = 0; i < 0xFFFF; i++) {
 		if (k_isInputBufferFull() == false) {
 			break;
 		}
 	}
-
+	
 	// check ACK: wait until ACK is received.
 	result = k_waitAckAndPutOtherScanCode();
-
+	
 	if (result == false) {
 		k_setInterruptFlag(interruptFlag);
 		return false;
@@ -119,68 +119,68 @@ bool k_changeKeyboardLed(bool capslockOn, bool numlockOn, bool scrolllockOn) {
 	
 	// send Keyboard LED Status Change Data: send [CapsLock(bit 2) | NumLock(bit 1) | ScrollLock(bit 0)] to Input Buffer.
 	k_outPortByte(0x60, (capslockOn << 2) | (numlockOn << 1) | (scrolllockOn));
-
+	
 	for (i = 0; i < 0xFFFF; i++) {
 		if (k_isInputBufferFull() == false) {
 			break;
 		}
 	}
-
+	
 	// check ACK: wait until ACK is received.
 	result = k_waitAckAndPutOtherScanCode();
-
+	
 	k_setInterruptFlag(interruptFlag);
-
+	
 	return result;
 }
 
 void k_enableA20gate(void) {
 	byte outPortData; // Output Port data
 	int i;
-
+	
 	// send [0xD0:Output Port Read Command] to Control Register.
 	k_outPortByte(0x64, 0xD0);
-
+	
 	for (i = 0; i < 0xFFFF; i++) {
 		if (k_isOutputBufferFull() == true) {
 			break;
 		}
 	}
-
+	
 	// read data from Output Port.
 	outPortData = k_inPortByte(0x60);
-
+	
 	// set A20 Gate Enable Bit(bit 1) to 1.
 	outPortData |= 0x02;
-
+	
 	for (i = 0; i < 0xFFFF; i++) {
 		if (k_isInputBufferFull() == false) {
 			break;
 		}
 	}
-
+	
 	// send [0xD1:Output Port Write Command] to Control Register.
 	k_outPortByte(0x64, 0xD1);
-
+	
 	// write data to Output Port.
 	k_outPortByte(0x60, outPortData);
 }
 
 void k_rebootSystem(void) {
 	int i;
-
+	
 	for (i = 0; i < 0xFFFF; i++) {
 		if (k_isInputBufferFull() == false) {
 			break;
 		}
 	}
-
+	
 	// send [0xD1:Output Port Write Command] to Control Register.
 	k_outPortByte(0x64, 0xD1);
-
+	
 	// set Processor Reset Bit (bit 0) to 0.
 	k_outPortByte(0x60, 0x00);
-
+	
 	while (true) {
 		;
 	}
@@ -293,7 +293,7 @@ bool k_isAlphabetScanCode(byte downScanCode) {
 	if (('a' <= g_keyMappingTable[downScanCode].normalCode) && (g_keyMappingTable[downScanCode].normalCode <= 'z')) {
 		return true;
 	}
-
+	
 	return false;
 }
 
@@ -302,7 +302,7 @@ bool k_isNumberOrSymbolScanCode(byte downScanCode) {
 	if ((2 <= downScanCode) && (downScanCode <= 53) && (k_isAlphabetScanCode(downScanCode) == false)) {
 		return true;
 	}
-
+	
 	return false;
 }
 
@@ -311,46 +311,45 @@ bool k_isNumberPadScanCode(byte downScanCode) {
 	if ((71 <= downScanCode) && (downScanCode <= 83)) {
 		return true;
 	}
-
+	
 	return false;
 }
 
 bool k_isUseCombinedCode(byte scanCode) {
 	byte downScanCode;
 	bool useCombinedKey = false;
-
+	
 	downScanCode = scanCode & 0x7F;
-
+	
 	// Alphabet keys get affected by Shift or Caps Lock key.
 	if (k_isAlphabetScanCode(downScanCode) == true) {
 		if (g_keyboardManager.shiftDown ^ g_keyboardManager.capslockOn) {
 			useCombinedKey = true;
-
+		
 		} else {
 			useCombinedKey = false;
 		}
-
+	
 	// Number or Symbol keys get affected by Shift key.
 	} else if (k_isNumberOrSymbolScanCode(downScanCode) == true) {
 		if(g_keyboardManager.shiftDown == true){
 			useCombinedKey = true;
-
+			
 		} else {
 			useCombinedKey = false;
 		}
-
+		
 	// Number pad keys get affected by Num Lock key.
 	// and process only when extended key codes are not received, because extended key codes and number pad key codes are duplicated except 0xE0.
 	} else if ((k_isNumberPadScanCode(downScanCode) == true) && (g_keyboardManager.extendedCodeIn == false)) {
 		if(g_keyboardManager.numlockOn == true){
 			useCombinedKey = true;
-
+			
 		} else {
 			useCombinedKey = false;
-
 		}
 	}
-
+	
 	return useCombinedKey;
 }
 
@@ -358,39 +357,38 @@ void k_updateCombinationKeyStatusAndLed(byte scanCode) {
 	bool down = false;
 	byte downScanCode;
 	bool ledStatusChanged = false;
-
+	
 	// If the highest bit (bit 7) of scan code == 1, it's Up Code.
 	// If the highest bit (bit 7) of scan code == 0, it's Down Code.
 	if (scanCode & 0x80) {
 		down = false;
 		downScanCode = scanCode & 0x7F;
-
+		
 	} else {
 		down = true;
 		downScanCode = scanCode;
-
 	}
-
+	
 	// If [42:Left Shift] or [54:Right Shift].
 	if ((downScanCode == 42) || (downScanCode == 54)) {
 		g_keyboardManager.shiftDown = down;
-
+		
 	// If [58:Caps Lock] and Down Code.
 	} else if ((downScanCode == 58) && (down == true)) {
 		g_keyboardManager.capslockOn ^= true;
 		ledStatusChanged = true;
-
+		
 	// If [69:Num Lock] and Down Code.
 	} else if ((downScanCode == 69) && (down == true)) {
 		g_keyboardManager.numlockOn ^= true;
 		ledStatusChanged = true;
-
+		
 	// If [70:Scroll Lock] and Down Code.
 	} else if ((downScanCode == 70) && (down == true)) {
 		g_keyboardManager.scrolllockOn ^= true;
 		ledStatusChanged = true;
 	}
-
+	
 	// change keyboard LED status.
 	if (ledStatusChanged == true) {
 		k_changeKeyboardLed(g_keyboardManager.capslockOn, g_keyboardManager.numlockOn, g_keyboardManager.scrolllockOn);
@@ -399,49 +397,48 @@ void k_updateCombinationKeyStatusAndLed(byte scanCode) {
 
 bool k_convertScanCodeToAsciiCode(byte scanCode, byte* asciiCode, byte* flags) {
 	bool useCombinedKey = false;
-
+	
 	if (g_keyboardManager.skipCountForPause > 0) {
 		g_keyboardManager.skipCountForPause--;
 		return false;
 	}
-
+	
 	// If [0xE1:Pause key].
 	if (scanCode == 0xE1) {
 		*asciiCode = KEY_PAUSE;
 		*flags = KEY_FLAGS_DOWN;
 		g_keyboardManager.skipCountForPause = KEY_SKIPCOUNTFORPAUSE;
 		return true;
-
+		
 	// If [0xE0:extended key].
 	} else if (scanCode == 0xE0) {
 		g_keyboardManager.extendedCodeIn = true;
 		return false;
 	}
-
+	
 	useCombinedKey = k_isUseCombinedCode(scanCode);
-
+	
 	if (useCombinedKey == true) {
 		*asciiCode = g_keyMappingTable[scanCode & 0x7F].combinedCode;
-
+		
 	} else {
 		*asciiCode = g_keyMappingTable[scanCode & 0x7F].normalCode;
-
 	}
-
+	
 	if (g_keyboardManager.extendedCodeIn == true) {
 		*flags = KEY_FLAGS_EXTENDEDKEY;
 		g_keyboardManager.extendedCodeIn = false;
-
+		
 	} else {
 		*flags = 0;
 	}
-
+	
 	if ((scanCode & 0x80) == 0) {
 		*flags |= KEY_FLAGS_DOWN;
 	}
-
+	
 	k_updateCombinationKeyStatusAndLed(scanCode);
-
+	
 	return true;
 }
 
@@ -459,37 +456,36 @@ bool k_initKeyboard(void) {
 bool k_convertScanCodeAndPutQueue(byte scanCode) {
 	Key key;
 	bool result = false;
-
+	
 	key.scanCode = scanCode;
-
+	
 	// convert scan code to ASCII code.
 	if (k_convertScanCodeToAsciiCode(scanCode, &(key.asciiCode), &(key.flags)) == true) {
-
+		
 		k_lockSpin(&(g_keyboardManager.spinlock));
-
+		
 		// put data to key queue.
 		result = k_putQueue(&g_keyQueue, &key);
-
+		
 		k_unlockSpin(&(g_keyboardManager.spinlock));
-
 	}
-
+	
 	return result;
 }
 
 bool k_getKeyFromKeyQueue(Key* key) {
 	bool result = false;
-
+	
 	if (k_isQueueEmpty(&g_keyQueue) == true) {
 		return false;
 	}
-
+	
 	k_lockSpin(&(g_keyboardManager.spinlock));
-
+	
 	// get data from key queue.
 	result = k_getQueue(&g_keyQueue, key);
-
+	
 	k_unlockSpin(&(g_keyboardManager.spinlock));
-
+	
 	return result;
 }

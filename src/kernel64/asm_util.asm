@@ -41,12 +41,12 @@ global k_enableGlobalLocalApic
 ; return : byte data(RAX)
 k_inPortByte:
 	push rdx
-
+	
 	mov rdx, rdi ; port
 	mov rax, 0   ; data (initialization)
 	; read data (1 byte) from a port number saved in DX, save it to AL (AL will be used as a return value.)
 	in al, dx
-
+	
 	pop rdx
 	ret
 
@@ -55,12 +55,12 @@ k_inPortByte:
 k_outPortByte:
 	push rdx
 	push rax
-
+	
 	mov rdx, rdi ; port
 	mov rax, rsi ; bData
     ; write data (1 byte) saved in AL to a port number saved in DX.
 	out dx, al
-
+	
 	pop rax
 	pop rdx
 	ret
@@ -69,12 +69,12 @@ k_outPortByte:
 ; return : word data(RAX)
 k_inPortWord:
 	push rdx
-
+	
 	mov rdx, rdi ; port
 	mov rax, 0   ; data (initialization)
 	; read data (2 bytes) from a port number saved in DX, save it to AX (AX will be used as a return value.)
 	in ax, dx
-
+	
 	pop rdx
 	ret
 
@@ -83,12 +83,12 @@ k_inPortWord:
 k_outPortWord:
 	push rdx
 	push rax
-
+	
 	mov rdx, rdi ; port
 	mov rax, rsi ; data
     ; write data (2 bytes) saved in AX to a port number saved in DX.
 	out dx, ax
-
+	
 	pop rax
 	pop rdx
 	ret
@@ -137,14 +137,14 @@ k_readRflags:
 ; return : qword data(RAX)
 k_readTsc:
 	push rdx
-
+	
 	; read time stamp counter register (64 bits), save high 32 bits to RDX, low 32 bits to RAX.
 	rdtsc
-
+	
 	; RAX = RAX | (RDX << 32) : RAX will be used as a return value.
 	shl rdx, 32
 	or rax, rdx
-
+	
 	pop rdx
 	ret
 
@@ -165,7 +165,7 @@ k_readTsc:
 	push r13
 	push r14
 	push r15
-
+	
 	mov ax, ds ; use RAX to push DS, ES to stack, becase it's not allowed to push DS, ES to stack directly.
 	push rax
 	mov ax, es
@@ -182,7 +182,7 @@ k_readTsc:
 	mov es, ax
 	pop rax
 	mov ds, ax
-
+	
 	pop r15
 	pop r14
 	pop r13
@@ -205,52 +205,52 @@ k_readTsc:
 k_switchContext:
 	push rbp
 	mov rbp, rsp
-
+	
 	; If currentContext == null, it dosen't have to save context.
 	pushfq ; push RFLAGS to stack to keep RFLAGS not-changed after cmp command below.
 	cmp rdi, 0
-	je .LoadConext
+	je .loadContext
 	popfq
-
+	
 	; ***** save context of a current task *****
 	push rax ; back up RAX to use as register offset.
-
+	
 	; save 5 registers (SS, RSP, RFLAGS, CS, RIP) to Context structure (currentContext).
 	mov ax, ss ; save SS
 	mov qword [rdi + (23 * 8)], rax
-
+	
 	mov rax, rbp ; save RSP saved in RBP.
 	add rax, 16  ; when saving RSP, be except RBP(push rbp) and return address.
 	mov qword [rdi + (22 * 8)], rax
-
+	
 	pushfq ; push RFLAGS to stack
 	pop rax
 	mov qword [rdi + (21 * 8)], rax
-
+	
 	mov ax, cs ; save CS
 	mov qword [rdi + (20 * 8)], rax
-
+	
 	mov rax, qword [rbp + 8] ; set RIP as return address in order to move the next line of k_switchContext function when restoring a next context.
 	mov qword [rdi + (19 * 8)], rax
-
+	
 	pop rax
 	pop rbp
-
+	
 	; move RSP to No.19 (RIP) offset in order to save left 19 registers to No.18 (RBP) ~ No.0 (GS) offset of Context structure.
 	add rdi, (19 * 8)
 	mov rsp, rdi
 	sub rdi, (19 * 8)
-
+	
 	; save left 19 registers to Context structure (currentContext).
 	KSAVECONTEXT
 
 ; ***** restore context of a next task *****
-.LoadConext:
+.loadContext:
 	mov rsp, rsi
-
+	
 	; restore 19 registers from Context structure (nextContext).
 	KLOADCONTEXT
-
+	
 	; restore left 5 registers from Context structure (nextContext), return to the address of RIP.
 	iretq
 
@@ -284,11 +284,11 @@ k_testAndSet:
 	mov rax, rsi
 	lock cmpxchg byte [rdi], dl
 	je .SUCCESS ; If RFLAGS.ZF == 1, move to .SUCCESS
-
+	
 .NOTSAME:
 	mov rax, 0x00 ; return false(0)
 	ret
-
+	
 .SUCCESS:
 	mov rax, 0x01 ; return true(1)
 	ret
@@ -315,12 +315,12 @@ k_loadFpuContext:
 ; return : void
 k_setTs:
 	push rax
-
+	
 	; set CR0.TS (bit 3) to 1 in order to cause No.7 exception (#NM, Device Not Available) when task switching.
 	mov rax, cr0
 	or rax, 0x08
 	mov cr0, rax
-
+	
 	pop rax
 	ret
 
@@ -337,7 +337,7 @@ k_enableGlobalLocalApic:
 	push rax
 	push rcx
 	push rdx
-
+	
 	; set local APIC global enable/disable field (bit 11) of IA32_APIC_BASE MSR register (address 27, size 64 bits) to [1:all local APICs enable].
 	; MSR register command (rdmsr, wrmsr): Read/Write Model Specific Register
 	;   - ECX: MSR register address
@@ -347,7 +347,7 @@ k_enableGlobalLocalApic:
 	rdmsr
 	or eax, 0x0800
 	wrmsr
-
+	
 	pop rdx
 	pop rcx
 	pop rax
