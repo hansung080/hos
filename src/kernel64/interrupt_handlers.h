@@ -35,7 +35,7 @@
 typedef struct k_InterruptManager {
 	qword interruptCounts[MAXPROCESSORCOUNT][INTERRUPT_MAXVECTORCOUNT]; // interrupt counts by core * IRQ
 	bool symmetricIoMode; // symmetric io mode flag
-	bool loadBalancing;   // load balancing flag
+	bool loadBalancing;   // interrupt load balancing flag
 } InterruptManager;
 
 #pragma pack(pop)
