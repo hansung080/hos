@@ -122,6 +122,21 @@ int k_memcmp(const void* dest, const void* src, int size) {
 	return 0;
 }
 
+bool k_equalStr(const char* str1, const char* str2) {
+	int len1;
+	int len2;
+	
+	len1 = k_strlen(str1);
+	len2 = k_strlen(str2);
+	
+	if ((len1 == len2) && (k_memcmp(str1, str2, len1) == 0)) {
+		return true;
+	}
+	
+	return false;
+}
+
+
 bool k_setInterruptFlag(bool interruptFlag) {
 	qword rflags;
 	
@@ -360,7 +375,7 @@ int k_sprintf(char* buffer, const char* format, ...) {
   < Data Types Supported by k_vsprintf Function >
   - %s         : string
   - %c         : char
-  - %d, %i     : decimal int (decimal, signed)
+  - %d, %i     : int (decimal, signed)
   - %x, %X     : dword (hexadecimal, unsigned)
   - %q, %Q, %p : qword (hexadecimal, unsigned)
   - %f         : float (print down to the second position below decimal point by half-rounding up at the third position below decimal point.)

@@ -51,6 +51,25 @@ void k_setGdtEntry16(GdtEntry16* entry, qword baseAddr, dword limit, byte upperF
 	entry->reserved = 0;
 }
 
+/**
+  < IST Address of Each Core >
+    - Total IST area is 1 MB size (7MB ~ 8MB).
+    - A core has 64 KB-sized IST which is 1 MB divided by 16 cores.
+    - Cores get assigned IST from the end of area, because data is added to stack from the end.
+    
+    ------------------- 8 MB - (64 KB * 0)
+    | core 0 (64 KB)  |
+    ------------------- 8 MB - (64 KB * 1)
+    | core 1 (64 KB)  |
+    ------------------- 8 MB - (64 KB * 2)
+    | core 2 (64 KB)  |
+    ------------------- 8 MB - (64 KB * 3)
+    |      ...        |
+    ------------------- 8 MB - (64 KB * 15)
+    | core 15 (64 KB) |
+    ------------------- 7 MB
+*/
+
 void k_initTss(Tss* tss) {
 	int i;
 	
@@ -58,7 +77,7 @@ void k_initTss(Tss* tss) {
 	for (i = 0; i < MAXPROCESSORCOUNT; i++) {
 		k_memset(tss, 0, sizeof(Tss));
 		
-		// allocate from the end of IST. (IST must be aligned with 16 bytes.)
+		// allocate from the end of IST area. (IST must be aligned with 16 bytes.)
 		tss->ist[0] = IST_STARTADDRESS + IST_SIZE - (IST_SIZE / MAXPROCESSORCOUNT * i);
 		
 		// set IO map base address more than Limit field of TSS segment descriptor, in order not to use IO map.

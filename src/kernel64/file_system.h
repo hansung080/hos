@@ -15,7 +15,7 @@
 #define FS_CLUSTERSIZE            (FS_SECTORSPERCLUSTER * 512)        // cluster size (byte count, 4KB)
 #define FS_MAXDIRECTORYENTRYCOUNT (FS_CLUSTERSIZE / sizeof(DirEntry)) // max directory entry count of root directory (128)
 #define FS_HANDLE_MAXCOUNT        (TASK_MAXCOUNT * 3) // max handle count
-#define FS_MAXFILENAMELENGTH      24                  // max file name length
+#define FS_MAXFILENAMELENGTH      24                  // max file name length (including file extension and last null character)
 
 // handle types
 #define FS_TYPE_FREE      0 // free handle

@@ -17,7 +17,7 @@
 #define APICID_INVALID   0xFF // invalid APIC ID
 
 bool k_startupAp(void);
-byte k_getApicId(void);
+byte k_getApicId(void); // get Local APIC ID of current core. [Ref] in HansOS, Local APIC ID == core index == scheduler index
 static bool k_wakeupAp(void);
 
 #endif // __MULTIPROCESSOR_H__

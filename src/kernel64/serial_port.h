@@ -59,7 +59,7 @@
 
 // fields of Line Status Register (1 byte)
 #define SERIAL_LINESTATUS_RECEIVEDDATAREADY      0x01 // [bit 0:RxRD] Receive Data Ready, mean that Receiver Buffer Register has received data.
-#define SERIAL_LINESTATUS_OVERRUNERROR           0x02 // [bit 1:OVRE] Overrun Error, mean that Receive Buffer Register is totally full, so no more data to receive.
+#define SERIAL_LINESTATUS_OVERRUNERROR           0x02 // [bit 1:OVRE] Overrun Error, mean that Receive Buffer Register is completely full, so no more data to receive.
 #define SERIAL_LINESTATUS_PARITYERROR            0x04 // [bit 2:PARE] Parity Error, mean that parity error has occurred in the received data.
 #define SERIAL_LINESTATUS_FRAMINGERROR           0x08 // [bit 3:FRME] Frame Error, mean that frame error has occurred in the received data.
 #define SERIAL_LINESTATUS_BREAKINDICATOR         0x10 // [bit 4:BREK] Break, mean that Break signal has been detected.

@@ -91,8 +91,8 @@ void k_commonExceptionHandler(int vector, qword errorCode) {
 	k_printStrXy(0, 2, "|           vector:        core:                 |");
 	k_printStrXy(20, 2, buffer);
 	k_memset(buffer, 0, sizeof(buffer));
-	k_sprintf(buffer, "0x%X", k_getApicId());
-	k_printStrXy(32, 2, buffer);
+	k_sprintf(buffer, "%d", k_getApicId());
+	k_printStrXy(33, 2, buffer);
 	k_printStrXy(0, 3, "--------------------------------------------------");
 	
 	while (true);
@@ -102,6 +102,7 @@ void k_deviceNotAvailableHandler(int vector) {
 	Tcb* fpuTask;        // last FPU-used task
 	Tcb* currentTask;    // current task
 	qword lastFpuTaskId; // last FPU-used task ID
+	byte currentApicId;
 	
 	//====================================================================================================
 	/* Print FPU Exception Message */
@@ -120,11 +121,13 @@ void k_deviceNotAvailableHandler(int vector) {
 	k_printStrXy(0, 0, buffer);
 	//====================================================================================================
 	
+	currentApicId = k_getApicId();
+	
 	// set CR0.TS=0
 	k_clearTs();
 	
-	lastFpuTaskId = k_getLastFpuUsedTaskId();
-	currentTask = k_getRunningTask();
+	lastFpuTaskId = k_getLastFpuUsedTaskId(currentApicId);
+	currentTask = k_getRunningTask(currentApicId);
 	
 	// If last FPU-used task is current task, it's not required to save and restore FPU context, and use current FPU context as is.
 	if (lastFpuTaskId == currentTask->link.id) {
@@ -132,7 +135,7 @@ void k_deviceNotAvailableHandler(int vector) {
 		
 	// If last FPU-used task exists, save current FPU context to memory.
 	} else if (lastFpuTaskId != TASK_INVALIDID) {
-		fpuTask = k_getTcbInTcbPool(GETTCBOFFSET(lastFpuTaskId));
+		fpuTask = k_getTaskFromTcbPool(GETTCBOFFSET(lastFpuTaskId));
 		if ((fpuTask != null) && (fpuTask->link.id == lastFpuTaskId)) {
 			k_saveFpuContext(fpuTask->fpuContext);
 		}
@@ -149,7 +152,7 @@ void k_deviceNotAvailableHandler(int vector) {
 	}
 	
 	// set last FPU-used task to current task.
-	k_setLastFpuUsedTaskId(currentTask->link.id);
+	k_setLastFpuUsedTaskId(currentApicId, currentTask->link.id);
 }
 
 void k_commonInterruptHandler(int vector) {
@@ -184,6 +187,7 @@ void k_timerHandler(int vector) {
 	char buffer[] = "[INT:  , ]";
 	static int timerInterruptCount = 0;
 	int irq;
+	byte currentApicId;
 	
 	//====================================================================================================
 	/* Print Interrupt Message */
@@ -205,15 +209,16 @@ void k_timerHandler(int vector) {
 	
 	k_increaseInterruptCount(irq);
 	
-	// Timer interrupt must be processed only by BSP.
-	if (k_getApicId() == APICID_BSP) {
+	currentApicId = k_getApicId();
+	
+	if (currentApicId == APICID_BSP) {
 		g_tickCount++;
-		
-		k_decreaseProcessorTime();
-		
-		if (k_isProcessorTimeExpired() == true) {
-			k_scheduleInInterrupt();
-		}
+	}
+	
+	k_decreaseProcessorTime(currentApicId);
+	
+	if (k_isProcessorTimeExpired(currentApicId) == true) {
+		k_scheduleInInterrupt();
 	}
 }
 

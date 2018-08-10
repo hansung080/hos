@@ -35,7 +35,7 @@
 #define TASK_RSP_OFFSET    22
 #define TASK_SS_OFFSET     23
 
-// macros related with task pool
+// macros related with TCB pool
 #define TASK_TCBPOOLADDRESS 0x800000 // 8M
 #define TASK_MAXCOUNT       1024
 
@@ -52,20 +52,20 @@
 // ready list count
 #define TASK_MAXREADYLISTCOUNT 5
 
-// task priority (low 8 bits of task flags (64 bits))
-#define TASK_FLAGS_HIGHEST 0
-#define TASK_FLAGS_HIGH    1
-#define TASK_FLAGS_MEDIUM  2
-#define TASK_FLAGS_LOW     3
-#define TASK_FLAGS_LOWEST  4
-#define TASK_FLAGS_WAIT    0xFF // priority of end task
-
 // task flags
-#define TASK_FLAGS_ENDTASK 0x8000000000000000 // end task
-#define TASK_FLAGS_SYSTEM  0x4000000000000000 // system task
-#define TASK_FLAGS_PROCESS 0x2000000000000000 // processor
-#define TASK_FLAGS_THREAD  0x1000000000000000 // thread
-#define TASK_FLAGS_IDLE    0x0800000000000000 // idle task
+#define TASK_FLAGS_ENDTASK 0x8000000000000000 // end task flag
+#define TASK_FLAGS_SYSTEM  0x4000000000000000 // system task flag
+#define TASK_FLAGS_PROCESS 0x2000000000000000 // processor flag
+#define TASK_FLAGS_THREAD  0x1000000000000000 // thread flag
+#define TASK_FLAGS_IDLE    0x0800000000000000 // idle task flag
+
+// task priority (low 8 bits of task flags (64 bits))
+#define TASK_FLAGS_HIGHEST 0    // highest
+#define TASK_FLAGS_HIGH    1    // high
+#define TASK_FLAGS_MEDIUM  2    // medium
+#define TASK_FLAGS_LOW     3    // low
+#define TASK_FLAGS_LOWEST  4    // lowest
+#define TASK_FLAGS_WAIT    0xFF // end task priority
 
 // processor affinity
 #define TASK_AFFINITY_LOADBALANCING 0xFF // no processor affinity
@@ -84,13 +84,13 @@ typedef struct k_Context {
 
 typedef struct k_Tcb {
 	//--------------------------------------------------
-	// Task Info Fields
+	// Task-related Fields
 	//--------------------------------------------------
 	ListLink link;           // scheduler link: It consists of next task position (link.next) and task ID (link.id).
 	                         //                 task ID consists of TCB allocation count (high 32 bits) and TCB offset (low 32 bits).
 	                         //                 [Note] ListLink must be positioned at the first of the structure.
 	qword flags;             // task flags: bit 63 is end task flag.
-                             //             bit 62 is system task flag.
+	                         //             bit 62 is system task flag.
 	                         //             bit 61 is processor flag.
 	                         //             bit 60 is thread flag.
 	                         //             bit 59 is idle task flag.
@@ -98,7 +98,7 @@ typedef struct k_Tcb {
 	void* memAddr;           // start address of process memory area (code, data area)
 	qword memSize;           // size of process memory area (code, data area)
 	//--------------------------------------------------
-	// Thread Info Fields
+	// Thread-related Fields
 	//--------------------------------------------------
 	ListLink threadLink;     // child thread link: It consists of next child thread position (threadLink.next) and thread ID (threadLink.id).
 	qword parentProcessId;   // parent process ID
@@ -107,21 +107,24 @@ typedef struct k_Tcb {
 	                         //       To guarantee it, the conditions below must be satisfied.
 	                         //       - Condition 1: The start address of TCB pool must be the multiple of 16 bytes. (currently, It's 0x800000 (8 MBytes).)
 	                         //       - Condition 2: The size of each TCB must be the multiple of 16 bytes. (currently, It's 816 bytes.)
-                             //       - Condition 3: The FPU context offset of each TCB must be the multiple of 16 bytes. (currently, It's 64 bytes)
+	                         //       - Condition 3: The FPU context offset of each TCB must be the multiple of 16 bytes. (currently, It's 64 bytes)
 	                         //       Currently, the conditions above are satisfied. Thus, it's recommended to add fields below FPU context field.
 	List childThreadList;    // child thread list
+	//--------------------------------------------------
+	// Task-related Fields
+	//--------------------------------------------------
 	Context context;         // context
 	void* stackAddr;         // start address of stack
 	qword stackSize;         // size of stack
 	bool fpuUsed;            // FPU used flag: It indicates whether the task has used FPU operation before.
-	byte affinity;           // processor affinity: APIC ID of core which has affinity with task
 	byte apicId;             // APIC ID of core which task is running on
+	byte affinity;           // processor affinity: APIC ID of core which has affinity with task
 	char padding[9];         // padding bytes: According to Condition 2 of FPU context, align TCB size with the multiple of 16 bytes.
 } Tcb; // TCB is ListItem, and current TCB size is 816 bytes.
 
 typedef struct k_TcbPoolManager {
 	Spinlock spinlock; // spinlock
-	Tcb* startAddr;    // start address of TCB pool
+	Tcb* startAddr;    // start address of TCB pool: You can consider it as TCB array.
 	int maxCount;      // TCB max count: max TCB count in TCB pool
 	int useCount;      // TCB use count: TCB count being used in TCB pool
 	int allocedCount;  // TCB allocated count: TCB-allocated times in TCB pool. It's accumulated.
@@ -129,13 +132,13 @@ typedef struct k_TcbPoolManager {
 
 typedef struct k_Scheduler {
 	Spinlock spinlock;                         // spinlock
-	Tcb* runningTask;                          // current running task
-	int processorTime;                         // process time for current running task to use
+	Tcb* runningTask;                          // running task (current task)
+	int processorTime;                         // processor time for running task to use
 	List readyLists[TASK_MAXREADYLISTCOUNT];   // ready lists: Tasks which are waiting to run, are in the lists identified by task priority.
 	List waitList;                             // wait list: Tasks which are waiting to end, are in the list.
 	int executeCounts[TASK_MAXREADYLISTCOUNT]; // task execute counts by task priority
-	qword processorLoad;                       // process load (process usage)
-	qword spendProcessorTimeInIdleTask;        // process time for idle task to use
+	qword processorLoad;                       // processor load (processor usage)
+	qword processorTimeInIdleTask;             // processor time for idle task to use
 	qword lastFpuUsedTaskId;                   // last FPU-used task ID
 	bool loadBalancing;                        // task load balancing flag
 } Scheduler;
@@ -155,20 +158,20 @@ void k_setRunningTask(byte apicId, Tcb* task);
 Tcb* k_getRunningTask(byte apicId);
 static Tcb* k_getNextTaskToRun(byte apicId); // get next running task from ready list.
 static bool k_addTaskToReadyList(byte apicId, Tcb* task); // add task to ready list.
-void k_schedule(void); // task switching in task.
+bool k_schedule(void); // task switching in task.
 bool k_scheduleInInterrupt(void); // task switching in interrupt handler.
-void k_decreaseProcessorTime(void);
-bool k_isProcessorTimeExpired(void);
+void k_decreaseProcessorTime(byte apicId);
+bool k_isProcessorTimeExpired(byte apicId);
 static Tcb* k_removeTaskFromReadyList(byte apicId, qword taskId); // remove task from ready list.
 static bool k_findSchedulerOfTaskAndLock(qword taskId, byte* apicId);
 bool k_changePriority(qword taskId, byte priority); // change task priority.
 bool k_endTask(qword taskId); // end task.
 void k_exitTask(void); // end task by itself.
 int k_getReadyTaskCount(byte apicId); // get ready task count.
-int k_getTaskCount(byte apicId); // get total task count. (total task count = ready task count + end-waiting task count + current running task count)
-Tcb* k_getTcbInTcbPool(int offset);
+int k_getTaskCount(byte apicId); // get total task count. (total task count = ready task count + wait task count + running task count)
+Tcb* k_getTaskFromTcbPool(int offset);
 bool k_isTaskExist(qword taskId);
-qword k_getProcessorLoad(void);
+qword k_getProcessorLoad(byte apicId);
 static Tcb* k_getProcessByThread(Tcb* thread); // get process by thread: process returns itself, and thread returns parent process.
 void k_addTaskToSchedulerWithLoadBalancing(Tcb* task);
 static byte k_findSchedulerOfMinTaskCount(const Tcb* task);

@@ -27,13 +27,14 @@ on your computer or QEMU.
 - timer drivers: consist of PIT, TSC, RTC driver
 - multitasking and multithreading
 - task scheduling: use Multilevel Queue Scheduler which is the upgraded version of Round Robin Scheduler.
-- synchronization: use mutex.
+- synchronization: use mutex and spinlock.
 - float operation: use hard float operation with FPU.
 - dynamic memory management: use Buddy Block Algorithm to prevent external fragmentation.
 - hard disk driver
 - RAM disk driver
-- file system: use cache and provide C standard in/out functions
+- file system: use cache and provide C standard in/out functions.
 - serial port driver
+- multi-core processing: process interrupt load balancing and task load balancing.
 
 < Shorthands >
 - ID: IDentification

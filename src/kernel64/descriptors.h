@@ -66,8 +66,8 @@
 #define IDT_TABLESIZE     (IDT_MAXENTRYCOUNT * sizeof(IdtEntry))
 
 // macros related with IST
-#define IST_STARTADDRESS 0x700000 // 7M
-#define IST_SIZE         0x100000 // 1M
+#define IST_STARTADDRESS 0x700000 // 7 MB
+#define IST_SIZE         0x100000 // 1 MB
 
 #pragma pack(push, 1)
 

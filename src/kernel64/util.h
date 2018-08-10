@@ -10,6 +10,7 @@
 void k_memset(void* dest, byte data, int size);
 int k_memcpy(void* dest, const void* src, int size);
 int k_memcmp(const void* dest, const void* src, int size);
+bool k_equalStr(const char* str1, const char* str2);
 bool k_setInterruptFlag(bool interruptFlag);
 int k_strlen(const char* buffer);
 void k_checkTotalRamSize(void);

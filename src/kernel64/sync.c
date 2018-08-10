@@ -21,10 +21,19 @@ void k_initMutex(Mutex* mutex) {
 }
 
 void k_lock(Mutex* mutex) {
+	byte currentApicId;
+	bool interruptFlag;
+	
+	// disable interrupt while getting a lock.
+	interruptFlag = k_setInterruptFlag(false);
+	
+	currentApicId = k_getApicId();
+	
 	// If it's already locked, process below.
 	if (k_testAndSet(&(mutex->lockFlag), false, true) == false) {
-		// If it's locked by itself (current task), increase lock count and return.
-		if (mutex->taskId == k_getRunningTask()->link.id) {
+		// If it's locked by itself (running task), increase lock count and return.
+		if (mutex->taskId == k_getRunningTask(currentApicId)->link.id) {
+			k_setInterruptFlag(interruptFlag);
 			mutex->lockCount++;
 			return;
 		}
@@ -39,26 +48,35 @@ void k_lock(Mutex* mutex) {
 	// If it's unlocked, lock it.
 	// already set <mutex->lockFlag = true> in k_testAndSet using atomic operation.
 	mutex->lockCount = 1;
-	mutex->taskId = k_getRunningTask()->link.id;
+	mutex->taskId = k_getRunningTask(currentApicId)->link.id;
+	k_setInterruptFlag(interruptFlag);
 }
 
 void k_unlock(Mutex* mutex) {
+	bool interruptFlag;
+	
+	// disable interrupt while returning a lock.
+	interruptFlag = k_setInterruptFlag(false);
+	
 	// If it's already unlocked or it's locked by other tasks, return.
-	if ((mutex->lockFlag == false) || (mutex->taskId != k_getRunningTask()->link.id)) {
+	if ((mutex->lockFlag == false) || (mutex->taskId != k_getRunningTask(k_getApicId())->link.id)) {
+		k_setInterruptFlag(interruptFlag);
 		return;
 	}
 	
 	// If it's locked more than twice, decrease lock count and return.
 	if (mutex->lockCount > 1) {
 		mutex->lockCount--;
-		return;
-	}
-	
+		
 	// If it's locked once, unlock it.
 	// Setting lock flag to false must be done at the last.
-	mutex->taskId = TASK_INVALIDID;
-	mutex->lockCount = 0;
-	mutex->lockFlag = false;
+	} else {
+		mutex->taskId = TASK_INVALIDID;
+		mutex->lockCount = 0;
+		mutex->lockFlag = false;
+	}
+	
+	k_setInterruptFlag(interruptFlag);
 }
 
 void k_initSpinlock(Spinlock* spinlock) {

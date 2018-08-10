@@ -31,8 +31,8 @@ static ShellCommandEntry g_commandTable[] = {
 		{"date", "show current date and time", k_showDateAndTime},
 		{"testtask", "test task, usage) testtask <type> <count>", k_createTestTask},
 		{"chpr" ,"change task priority, usage) chpr <taskId> <priority>", k_changeTaskPriority},
-		{"ts", "show task status", k_showTaskList},
-		{"ps", "show task status", k_showTaskList},
+		{"ts", "show task status, usage) ts <option>", k_showTaskList},
+		{"ps", "show task status, usage) ps <option>", k_showTaskList},
 		{"kill", "kill task, usage) kill <taskId>", k_killTask},
 		{"cpul", "show CPU load", k_cpuLoad},
 		{"testmutex", "test mutex", k_testMutex},
@@ -42,15 +42,15 @@ static ShellCommandEntry g_commandTable[] = {
 		{"dmem", "show dynamic memory info", k_showDynamicMemInfo},
 		{"testdmem", "test dynamic memory, usage) testdmem <type>", k_testDynamicMem},
 		{"hdd", "show HDD info", k_showHddInfo},
-		{"reads", "read HDD sector, usage) reads <lba> <count>", k_readSector},
 		{"writes", "write HDD sector, usage) writes <lba> <count>", k_writeSector},
+		{"reads", "read HDD sector, usage) reads <lba> <count>", k_readSector},
 		{"format", "format HDD", k_formatHdd},
 		{"mount", "mount HDD", k_mountHdd},
 		{"fs", "show file system info", k_showFileSystemInfo},
-		{"create", "create file, usage) create <fname>", k_createFileInRootDir},
-		{"delete", "delete file, usage) delete <fname>", k_deleteFileInRootDir},
 		{"ls", "show directory", k_showRootDir},
 		{"ll", "show directory", k_showRootDir},
+		{"create", "create file, usage) create <fname>", k_createFileInRootDir},
+		{"delete", "delete file, usage) delete <fname>", k_deleteFileInRootDir},
 		{"write", "write file, usage) write <fname>", k_writeDataToFile},
 		{"read", "read file, usage) read <fname>", k_readDataFromFile},
 		{"testfile", "test file IO", k_testFileIo},
@@ -61,8 +61,11 @@ static ShellCommandEntry g_commandTable[] = {
 		{"stap", "start application processor", k_startAp},
 		{"stsim", "start symmetric IO mode", k_startSymmetricIoMode},
 		{"irqmap", "show IRQ to INTIN Map", k_showIrqToIntinMap},
+		{"stilb", "start interrupt load balancing", k_startInterruptLoadBalancing},
 		{"intcnt", "show interrupt count by core * IRQ, usage) intcnt <irq>", k_showInterruptCounts},
-		{"stilb", "start interrupt load balancing", k_startInterruptLoadBalancing}
+		{"sttlb", "start task load balancing", k_startTaskLoadBalancing},
+		{"chaf" ,"change task affinity, usage) chaf <taskId> <affinity>", k_changeTaskAffinity},
+		{"stmp", "start multi-core processing", k_startMultiprocessing}
 };
 
 void k_startShell(void) {
@@ -194,6 +197,11 @@ int k_getNextParam(ParamList* list, char* param) {
 	param[len] = '\0';
 	list->currentIndex += len + 1;
 	
+	if (len >= SHELL_MAXPARAMETERLENGTH) {
+		k_printf("too long parameter length: Parameter length must be less than %d\n", SHELL_MAXPARAMETERLENGTH - 1);
+		return SHELL_ERROR_TOOLONGPARAMETERLENGTH;
+	}
+	
 	// return current parameter length.
 	return len;
 }
@@ -249,7 +257,7 @@ static void k_showTotalRamSize(const char* paramBuffer) {
 
 static void k_testStrToDecimalHex(const char* paramBuffer) {
 	ParamList list;
-	char param[100];
+	char param[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	int len;
 	int count = 0;
 	long value;
@@ -261,6 +269,13 @@ static void k_testStrToDecimalHex(const char* paramBuffer) {
 	while (true) {
 		// get parameter: decimal or hex
 		len = k_getNextParam(&list, param);
+		if (len < 0) {
+			k_printf("Usage) teststod <decimal> <hex> ...\n");
+			k_printf("  - decimal: decimal number\n");
+			k_printf("  - hex: hexadecimal number\n");
+			k_printf("  - example: teststod 19 0x1F 256\n");
+			return;
+		}
 		
 		if (first == true) {
 			first = false;
@@ -314,7 +329,7 @@ static void k_reboot(const char* paramBuffer) {
 
 static void k_setTimer(const char* paramBuffer) {
 	ParamList list;
-	char param[100];
+	char param[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	long millisecond;
 	bool periodic;
 	
@@ -322,7 +337,7 @@ static void k_setTimer(const char* paramBuffer) {
 	k_initParam(&list, paramBuffer);
 	
 	// get No.1 parameter: ms
-	if (k_getNextParam(&list, param) == 0) {
+	if (k_getNextParam(&list, param) <= 0) {
 		k_printf("Usage) timer <ms> <periodic>\n");
 		k_printf("  - ms: millisecond\n");
 		k_printf("  - periodic: 0 (once)\n");
@@ -333,8 +348,10 @@ static void k_setTimer(const char* paramBuffer) {
 	
 	millisecond = k_atoi(param, 10);
 	
+	k_memset(param, '\0', SHELL_MAXPARAMETERLENGTH);
+	
 	// get No.2 parameter: periodic
-	if (k_getNextParam(&list, param) == 0) {
+	if (k_getNextParam(&list, param) <= 0) {
 		k_printf("Usage) timer <ms> <periodic>\n");
 		k_printf("  - ms: millisecond\n");
 		k_printf("  - periodic: 0 (once)\n");
@@ -352,9 +369,9 @@ static void k_setTimer(const char* paramBuffer) {
 }
 
 static void k_waitUsingPit(const char* paramBuffer) {
-	char param[100];
-	int len;
 	ParamList list;
+	char param[SHELL_MAXPARAMETERLENGTH] = {'\0', };
+	int len;
 	long millisecond;
 	int i;
 	
@@ -362,7 +379,7 @@ static void k_waitUsingPit(const char* paramBuffer) {
 	k_initParam(&list, paramBuffer);
 	
 	// get No.1 parameter: ms
-	if (k_getNextParam(&list, param) == 0) {
+	if (k_getNextParam(&list, param) <= 0) {
 		k_printf("Usage) wait <ms>\n");
 		k_printf("  - ms: millisecond\n");
 		k_printf("  - example: wait 1\n");
@@ -427,7 +444,7 @@ static void k_showDateAndTime(const char* paramBuffer) {
 	k_printf(" %d-%d-%d %d:%d:%d (%s)\n", year, month, dayOfMonth, hour, minute, second, k_convertDayOfWeekToStr(dayOfWeek));
 }
 
-// test-task-1: print characters moving around the border of screen.
+// test-task-1: print character moving around the border of screen.
 static void k_testTask1(void) {
 	byte data;
 	int i = 0, x = 0, y = 0, margin, j;
@@ -435,7 +452,7 @@ static void k_testTask1(void) {
 	Tcb* runningTask;
 	
 	// use the serial number of TCB.ID as screen offset.
-	runningTask = k_getRunningTask();
+	runningTask = k_getRunningTask(k_getApicId());
 	margin = (runningTask->link.id & 0xFFFFFFFF) % 10;
 	
 	for (j = 0; j < 20000; j++) {
@@ -481,21 +498,21 @@ static void k_testTask1(void) {
 	//k_exitTask();
 }
 
-// test-task-2: print rotating pinwheels in the position corresponding to the serial number of TCB.ID.
+// test-task-2: print rotating pinwheel in the position corresponding to the serial number of task ID.
 static void k_testTask2(void) {
 	int i = 0, offset;
 	Char* screen = (Char*)CONSOLE_VIDEOMEMORYADDRESS;
 	Tcb* runningTask;
 	char data[4] = {'-', '\\', '|', '/'};
 	
-	// use the offset of current task ID as screen offset.
-	runningTask = k_getRunningTask();
+	// use the offset of running task ID as screen offset.
+	runningTask = k_getRunningTask(k_getApicId());
 	offset = (runningTask->link.id & 0xFFFFFFFF) * 2;
 	offset = (CONSOLE_WIDTH * CONSOLE_HEIGHT) - (offset % (CONSOLE_WIDTH * CONSOLE_HEIGHT));
 	
 	// infinite loop
 	while (true) {
-		// print rotating pinwheels.
+		// print rotating pinwheel.
 		screen[offset].char_ = data[i % 4];
 		screen[offset].attr = (offset % 15) + 1;
 		i++;
@@ -505,9 +522,35 @@ static void k_testTask2(void) {
 	}
 }
 
+// test-task-3: print task ID and core ID whenever the task moves to another core.
+static void k_testTask3(void) {
+	qword taskId;
+	Tcb* runningTask;
+	byte lastApicId;
+	qword lastTick;
+	
+	// get test-task-3 ID.
+	runningTask = k_getRunningTask(k_getApicId());
+	taskId = runningTask->link.id;
+	
+	k_printf("task-3 (0x%q) started on core %d\n", taskId, k_getApicId());
+	
+	lastApicId = k_getApicId();
+	
+	while (true) {
+		// If the task has been moved to another core, print task ID and core ID.
+		if (lastApicId != k_getApicId()) {
+			k_printf("task-3 (0x%q) moved from core %d to core %d\n", taskId, lastApicId, k_getApicId());
+			lastApicId = k_getApicId();
+		}
+		
+		k_schedule();
+	}
+}
+
 static void k_createTestTask(const char* paramBuffer) {
 	ParamList list;
-	char param[100];
+	char param[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	long type, count;
 	int i;
 	
@@ -515,10 +558,11 @@ static void k_createTestTask(const char* paramBuffer) {
 	k_initParam(&list, paramBuffer);
 	
 	// get No.1 parameter: type
-	if (k_getNextParam(&list, param) == 0) {
+	if (k_getNextParam(&list, param) <= 0) {
 		k_printf("Usage) testtask <type> <count>\n");
-		k_printf("  - type: 1 (border characters)\n");
-		k_printf("  - type: 2 (rotating pinwheels)\n");
+		k_printf("  - type: 1 (border character)\n");
+		k_printf("  - type: 2 (rotating pinwheel)\n");
+		k_printf("  - type: 3 (core checker)\n");
 		k_printf("  - count: 0 ~ 1022 (task count)\n");
 		k_printf("  - example: testtask 1 1022\n");
 		return;
@@ -526,11 +570,14 @@ static void k_createTestTask(const char* paramBuffer) {
 	
 	type = k_atoi(param, 10);
 	
+	k_memset(param, '\0', SHELL_MAXPARAMETERLENGTH);
+	
 	// get No.2 parameter: count
-	if (k_getNextParam(&list, param) == 0) {
+	if (k_getNextParam(&list, param) <= 0) {
 		k_printf("Usage) testtask <type> <count>\n");
-		k_printf("  - type: 1 (border characters)\n");
-		k_printf("  - type: 2 (rotating pinwheels)\n");
+		k_printf("  - type: 1 (border character)\n");
+		k_printf("  - type: 2 (rotating pinwheel)\n");
+		k_printf("  - type: 3 (core checker)\n");
 		k_printf("  - count: 0 ~ 1022 (task count)\n");
 		k_printf("  - example: testtask 1 1022\n");
 		return;
@@ -539,36 +586,51 @@ static void k_createTestTask(const char* paramBuffer) {
 	count = k_atoi(param, 10);
 	
 	switch (type) {
-	case 1: // test-task-1: print border characters.
+	case 1: // test-task-1: border character
 		for (i = 0; i < count; i++) {
-			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_testTask1) == null) {
+			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_testTask1, TASK_AFFINITY_LOADBALANCING) == null) {
 				break;
 			}
+			
+			//k_schedule();
 		}
 		
 		k_printf("created task-1 count: %d\n", i);
 		break;
 		
-	case 2: // test-task-2: print rotating pinwheels.
+	case 2: // test-task-2: rotating pinwheel
 		for (i = 0; i < count; i++) {
-			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_testTask2) == null) {
+			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_testTask2, TASK_AFFINITY_LOADBALANCING) == null) {
 				break;
 			}
+			
+			//k_schedule();
 		}
 		
 		k_printf("created task-2 count: %d\n", i);
 		break;
 		
+	case 3: // test-task-3: core checker
+		for (i = 0; i < count; i++) {
+			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_testTask3, TASK_AFFINITY_LOADBALANCING) == null) {
+				break;
+			}
+			
+			k_schedule();
+		}
+		
+		k_printf("created task-3 count: %d\n", i);
+		break;
+		
 	default:
-		k_printf("invalid type: %d, Type must be 1, 2.\n", type);
+		k_printf("invalid type: %d, Type must be 1, 2, 3.\n", type);
 		return;
 	}
 }
 
 static void k_changeTaskPriority(const char* paramBuffer) {
 	ParamList list;
-	char taskId_[30];
-	char priority_[30];
+	char param[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	qword taskId;
 	byte priority;
 	
@@ -576,16 +638,25 @@ static void k_changeTaskPriority(const char* paramBuffer) {
 	k_initParam(&list, paramBuffer);
 	
 	// get No.1 parameter: taskId
-	if (k_getNextParam(&list, taskId_) == 0) {
+	if (k_getNextParam(&list, param) <= 0) {
 		k_printf("Usage) chpr <taskId> <priority>\n");
 		k_printf("  - taskId: 8 bytes hexadecimal number\n");
 		k_printf("  - priority: 0 ~ 4 (highest ~ lowest)\n");
 		k_printf("  - example: chpr 0x300000002 0\n");
 		return;
 	}
+	
+	if (k_memcmp(param, "0x", 2) == 0) {
+		taskId = k_atoi(param + 2, 16);
+		
+	} else {
+		taskId = k_atoi(param, 10);
+	}
+	
+	k_memset(param, '\0', SHELL_MAXPARAMETERLENGTH);
 	
 	// get No.2 parameter: priority
-	if (k_getNextParam(&list, priority_) == 0) {
+	if (k_getNextParam(&list, param) <= 0) {
 		k_printf("Usage) chpr <taskId> <priority>\n");
 		k_printf("  - taskId: 8 bytes hexadecimal number\n");
 		k_printf("  - priority: 0 ~ 4 (highest ~ lowest)\n");
@@ -593,14 +664,12 @@ static void k_changeTaskPriority(const char* paramBuffer) {
 		return;
 	}
 	
-	if (k_memcmp(taskId_, "0x", 2) == 0) {
-		taskId = k_atoi(taskId_ + 2, 16);
-
-	} else {
-		taskId = k_atoi(taskId_, 10);
-	}
+	priority = k_atoi(param, 10);
 	
-	priority = k_atoi(priority_, 10);
+	if (priority < 0 || priority > 4) {
+		k_printf("invalid priority: %d, Priority must be 0 ~ 4.", priority);
+		return;
+	}
 	
 	if (k_changePriority(taskId, priority) == true) {
 		k_printf("task priority changing success\n");
@@ -611,27 +680,85 @@ static void k_changeTaskPriority(const char* paramBuffer) {
 }
 
 static void k_showTaskList(const char* paramBuffer) {
+	ParamList list;
+	char option[SHELL_MAXPARAMETERLENGTH] = {'\0', };
+	int optionLen;
 	int i;
 	Tcb* task;
 	int count = 0;
-	int taskCount;
+	int totalTaskCount = 0;
+	char buffer[20];
+	int remainLen;
+	int coreCount;
 	
-	taskCount = k_getTaskCount();
+	// initialize parameter.
+	k_initParam(&list, paramBuffer);
 	
-	k_printf("*** Task Status (%d) ***\n", taskCount);
-	k_printf("No  TID  PPID  Child  Flags  Priority  S  P/T  MemAddr  MemSize\n");
+	// get No.1 parameter: option
+	optionLen = k_getNextParam(&list, option);
+	if (optionLen != 0) {
+		if ((optionLen < 0) || ((k_equalStr(option, "-a") == false) && (k_equalStr(option, "-c") == false) && (k_equalStr(option, "-t") == false))) {
+			k_printf("Usage) ts <option>\n");
+			k_printf("  - option: -a (all info)\n");
+			k_printf("  - option: -c (core info)\n");
+			k_printf("  - option: -t (task info)\n"); // 'ts -t' is same as 'ts'.
+			k_printf("  - example: ts -a\n");
+			return;
+		}
+	}
+	
+	coreCount = k_getProcessorCount();
+	for (i = 0; i < coreCount; i++) {
+		totalTaskCount += k_getTaskCount(i);
+	}
+	
+	k_printf("*** Task Status (%d) ***\n", totalTaskCount);
+	
+	/* print core info */
+	if ((k_equalStr(option, "-a") == true) || (k_equalStr(option, "-c") == true)) {
+		for (i = 0; i < coreCount; i++) {
+			if ((i != 0) && ((i % 4) == 0)) {
+				k_printf("\n");
+			}
+			
+			k_sprintf(buffer, "core %d: %d", i, k_getTaskCount(i));
+			k_printf(buffer);
+			
+			// put spaces to remain cells out of 19 cells.
+			remainLen = 19 - k_strlen(buffer);
+			k_memset(buffer, ' ', remainLen);
+			buffer[remainLen] = '\0';
+			k_printf(buffer);
+		}
+		
+		if (k_equalStr(option, "-a") == true) {
+			// ask a user to print more info.
+			k_printf("\nPress any key to continue...('q' is quit): ");
+			if (k_getch() == 'q') {
+				k_printf("\n");
+				return;
+			}
+			
+			k_printf("\n");
+			
+		} else {
+			k_printf("\n");
+			return;
+		}
+	}
+	
+	/* print task info */
+	k_printf("No  TID  PPID  Child  S  P/T  Priority  MemAddr  MemSize  Affinity  Core\n");
 	
 	for (i = 0; i < TASK_MAXCOUNT; i++) {
-		task = k_getTcbInTcbPool(i);
+		task = k_getTaskFromTcbPool(i);
 		
 		// check if high 32 bits of task ID (TCB allocation count) != 0.
 		if ((task->link.id >> 32) != 0) {
 			
 			// ask a user to print more items, every after 10 items are printed.
 			if ((count != 0) && ((count % 10) == 0)) {
-				
 				k_printf("Press any key to continue...('q' is quit): ");
-				
 				if (k_getch() == 'q') {
 					k_printf("\n");
 					break;
@@ -640,25 +767,26 @@ static void k_showTaskList(const char* paramBuffer) {
 				k_printf("\n");
 			}
 			
-			k_printf("%d> 0x%Q  0x%Q  %d  0x%Q  %d  %s  %s%s  0x%Q  0x%Q\n"
+			k_printf("%d> 0x%q  0x%q  %d  %s  %s%s  %d  0x%q  0x%q  %d  %d\n"
 					,1 + count++
 					,task->link.id
 					,task->parentProcessId
 					,k_getListCount(&(task->childThreadList))
-					,task->flags
-					,GETPRIORITY(task->flags)
 					,(task->flags & TASK_FLAGS_SYSTEM) ? "S" : "-"
 					,(task->flags & TASK_FLAGS_PROCESS) ? "P" : ""
 					,(task->flags & TASK_FLAGS_THREAD) ? "T" : ""
+					,GETPRIORITY(task->flags)
 					,task->memAddr
-					,task->memSize);
+					,task->memSize
+					,task->affinity
+					,task->apicId);
 		}
 	}
 }
 
 static void k_killTask(const char* paramBuffer) {
 	ParamList list;
-	char taskId_[30];
+	char taskId_[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	qword taskId;
 	Tcb* task;
 	int i;
@@ -667,7 +795,7 @@ static void k_killTask(const char* paramBuffer) {
 	k_initParam(&list, paramBuffer);
 	
 	// get No.1 parameter: taskId
-	if (k_getNextParam(&list, taskId_) == 0) {
+	if (k_getNextParam(&list, taskId_) <= 0) {
 		k_printf("Usage) kill <taskId>\n");
 		k_printf("  - taskId: 8 bytes hexadecimal number\n");
 		k_printf("  - example: kill 0x300000002\n");
@@ -676,8 +804,7 @@ static void k_killTask(const char* paramBuffer) {
 	}
 	
 	// exit a task with specific ID.
-	if (k_memcmp(taskId_, "all", 3) != 0) {
-		
+	if (k_equalStr(taskId_, "all") == false) {
 		if (k_memcmp(taskId_, "0x", 2) == 0) {
 			taskId = k_atoi(taskId_ + 2, 16);
 			
@@ -686,8 +813,8 @@ static void k_killTask(const char* paramBuffer) {
 		}
 		
 		// [Note] To exit the task, it requires only the offset (low 32 bits) of parameter TaskID,
-		//        because parameter TaskID has been overrided with real TaskID from task pool.
-		task = k_getTcbInTcbPool(GETTCBOFFSET(taskId));
+		//        because parameter TaskID has been overrided with real TaskID from TCB pool.
+		task = k_getTaskFromTcbPool(GETTCBOFFSET(taskId));
 		taskId = task->link.id;
 		
 		// exit tasks except not-allocated tasks and system tasks.
@@ -714,7 +841,7 @@ static void k_killTask(const char* paramBuffer) {
 	// exit all tasks except a console shell task and a idle task.
 	} else {
 		for (i = 0; i < TASK_MAXCOUNT; i++) {
-			task = k_getTcbInTcbPool(i);
+			task = k_getTaskFromTcbPool(i);
 			taskId = task->link.id;
 			
 			// exit tasks except not-allocated tasks and system tasks.
@@ -731,14 +858,35 @@ static void k_killTask(const char* paramBuffer) {
 }
 
 static void k_cpuLoad(const char* paramBuffer) {
-	k_printf("CPU load: %d %%\n", k_getProcessorLoad());
+	int i;
+	char buffer[50];
+	int remainLen;
+	
+	k_printf("*** CPU Load by Core ***\n");
+	
+	for (i = 0; i < k_getProcessorCount(); i++) {
+		if ((i != 0) && ((i % 4) == 0)) {
+			k_printf("\n");
+		}
+		
+		k_sprintf(buffer, "core %d: %d %%", i, k_getProcessorLoad(i));
+		k_printf(buffer);
+		
+		// put spaces to remain cells out of 19 cells.
+		remainLen = 19 - k_strlen(buffer);
+		k_memset(buffer, ' ', remainLen);
+		buffer[remainLen] = '\0';
+		k_printf(buffer);
+	}
+	
+	k_printf("\n");
 }
 
 // for mutex test.
 static Mutex g_mutex;
 static volatile qword g_adder;
 
-static void k_printNumberTask(const char* paramBuffer) {
+static void k_printNumberTask(void) {
 	int i, j;
 	qword tickCount;
 	
@@ -752,7 +900,7 @@ static void k_printNumberTask(const char* paramBuffer) {
 	for (i = 0; i < 5; i++) {
 		k_lock(&g_mutex);
 		
-		k_printf("mutex test: task ID: 0x%Q, value: %d\n", k_getRunningTask()->link.id, g_adder);
+		k_printf("mutex test: task ID: 0x%q, value: %d\n", k_getRunningTask(k_getApicId())->link.id, g_adder);
 		g_adder++;
 		
 		k_unlock(&g_mutex);
@@ -782,7 +930,7 @@ static void k_testMutex(const char* paramBuffer) {
 	
 	// create 3 tasks for mutex test.
 	for (i = 0; i < 3; i++) {
-		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_printNumberTask);
+		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_printNumberTask, k_getApicId());
 	}
 	
 	k_printf("wait for the mutex test until %d tasks end.\n", i);
@@ -793,7 +941,7 @@ static void k_createThreadTask(void) {
 	int i;
 	
 	for (i = 0; i < 3; i++) {
-		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_testTask2);
+		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_testTask2, TASK_AFFINITY_LOADBALANCING);
 	}
 	
 	while (true) {
@@ -805,10 +953,10 @@ static void k_testThread(const char* paramBuffer) {
 	Tcb* process;
 	
 	// create 1 process and 3 threads.
-	process = k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void*)0xEEEEEEEE, 0x1000, (qword)k_createThreadTask);
+	process = k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void*)0xEEEEEEEE, 0x1000, (qword)k_createThreadTask, TASK_AFFINITY_LOADBALANCING);
 	
 	if (process != null) {
-		k_printf("thread test success: 1 process (0x%Q) and 3 threads have been created.\n", process->link.id);
+		k_printf("thread test success: 1 process (0x%q) and 3 threads have been created.\n", process->link.id);
 		
 	} else {
 		k_printf("thread test failure: process creation failure\n");
@@ -853,7 +1001,7 @@ static void k_matrixProcess(void) {
 	int i;
 	
 	for (i = 0; i < 300; i++) {
-		if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_dropCharThread) == null) {
+		if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_dropCharThread, TASK_AFFINITY_LOADBALANCING) == null) {
 			break;
 		}
 		
@@ -869,10 +1017,9 @@ static void k_matrixProcess(void) {
 static void k_showMatrix(const char* paramBuffer) {
 	Tcb* process;
 	
-	process = k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void*)0xE00000, 0xE00000, (qword)k_matrixProcess);
-	
+	process = k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void*)0xE00000, 0xE00000, (qword)k_matrixProcess, TASK_AFFINITY_LOADBALANCING);
 	if (process != null) {
-		k_printf("Matrix process creation success: 0x%Q\n", process->link.id);
+		k_printf("Matrix process creation success: 0x%q\n", process->link.id);
 		
 		// wait until process exits.
 		while ((process->link.id >> 32) != 0) {
@@ -896,7 +1043,7 @@ static void k_fpuTestTask(void) {
 	Char* screen = (Char*)CONSOLE_VIDEOMEMORYADDRESS;
 	
 	// use the offset of current tast ID as screen offset.
-	runningTask = k_getRunningTask();
+	runningTask = k_getRunningTask(k_getApicId());
 	offset = (runningTask->link.id & 0xFFFFFFFF) * 2;
 	offset = (CONSOLE_WIDTH * CONSOLE_HEIGHT) - (offset % (CONSOLE_WIDTH * CONSOLE_HEIGHT));
 	
@@ -924,7 +1071,7 @@ static void k_fpuTestTask(void) {
 			break;
 		}
 		
-		// If FPU operation has no problems, print rotating pinwheels.
+		// If FPU operation has no problems, print rotating pinwheel.
 		screen[offset].char_ = data[count % 4];
 		screen[offset].attr = (offset % 15) + 1;
 		count++;
@@ -943,7 +1090,7 @@ static void k_testPi(const char* paramBuffer) {
 	
 	// create 100 tasks for calculating float numbers (rotating pinwheels).
 	for (i = 0; i < 100; i++) {
-		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_fpuTestTask);
+		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_fpuTestTask, TASK_AFFINITY_LOADBALANCING);
 	}
 }
 
@@ -957,24 +1104,24 @@ static void k_showDynamicMemInfo(const char* paramBuffer) {
 	totalRamSize = k_getTotalRamSize();
 	
 	k_printf("*** Dynamic Memory Info ***\n");
-	k_printf("- start address  : 0x%Q bytes (%d MB)\n", startAddr, startAddr / 1024 / 1024);
-	k_printf("- end address    : 0x%Q bytes (%d MB)\n", endAddredss, endAddredss / 1024 / 1024);
-	k_printf("- total size     : 0x%Q bytes (%d MB)\n", totalSize, totalSize / 1024 / 1024);
-	k_printf("- meta size      : 0x%Q bytes (%d KB)\n", metaSize, metaSize / 1024);
-	k_printf("- used size      : 0x%Q bytes (%d KB)\n", usedSize, usedSize / 1024);
-	k_printf("- total RAM size : 0x%Q bytes (%d MB)\n", totalRamSize * 1024 * 1024, totalRamSize);
+	k_printf("- start address  : 0x%q bytes (%d MB)\n", startAddr, startAddr / 1024 / 1024);
+	k_printf("- end address    : 0x%q bytes (%d MB)\n", endAddredss, endAddredss / 1024 / 1024);
+	k_printf("- total size     : 0x%q bytes (%d MB)\n", totalSize, totalSize / 1024 / 1024);
+	k_printf("- meta size      : 0x%q bytes (%d KB)\n", metaSize, metaSize / 1024);
+	k_printf("- used size      : 0x%q bytes (%d KB)\n", usedSize, usedSize / 1024);
+	k_printf("- total RAM size : 0x%q bytes (%d MB)\n", totalRamSize * 1024 * 1024, totalRamSize);
 }
 
 static void k_testDynamicMem(const char* paramBuffer) {
 	ParamList list;
-	char param[100];
+	char param[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	long type;
 	
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
 	
 	// get No.1 parameter: type
-	if (k_getNextParam(&list, param) == 0) {
+	if (k_getNextParam(&list, param) <= 0) {
 		k_printf("Usage) testdmem <type>\n");
 		k_printf("  - type: 1 (sequential allocation)\n");
 		k_printf("  - type: 2 (random allocation)\n");
@@ -999,7 +1146,7 @@ static void k_testDynamicMem(const char* paramBuffer) {
 	}
 }
 
-static void k_testSeqAlloc() {
+static void k_testSeqAlloc(void) {
 	DynamicMemManager* manager;
 	long i, j, k;
 	qword* buffer;
@@ -1057,7 +1204,7 @@ static void k_randomAllocTask(void) {
 	int i, j;
 	int y;
 	
-	task = k_getRunningTask();
+	task = k_getRunningTask(k_getApicId());
 	y = (task->link.id) % 15 + 9;
 	
 	for (j = 0; j < 10; j++) {
@@ -1073,12 +1220,12 @@ static void k_randomAllocTask(void) {
 			
 		} while (allocBuffer == 0);
 		
-		k_sprintf(buffer, "| address (0x%Q), size (0x%Q) allocation success", allocBuffer, memSize);
+		k_sprintf(buffer, "| address (0x%q), size (0x%q) allocation success", allocBuffer, memSize);
 		k_printStrXy(20, y, buffer);
 		k_sleep(200);
 		
 		// divide buffer half, put the same random data to both of them.
-		k_sprintf(buffer, "| address (0x%Q), size (0x%Q) write data...", allocBuffer, memSize);
+		k_sprintf(buffer, "| address (0x%q), size (0x%q) write data...", allocBuffer, memSize);
 		k_printStrXy(20, y, buffer);
 		
 		for (i = 0; i < (memSize / 2); i++) {
@@ -1089,12 +1236,12 @@ static void k_randomAllocTask(void) {
 		k_sleep(200);
 		
 		// verify data.
-		k_sprintf(buffer, "| address (0x%Q), size (0x%Q) verify data...", allocBuffer, memSize);
+		k_sprintf(buffer, "| address (0x%q), size (0x%q) verify data...", allocBuffer, memSize);
 		k_printStrXy(20, y, buffer);
 		
 		for (i = 0; i < (memSize / 2); i++) {
 			if (allocBuffer[i] != allocBuffer[i+(memSize/2)]) {
-				k_printf("test failure: data verification failure: task ID: 0x%Q\n", task->link.id);
+				k_printf("test failure: data verification failure: task ID: 0x%q\n", task->link.id);
 				k_exitTask();
 			}
 		}
@@ -1108,13 +1255,13 @@ static void k_randomAllocTask(void) {
 	k_exitTask();
 }
 
-static void k_testRandomAlloc() {
+static void k_testRandomAlloc(void) {
 	int i;
 	
 	k_printf("*** Dynamic Memory Random Allocation Test ***\n");
 	
 	for (i = 0; i < 1000; i++) {
-		k_createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD, 0, 0, (qword)k_randomAllocTask);
+		k_createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD, 0, 0, (qword)k_randomAllocTask, TASK_AFFINITY_LOADBALANCING);
 	}
 }
 
@@ -1149,90 +1296,9 @@ static void k_showHddInfo(const char* paramBuffer) {
 	k_printf("- total sectors  : %d sectors (%d MB)\n", hddInfo.totalSectors, hddInfo.totalSectors / 2 / 1024);
 }
 
-static void k_readSector(const char* paramBuffer) {
-	ParamList list;
-	char lba_[50];
-	char sectorCount_[50];
-	dword lba;
-	int sectorCount;
-	char* buffer;
-	int i, j;
-	byte data;
-	bool exit = false;
-	
-	// initialize parameter.
-	k_initParam(&list, paramBuffer);
-	
-	// get No.1 parameter: lba
-	if (k_getNextParam(&list, lba_) == 0) {
-		k_printf("Usage) reads <lba> <count>\n");
-		k_printf("  - lba: logical block address\n");
-		k_printf("  - count: read sector count\n");
-		k_printf("  - example: reads 0 10\n");
-		return;
-	}
-	
-	// get No.2 parameter: sectorCount
-	if (k_getNextParam(&list, sectorCount_) == 0) {
-		k_printf("Usage) reads <lba> <count>\n");
-		k_printf("  - lba: logical block address\n");
-		k_printf("  - count: read sector count\n");
-		k_printf("  - example: reads 0 10\n");
-		return;
-	}
-	
-	lba = k_atoi(lba_, 10);
-	sectorCount = k_atoi(sectorCount_, 10);
-	
-	// allocate sector-count-sized memory.
-	buffer = (char*)k_allocMem(sectorCount * 512);
-	
-	// read sectors
-	if (k_readHddSector(true, true, lba, sectorCount, buffer) == sectorCount) {
-		k_printf("HDD sector reading successs: LBA: %d, count: %d", lba, sectorCount);
-		
-		// print memory buffer.
-		for (j = 0; j < sectorCount; j++) {
-			for (i = 0; i < 512; i++) {
-				if (!((j == 0) && (i == 0)) && ((i % 256) == 0)) {
-					k_printf("\nPress any key to continue...('q' is quit): ");
-					if (k_getch() == 'q') {
-						exit = true;
-						break;
-					}
-				}
-				
-				if ((i % 16) == 0) {
-					k_printf("\n<LBA:%d, offset:%d>\t| ", lba + j, i);
-				}
-				
-				// add 0 to the number less than 16 in order to print double digits.
-				data = buffer[j*512+i] & 0xFF;
-				if (data < 16) {
-					k_printf("0");
-				}
-				
-				k_printf("%X ", data);
-			}
-			
-			if (exit == true) {
-				break;
-			}
-		}
-		
-		k_printf("\n");
-		
-	} else {
-		k_printf("HDD sector reading failure\n");
-	}
-	
-	k_freeMem(buffer);
-}
-
 static void k_writeSector(const char* paramBuffer) {
 	ParamList list;
-	char lba_[50];
-	char sectorCount_[50];
+	char param[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	dword lba;
 	int sectorCount;
 	char* buffer;
@@ -1245,16 +1311,20 @@ static void k_writeSector(const char* paramBuffer) {
 	k_initParam(&list, paramBuffer);
 	
 	// get No.1 parameter: lba
-	if (k_getNextParam(&list, lba_) == 0) {
+	if (k_getNextParam(&list, param) <= 0) {
 		k_printf("Usage) writes <lba> <count>\n");
 		k_printf("  - lba: logical block address\n");
 		k_printf("  - count: read sector count\n");
 		k_printf("  - example: writes 0 10\n");
 		return;
 	}
+	
+	lba = k_atoi(param, 10);
+	
+	k_memset(param, '\0', SHELL_MAXPARAMETERLENGTH);
 	
 	// get No.2 parameter: sectorCount
-	if (k_getNextParam(&list, sectorCount_) == 0) {
+	if (k_getNextParam(&list, param) <= 0) {
 		k_printf("Usage) writes <lba> <count>\n");
 		k_printf("  - lba: logical block address\n");
 		k_printf("  - count: read sector count\n");
@@ -1262,8 +1332,7 @@ static void k_writeSector(const char* paramBuffer) {
 		return;
 	}
 	
-	lba = k_atoi(lba_, 10);
-	sectorCount = k_atoi(sectorCount_, 10);
+	sectorCount = k_atoi(param, 10);
 	
 	writeCount++;
 	
@@ -1304,7 +1373,7 @@ static void k_writeSector(const char* paramBuffer) {
 				k_printf("0");
 			}
 			
-			k_printf("%X ", data);
+			k_printf("%x ", data);
 		}
 		
 		if (exit == true) {
@@ -1313,6 +1382,88 @@ static void k_writeSector(const char* paramBuffer) {
 	}
 	
 	k_printf("\n");
+	
+	k_freeMem(buffer);
+}
+
+static void k_readSector(const char* paramBuffer) {
+	ParamList list;
+	char param[SHELL_MAXPARAMETERLENGTH] = {'\0', };
+	dword lba;
+	int sectorCount;
+	char* buffer;
+	int i, j;
+	byte data;
+	bool exit = false;
+	
+	// initialize parameter.
+	k_initParam(&list, paramBuffer);
+	
+	// get No.1 parameter: lba
+	if (k_getNextParam(&list, param) <= 0) {
+		k_printf("Usage) reads <lba> <count>\n");
+		k_printf("  - lba: logical block address\n");
+		k_printf("  - count: read sector count\n");
+		k_printf("  - example: reads 0 10\n");
+		return;
+	}
+	
+	lba = k_atoi(param, 10);
+	
+	k_memset(param, '\0', SHELL_MAXPARAMETERLENGTH);
+	
+	// get No.2 parameter: sectorCount
+	if (k_getNextParam(&list, param) <= 0) {
+		k_printf("Usage) reads <lba> <count>\n");
+		k_printf("  - lba: logical block address\n");
+		k_printf("  - count: read sector count\n");
+		k_printf("  - example: reads 0 10\n");
+		return;
+	}
+	
+	sectorCount = k_atoi(param, 10);
+	
+	// allocate sector-count-sized memory.
+	buffer = (char*)k_allocMem(sectorCount * 512);
+	
+	// read sectors
+	if (k_readHddSector(true, true, lba, sectorCount, buffer) == sectorCount) {
+		k_printf("HDD sector reading successs: LBA: %d, count: %d", lba, sectorCount);
+		
+		// print memory buffer.
+		for (j = 0; j < sectorCount; j++) {
+			for (i = 0; i < 512; i++) {
+				if (!((j == 0) && (i == 0)) && ((i % 256) == 0)) {
+					k_printf("\nPress any key to continue...('q' is quit): ");
+					if (k_getch() == 'q') {
+						exit = true;
+						break;
+					}
+				}
+				
+				if ((i % 16) == 0) {
+					k_printf("\n<LBA:%d, offset:%d>\t| ", lba + j, i);
+				}
+				
+				// add 0 to the number less than 16 in order to print double digits.
+				data = buffer[j*512+i] & 0xFF;
+				if (data < 16) {
+					k_printf("0");
+				}
+				
+				k_printf("%x ", data);
+			}
+			
+			if (exit == true) {
+				break;
+			}
+		}
+		
+		k_printf("\n");
+		
+	} else {
+		k_printf("HDD sector reading failure\n");
+	}
 	
 	k_freeMem(buffer);
 }
@@ -1349,71 +1500,6 @@ static void k_showFileSystemInfo(const char* paramBuffer) {
 	k_printf("- data area start address          : %d sectors\n",  manager.dataAreaStartAddr);
 	k_printf("- total cluster count              : %d clusters\n", manager.totalClusterCount);
 	k_printf("- cache enable                     : %s\n",         (manager.cacheEnabled == true) ? "true" : "false");
-}
-
-static void k_createFileInRootDir(const char* paramBuffer) {
-	ParamList list;
-	char fileName[50];
-	int len;
-	File* file;
-	
-	// initialize parameter.
-	k_initParam(&list, paramBuffer);
-	
-	// get No.1 parameter: fname
-	if ((len = k_getNextParam(&list, fileName)) == 0) {
-		k_printf("Usage) create <fname>\n");
-		k_printf("  - fname: file name\n");
-		k_printf("  - example: create a.txt");
-		return;
-	}
-	
-	fileName[len] = '\0';
-	
-	if (len > (FS_MAXFILENAMELENGTH - 1)) {
-		k_printf("file creation failure: too long file name\n");
-		return;
-	}
-	
-	// open file.
-	file = fopen(fileName, "w");
-	if (file == null) {
-		k_printf("file creation failure: file opening failure\n");
-		return;
-	}
-	
-	// close file.
-	fclose(file);
-}
-
-static void k_deleteFileInRootDir(const char* paramBuffer) {
-	ParamList list;
-	char fileName[50];
-	int len;
-	
-	// initialize parameter.
-	k_initParam(&list, paramBuffer);
-	
-	// get No.1 parameter: fname
-	if ((len = k_getNextParam(&list, fileName)) == 0) {
-		k_printf("Usage) delete <fname>\n");
-		k_printf("  - fname: file name\n");
-		k_printf("  - example: delete a.txt\n");
-		return;
-	}
-	
-	fileName[len] = '\0';
-	
-	if (len > (FS_MAXFILENAMELENGTH - 1)) {
-		k_printf("file deletion failure: too long file name\n");
-		return;
-	}
-	
-	// remove file.
-	if (remove(fileName) != 0) {
-		k_printf("file deletion failure: file removing failure\n");
-		return;
-	}
 }
 
 static void k_showRootDir(const char* paramBuffer) {
@@ -1484,7 +1570,7 @@ static void k_showRootDir(const char* paramBuffer) {
 		k_memcpy(buffer + 30, tempValue, k_strlen(tempValue));
 		
 		// set start cluster index to buffer.
-		k_sprintf(tempValue, "0x%X clusters", entry->startClusterIndex);
+		k_sprintf(tempValue, "0x%x clusters", entry->startClusterIndex);
 		k_memcpy(buffer + 55, tempValue, k_strlen(tempValue));
 		
 		// print file list.
@@ -1515,9 +1601,74 @@ static void k_showRootDir(const char* paramBuffer) {
 	closedir(dir);
 }
 
+static void k_createFileInRootDir(const char* paramBuffer) {
+	ParamList list;
+	char fileName[SHELL_MAXPARAMETERLENGTH] = {'\0', };
+	int len;
+	File* file;
+	
+	// initialize parameter.
+	k_initParam(&list, paramBuffer);
+	
+	// get No.1 parameter: fname
+	if ((len = k_getNextParam(&list, fileName)) <= 0) {
+		k_printf("Usage) create <fname>\n");
+		k_printf("  - fname: file name\n");
+		k_printf("  - example: create a.txt");
+		return;
+	}
+	
+	fileName[len] = '\0';
+	
+	if (len > (FS_MAXFILENAMELENGTH - 1)) {
+		k_printf("file creation failure: too long file name\n");
+		return;
+	}
+	
+	// open file.
+	file = fopen(fileName, "w");
+	if (file == null) {
+		k_printf("file creation failure: file opening failure\n");
+		return;
+	}
+	
+	// close file.
+	fclose(file);
+}
+
+static void k_deleteFileInRootDir(const char* paramBuffer) {
+	ParamList list;
+	char fileName[SHELL_MAXPARAMETERLENGTH] = {'\0', };
+	int len;
+	
+	// initialize parameter.
+	k_initParam(&list, paramBuffer);
+	
+	// get No.1 parameter: fname
+	if ((len = k_getNextParam(&list, fileName)) <= 0) {
+		k_printf("Usage) delete <fname>\n");
+		k_printf("  - fname: file name\n");
+		k_printf("  - example: delete a.txt\n");
+		return;
+	}
+	
+	fileName[len] = '\0';
+	
+	if (len > (FS_MAXFILENAMELENGTH - 1)) {
+		k_printf("file deletion failure: too long file name\n");
+		return;
+	}
+	
+	// remove file.
+	if (remove(fileName) != 0) {
+		k_printf("file deletion failure: file removing failure\n");
+		return;
+	}
+}
+
 static void k_writeDataToFile(const char* paramBuffer) {
 	ParamList list;
-	char fileName[50];
+	char fileName[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	int len;
 	File* file;
 	int enterCount;
@@ -1527,7 +1678,7 @@ static void k_writeDataToFile(const char* paramBuffer) {
 	k_initParam(&list, paramBuffer);
 	
 	// get No.1 parameter: fname
-	if ((len = k_getNextParam(&list, fileName)) == 0) {
+	if ((len = k_getNextParam(&list, fileName)) <= 0) {
 		k_printf("Usage) write <fname>\n");
 		k_printf("  - fname: file name\n");
 		k_printf("  - example: write a.txt\n");
@@ -1579,7 +1730,7 @@ static void k_writeDataToFile(const char* paramBuffer) {
 
 static void k_readDataFromFile(const char* paramBuffer) {
 	ParamList list;
-	char fileName[50];
+	char fileName[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	int len;
 	File* file;
 	int enterCount;
@@ -1589,7 +1740,7 @@ static void k_readDataFromFile(const char* paramBuffer) {
 	k_initParam(&list, paramBuffer);
 	
 	// get No.1 parameter: fname
-	if ((len = k_getNextParam(&list, fileName)) == 0) {
+	if ((len = k_getNextParam(&list, fileName)) <= 0) {
 		k_printf("Usage) read <fname>\n");
 		k_printf("  - fname:  file name\n");
 		k_printf("  - example: read a.txt\n");
@@ -1743,7 +1894,7 @@ static void k_testFileIo(const char* paramBuffer) {
 		for (j = 0; j < FS_CLUSTERSIZE; j++) {
 			if (buffer[j] != (byte)i) {
 				fail = true;
-				k_printf("fail: %d cluster, 0x%X != 0x%X\n", i, buffer[j], (byte)i);
+				k_printf("fail: %d cluster, 0x%x != 0x%x\n", i, buffer[j], (byte)i);
 				break;
 			}
 		}
@@ -2065,7 +2216,7 @@ static void k_flushCache(const char* paramBuffer) {
 
 static void k_downloadFile(const char* paramBuffer) {
 	ParamList list;
-	char fileName[50];
+	char fileName[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	int fileNameLen;
 	dword dataLen;
 	File* file;
@@ -2078,7 +2229,7 @@ static void k_downloadFile(const char* paramBuffer) {
 	k_initParam(&list, paramBuffer);
 	
 	// get No.1 parameter: fname
-	if ((fileNameLen = k_getNextParam(&list, fileName)) == 0) {
+	if ((fileNameLen = k_getNextParam(&list, fileName)) <= 0) {
 		k_printf("Usage) download <fname>\n");
 		k_printf("  - fname: file name\n");
 		k_printf("  - example: download a.txt");
@@ -2201,12 +2352,12 @@ static void k_showMpConfigTable(const char* paramBuffer) {
 }
 
 static void k_startAp(const char* paramBuffer) {
+	k_printf("BSP (%d) wakes up APs.\n", k_getApicId());
+	
 	if (k_startupAp() == false) {
 		k_printf("AP starting failure\n");
 		return;
 	}
-	
-	k_printf("BSP (%d) has woken up APs.\n", k_getApicId());
 }
 
 static void k_startSymmetricIoMode(const char* paramBuffer) {
@@ -2243,9 +2394,14 @@ static void k_showIrqToIntinMap(const char* paramBuffer) {
 	k_printIrqToIntinMap();
 }
 
+static void k_startInterruptLoadBalancing(const char* paramBuffer) {
+	k_setInterruptLoadBalancing(true);
+	k_printf("interrupt load balancing success\n");
+}
+
 static void k_showInterruptCounts(const char* paramBuffer) {
 	ParamList list;
-	char param[100];
+	char param[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	int irq;
 	int irqLen;
 	int irqStart = 0;
@@ -2253,7 +2409,7 @@ static void k_showInterruptCounts(const char* paramBuffer) {
 	InterruptManager* interruptManager;
 	int i, j;
 	int coreCount;
-	char buffer[20] = {0, };
+	char buffer[20];
 	int remainLen;
 	int lineCount;
 	
@@ -2265,7 +2421,7 @@ static void k_showInterruptCounts(const char* paramBuffer) {
 	if (irqLen != 0) {
 		irq = k_atoi(param, 10);
 		
-		if ((irq < 0) || (irq >= INTERRUPT_MAXVECTORCOUNT)) {
+		if ((irqLen < 0) || (irq < 0) || (irq >= INTERRUPT_MAXVECTORCOUNT)) {
 			k_printf("Usage) intcnt <irq>\n");
 			k_printf("  - irq: 0 (timer)\n");
 			k_printf("  - irq: 1 (PS/2 keyboard)\n");
@@ -2350,7 +2506,7 @@ static void k_showInterruptCounts(const char* paramBuffer) {
 				lineCount++;
 			}
 			
-			k_sprintf(buffer, "0x%Q", interruptManager->interruptCounts[j][i]);
+			k_sprintf(buffer, "0x%q", interruptManager->interruptCounts[j][i]);
 			k_printf(buffer);
 			
 			// put spaces to remain cells out of 15 cells.
@@ -2371,8 +2527,77 @@ static void k_showInterruptCounts(const char* paramBuffer) {
 	}
 }
 
-static void k_startInterruptLoadBalancing(const char* paramBuffer) {
-	k_setInterruptLoadBalancing(true);
-	k_printf("interrupt load balancing success\n");
+static void k_startTaskLoadBalancing(const char* paramBuffer) {
+	int i;
+	
+	for (i = 0; i < MAXPROCESSORCOUNT; i++) {
+		k_setTaskLoadBalancing(i, true);
+	}
+	
+	k_printf("task load balancing success\n");
+}
+
+static void k_changeTaskAffinity(const char* paramBuffer) {
+	ParamList list;
+	char param[SHELL_MAXPARAMETERLENGTH] = {'\0', };
+	qword taskId;
+	byte affinity;
+	const byte maxAffinity = k_getProcessorCount() - 1;
+	
+	// initialize parameter.
+	k_initParam(&list, paramBuffer);
+	
+	// get No.1 parameter: taskId
+	if (k_getNextParam(&list, param) <= 0) {
+		k_printf("Usage) chaf <taskId> <affinity>\n");
+		k_printf("  - taskId: 8 bytes hexadecimal number\n");
+		k_printf("  - affinity: 0 ~ %d (core index)\n", maxAffinity);
+		k_printf("  - example: chaf 0x300000002 0\n");
+		return;
+	}
+	
+	if (k_memcmp(param, "0x", 2) == 0) {
+		taskId = k_atoi(param + 2, 16);
+		
+	} else {
+		taskId = k_atoi(param, 10);
+	}
+	
+	k_memset(param, '\0', SHELL_MAXPARAMETERLENGTH);
+	
+	// get No.2 parameter: affinity
+	if (k_getNextParam(&list, param) <= 0) {
+		k_printf("Usage) chaf <taskId> <affinity>\n");
+		k_printf("  - taskId: 8 bytes hexadecimal number\n");
+		k_printf("  - affinity: 0 ~ %d (core index)\n", maxAffinity);
+		k_printf("  - example: chaf 0x300000002 0\n");
+		return;
+	}
+	
+	if (k_memcmp(param, "0x", 2) == 0) {
+		affinity = k_atoi(param + 2, 16);
+		
+	} else {
+		affinity = k_atoi(param, 10);
+	}
+	
+	if (affinity < 0 || affinity > maxAffinity) {
+		k_printf("invalid affinity: %d, Affinity must be 0 ~ %d.", affinity, maxAffinity);
+		return;
+	}
+	
+	if (k_changeProcessorAffinity(taskId, affinity) == true) {
+		k_printf("task affinity changing success\n");
+		
+	} else {
+		k_printf("task affinity changing failure\n");
+	}
+}
+
+static void k_startMultiprocessing(const char* paramBuffer) {
+	k_startAp(paramBuffer);
+	k_startSymmetricIoMode(paramBuffer);
+	k_startInterruptLoadBalancing(paramBuffer);
+	k_startTaskLoadBalancing(paramBuffer);
 }
 

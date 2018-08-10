@@ -72,7 +72,7 @@ int main(int argc, const char** argv) {
 	return 0
 }
 --------------------------------------------------
-$ gcc -m32 -o hello32 hello.c -> fail: 'hello32' file has not been created.
+$ gcc -m32 -o hello32 hello.c -> failure: 'hello32' file has not been created.
 $ gcc -m64 -o hello64 hello.c -> success: 'hello64' file has been created and executed successfully.
 
 ### build binutils: create cross linker ###
@@ -133,7 +133,7 @@ nasm-2.13.03-installer-x64.exe
 
 # copy nasm to bin directory
 - file: nasm.exe
-- from: C:\Program Files\NASM
+- from: C:\Users\hansu\AppData\Local\bin\NASM
 - to: C:\work\cygwin64\bin
 
 # check version

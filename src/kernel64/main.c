@@ -107,7 +107,7 @@ void k_main(void) {
 	k_printf("pass\n");
 	
 	// create idle task and start shell.
-	k_createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, (qword)k_idleTask);
+	k_createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, (qword)k_idleTask, k_getApicId());
 	k_startShell();
 }
 
@@ -123,6 +123,9 @@ void k_mainForAp(void) {
 	// load IDT.
 	k_loadIdt(IDTR_STARTADDRESS);
 	
+	// initialize scheduler.
+	k_initScheduler();
+	
 	/* support symmetric IO mode. */
 	k_enableSoftwareLocalApic();
 	k_setInterruptPriority(0);
@@ -131,12 +134,6 @@ void k_mainForAp(void) {
 	
 	k_printf("AP (%d) has been activated.\n", k_getApicId());
 	
-	// print message once per 1 seconds.
-	tickCount = k_getTickCount();
-	while (true) {
-		if (k_getTickCount() - tickCount > 1000) {
-			tickCount = k_getTickCount();
-			//k_printf("AP (%d) is working.\n", k_getApicId());
-		}
-	}
+	// run idle task.
+	k_idleTask();
 }
