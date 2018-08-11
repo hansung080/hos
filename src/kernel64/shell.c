@@ -870,7 +870,7 @@ static void k_cpuLoad(const char* paramBuffer) {
 		}
 		
 		k_sprintf(buffer, "core %d: %d %%", i, k_getProcessorLoad(i));
-		k_printf(buffer);
+		k_printf("%s", buffer); // Using format "%s" is essential if buffer has '%' and '%' dose not mean data type in buffer.
 		
 		// put spaces to remain cells out of 19 cells.
 		remainLen = 19 - k_strlen(buffer);
