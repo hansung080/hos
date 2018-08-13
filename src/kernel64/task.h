@@ -97,6 +97,7 @@ typedef struct k_Tcb {
 	                         //             bit 7~0 is task priority.
 	void* memAddr;           // start address of process memory area (code, data area)
 	qword memSize;           // size of process memory area (code, data area)
+	
 	//--------------------------------------------------
 	// Thread-related Fields
 	//--------------------------------------------------
@@ -110,6 +111,7 @@ typedef struct k_Tcb {
 	                         //       - Condition 3: The FPU context offset of each TCB must be the multiple of 16 bytes. (currently, It's 64 bytes)
 	                         //       Currently, the conditions above are satisfied. Thus, it's recommended to add fields below FPU context field.
 	List childThreadList;    // child thread list
+	
 	//--------------------------------------------------
 	// Task-related Fields
 	//--------------------------------------------------

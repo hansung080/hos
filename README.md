@@ -90,6 +90,7 @@ on your computer or QEMU.
 - AP: Application Processor
 - LED: Light Emitting Diode
 - ECC: Error Correcting Code
+- VBE: Vesa Bios Extention
 
 < Abbreviation >
 - init: initialize
@@ -118,4 +119,4 @@ on your computer or QEMU.
 - sync: synchronization
 - dep: dependency
 - ret: return
-
+- ptr: pointer

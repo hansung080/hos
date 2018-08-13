@@ -56,33 +56,33 @@
 typedef struct k_HddInfo {
 	// configuration value
 	word config;
-
+	
 	// cylinder count (used in CHS mode)
 	word numberOfCylinder;
 	word reserved1;
-
+	
 	// head count (used in CHS mode)
 	word numberOfHead;
 	word unformattedBytesPerTrack;
 	word unformattedBytesPerSector;
-
+	
 	// sector count per cylinder (used in CHS mode)
 	word numberOfSectorPerCylinder;
 	word interSectorGap;
 	word bytesInPhaseLock;
 	word numberOfVendorUniqueStatusWord;
-
+	
 	// serial number
 	word serialNumber[10];
 	word controllerType;
 	word bufferSize;
 	word numberOfEccBytes;
 	word firmwareRevision[4];
-
+	
 	// model number
 	word modelNumber[20];
 	word reserved2[13];
-
+	
 	// total sector count (used in LBA mode)
 	dword totalSectors;
 	word reserved3[196];

@@ -1,0 +1,84 @@
+#ifndef __VBE_H__
+#define __VBE_H__
+
+#include "types.h"
+
+#define VBE_MODEINFOBLOCKADDRESS   0x7E00 // VBE mode info block address: It's right after boot-loader address <0x7C00>.
+#define VBE_GRAPHICMODEFLAGADDRESS 0x7C0A // GRAPHIC_MODE_FLAG is defined in boot_loader.asm.
+
+#pragma pack(push, 1)
+
+// VBE mode info block size must be 256 bytes. (It's the fixed size.)
+typedef struct k_VbeModeInfoBlock {
+	//--------------------------------------------------
+	// Common Fields in All VBE Versions
+	//--------------------------------------------------
+	word modeAttr;         // mode attribute
+	byte winAAttr;         // window A attribute
+	byte winBAttr;         // window B attribute
+	word winGranularity;   // window granularity
+	word winSize;          // window size
+	word winASegment;      // window A starting segment address
+	word winBSegment;      // window B starting segment address
+	dword winFuncPtr;      // window function pointer (for real mode)
+	word bytesPerScanLine; // byte count per a screen scan line
+	
+	//--------------------------------------------------
+	// Common Fields in VEB Version 1.2 or Higher
+	//--------------------------------------------------
+	word xResolution;        // X-axis pixel count or character count of screen
+	word yResolution;        // Y-axis pixel count or character count of screen
+	byte xCharSize;          // X-axis pixel count of a character
+	byte yCharSize;          // Y-axis pixel count of a character
+	byte numberOfPlane;      // memory plane count
+	byte bitsPerPixel;       // bit count per a pixel
+	byte numberOfBanks;      // bank count
+	byte memoryModel;        // video memory model
+	byte bankSize;           // bank size (KB)
+	byte numberOfImagePages; // image page count
+	byte reserved1;          // reserved for paging
+	
+	/* Direct Color-related Field */
+	byte redMaskSize;         // red-occuping size in a color (bit)
+	byte redFieldPos;         // red-starting position in a color (bit)
+	byte greenMaskSize;       // green-occuping size in a color (bit)
+	byte greenFieldPos;       // green-starting position in a color (bit)
+	byte blueMaskSize;        // blue-occuping size in a color (bit)
+	byte blueFieldPos;        // blue-starting position in a color (bit)
+	byte reservedMaskSize;    // reserved-occuping size in a color (bit)
+	byte reservedFieldPos;    // reserved-starting position in a color (bit)
+	byte directColorModeInfo; // direct color mode info
+	
+	//--------------------------------------------------
+	// Common Fields in VEB Version 2.0 or Higher
+	//--------------------------------------------------
+	dword physicalBasePtr; // linear frame buffer memory start address
+	dword reserved2;       // reserved field
+	dword reserved3;       // reserved field
+	
+	//--------------------------------------------------
+	// Common Fields in VEB Version 3.0 or Higher
+	//--------------------------------------------------
+	word linearBytesPerScanLine;   // byte count per a screen scan line in linear frame buffer mode
+	byte bankNumberOfImagePages;   // image page count in bank mode
+	byte linearNumberOfImagePages; // image page count in linear frame buffer mode
+	
+	/* Direct Color-related Field in Linear Frame Buffer Mode */
+	byte linearRedMaskSize;      // red-occuping size in a color (bit)
+	byte linearRedFieldPos;      // red-starting position in a color (bit)
+	byte linearGreenMaskSize;    // green-occuping size in a color (bit)
+	byte linearGreenFieldPos;    // green-starting position in a color (bit)
+	byte linearBlueMaskSize;     // blue-occuping size in a color (bit)
+	byte linearBlueFieldPos;     // blue-starting position in a color (bit)
+	byte linearReservedMaskSize; // reserved-occuping size in a color (bit)
+	byte linearReservedFieldPos; // reserved-starting position in a color (bit)
+	dword maxPixelClock;         // max value of pixel clock (Hz)
+	
+	byte reserved4[188]; // reserved area: align this structure size with 256 bytes.
+} VbeModeInfoBlock;
+
+#pragma pack(pop)
+
+VbeModeInfoBlock* k_getVbeModeInfoBlock(void);
+
+#endif // __VBE_H__

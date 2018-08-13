@@ -8,6 +8,7 @@ jmp 0x07C0:START ; set <0x07C0> to CS segment register, and move to the address 
 TOTAL_SECTOR_COUNT: dw 0x02    ; physical address 0x7C05: the total sector count of HansOS image except boot-loader (max 1152 sectors, max 0x90000 bytes)
 KERNEL32_SECTOR_COUNT: dw 0x02 ; physical address 0x7C07: the sector count of kernel32
 BSP_FLAG: db 0x01              ; physical address 0x7C09: BSP flag (1:BSP, 0:AP)
+GRAPHIC_MODE_FLAG: db 0x01     ; physical address 0x7C0A: graphic mode flag (1: graphic mode, 0: text mode)
 
 START:
 	mov ax, 0x07C0 ; boot-loader memory address (0x7C00)
