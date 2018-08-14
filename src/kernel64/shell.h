@@ -92,5 +92,6 @@ static void k_showInterruptCounts(const char* paramBuffer);
 static void k_startTaskLoadBalancing(const char* paramBuffer);
 static void k_changeTaskAffinity(const char* paramBuffer);
 static void k_startMultiprocessing(const char* paramBuffer);
+static void k_showVbeModeInfo(const char* paramBuffer);
 
 #endif // __SHELL_H__

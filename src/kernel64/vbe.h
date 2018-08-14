@@ -9,6 +9,7 @@
 #pragma pack(push, 1)
 
 // VBE mode info block size must be 256 bytes. (It's the fixed size.)
+// HansOS uses VBE mode 0x117 (resolution: 1024 * 768 pixels, color count: 16 bits (64K) color, R:G:B=5:6:5)
 typedef struct k_VbeModeInfoBlock {
 	//--------------------------------------------------
 	// Common Fields in All VBE Versions
@@ -16,22 +17,22 @@ typedef struct k_VbeModeInfoBlock {
 	word modeAttr;         // mode attribute
 	byte winAAttr;         // window A attribute
 	byte winBAttr;         // window B attribute
-	word winGranularity;   // window granularity
+	word winGranularity;   // window granularity -> 0x10
 	word winSize;          // window size
 	word winASegment;      // window A starting segment address
 	word winBSegment;      // window B starting segment address
-	dword winFuncPtr;      // window function pointer (for real mode)
+	dword winFuncAddr;     // window function address (for real mode)
 	word bytesPerScanLine; // byte count per a screen scan line
 	
 	//--------------------------------------------------
 	// Common Fields in VEB Version 1.2 or Higher
 	//--------------------------------------------------
-	word xResolution;        // X-axis pixel count or character count of screen
-	word yResolution;        // Y-axis pixel count or character count of screen
+	word xResolution;        // X-axis pixel count or character count of screen -> 1024 pixels
+	word yResolution;        // Y-axis pixel count or character count of screen -> 768 pixels
 	byte xCharSize;          // X-axis pixel count of a character
 	byte yCharSize;          // Y-axis pixel count of a character
 	byte numberOfPlane;      // memory plane count
-	byte bitsPerPixel;       // bit count per a pixel
+	byte bitsPerPixel;       // bit count per a pixel -> 16 bits
 	byte numberOfBanks;      // bank count
 	byte memoryModel;        // video memory model
 	byte bankSize;           // bank size (KB)
@@ -39,12 +40,12 @@ typedef struct k_VbeModeInfoBlock {
 	byte reserved1;          // reserved for paging
 	
 	/* Direct Color-related Field */
-	byte redMaskSize;         // red-occuping size in a color (bit)
-	byte redFieldPos;         // red-starting position in a color (bit)
-	byte greenMaskSize;       // green-occuping size in a color (bit)
-	byte greenFieldPos;       // green-starting position in a color (bit)
-	byte blueMaskSize;        // blue-occuping size in a color (bit)
-	byte blueFieldPos;        // blue-starting position in a color (bit)
+	byte redMaskSize;         // red-occuping size in a color (bit)       -> 5 bits
+	byte redFieldPos;         // red-starting position in a color (bit)   -> bit 11
+	byte greenMaskSize;       // green-occuping size in a color (bit)     -> 6 bits
+	byte greenFieldPos;       // green-starting position in a color (bit) -> bit 5
+	byte blueMaskSize;        // blue-occuping size in a color (bit)      -> 5 bits
+	byte blueFieldPos;        // blue-starting position in a color (bit)  -> bit 0
 	byte reservedMaskSize;    // reserved-occuping size in a color (bit)
 	byte reservedFieldPos;    // reserved-starting position in a color (bit)
 	byte directColorModeInfo; // direct color mode info
@@ -52,9 +53,9 @@ typedef struct k_VbeModeInfoBlock {
 	//--------------------------------------------------
 	// Common Fields in VEB Version 2.0 or Higher
 	//--------------------------------------------------
-	dword physicalBasePtr; // linear frame buffer memory start address
-	dword reserved2;       // reserved field
-	dword reserved3;       // reserved field
+	dword physicalBaseAddr; // linear frame buffer address (video memory address in graphic mode) -> 0xF0000000 bytes
+	dword reserved2;        // reserved field
+	dword reserved3;        // reserved field
 	
 	//--------------------------------------------------
 	// Common Fields in VEB Version 3.0 or Higher

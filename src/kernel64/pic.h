@@ -5,13 +5,13 @@
 
 /**
   < PIC Controller with IRQ >
-   - IRQ 0 : timer (PIT controller)           -> master PIC pin 0 -> interrupt vector 32 (0x20)
+   - IRQ 0 : timer (PIT)                      -> master PIC pin 0 -> interrupt vector 32 (0x20)
    - IRQ 1 : PS/2 keyboard                    -> master PIC pin 1 -> interrupt vector 33 (0x21)
-   - IRQ 2 : slave PIC controller             -> master PIC pin 2 -> interrupt vector 34 (0x22)
+   - IRQ 2 : slave PIC                        -> master PIC pin 2 -> interrupt vector 34 (0x22)
    - IRQ 3 : serial port 2 (COM port 2)       -> master PIC pin 3 -> interrupt vector 35 (0x23)
    - IRQ 4 : serial port 1 (COM port 1)       -> master PIC pin 4 -> interrupt vector 36 (0x24)
    - IRQ 5 : parallel port 2 (printer port 2) -> master PIC pin 5 -> interrupt vector 37 (0x25)
-   - IRQ 6 : floppy disk controller           -> master PIC pin 6 -> interrupt vector 38 (0x26)
+   - IRQ 6 : floppy disk                      -> master PIC pin 6 -> interrupt vector 38 (0x26)
    - IRQ 7 : parallel port 1 (printer port 1) -> master PIC pin 7 -> interrupt vector 39 (0x27)
    - IRQ 8 : RTC                              ->  slave PIC pin 0 -> interrupt vector 40 (0x28)
    - IRQ 9 : reserved                         ->  slave PIC pin 1 -> interrupt vector 41 (0x29)
@@ -24,13 +24,13 @@
 */
 
 // IRQ
-#define IRQ_TIMER         0  // timer (PIT controller)
+#define IRQ_TIMER         0  // timer (PIT)
 #define IRQ_KEYBOARD      1  // PS/2 keyboard
-#define IRQ_SLAVEPIC      2  // slave PIC controller
+#define IRQ_SLAVEPIC      2  // slave PIC
 #define IRQ_SERIALPORT2   3  // serial port 2 (COM port 2)
 #define IRQ_SERIALPORT1   4  // serial port 1 (COM port 1)
 #define IRQ_PARALLELPORT2 5  // parallel port 2 (printer port 2)
-#define IRQ_FLOPPYDISK    6  // floppy disk controller
+#define IRQ_FLOPPYDISK    6  // floppy disk
 #define IRQ_PARALLELPORT1 7  // parallel port 1 (printer port 1)
 #define IRQ_RTC           8  // RTC
 #define IRQ_RESERVED      9  // reserved

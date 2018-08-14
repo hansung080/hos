@@ -16,7 +16,7 @@ START:
 	
 	; enable A20 gate
 	mov ax, 0x2401        ; function number (0x2401: enable A20 gate)
-	int 0x15              ; interrupt vector table index (0x15: BIOS Service->System Service)
+	int 0x15              ; cause software interrupt (0x15: BIOS Service -> System Service)
 	jc .A20_GATE_ERROR    ; error handling
 	jmp .A20_GATE_SUCCESS ; success handling
 

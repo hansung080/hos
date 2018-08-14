@@ -17,6 +17,7 @@
 #include "local_apic.h"
 #include "io_apic.h"
 #include "interrupt_handlers.h"
+#include "vbe.h"
 
 static ShellCommandEntry g_commandTable[] = {
 		{"help", "show help", k_help},
@@ -65,7 +66,8 @@ static ShellCommandEntry g_commandTable[] = {
 		{"intcnt", "show interrupt count by core * IRQ, usage) intcnt <irq>", k_showInterruptCounts},
 		{"sttlb", "start task load balancing", k_startTaskLoadBalancing},
 		{"chaf" ,"change task affinity, usage) chaf <taskId> <affinity>", k_changeTaskAffinity},
-		{"stmp", "start multi-core processing", k_startMultiprocessing}
+		{"stmp", "start multi-core processing", k_startMultiprocessing},
+		{"vbe", "show VBE mode info", k_showVbeModeInfo}
 };
 
 void k_startShell(void) {
@@ -2425,11 +2427,11 @@ static void k_showInterruptCounts(const char* paramBuffer) {
 			k_printf("Usage) intcnt <irq>\n");
 			k_printf("  - irq: 0 (timer)\n");
 			k_printf("  - irq: 1 (PS/2 keyboard)\n");
-			k_printf("  - irq: 2 (slave PIC controller)\n");
+			k_printf("  - irq: 2 (slave PIC)\n");
 			k_printf("  - irq: 3 (serial port 2)\n");
 			k_printf("  - irq: 4 (serial port 1)\n");
 			k_printf("  - irq: 5 (parallel port 2)\n");
-			k_printf("  - irq: 6 (floppy disk controller)\n");
+			k_printf("  - irq: 6 (floppy disk)\n");
 			k_printf("  - irq: 7 (parallel port 1)\n");
 			k_printf("  - irq: 8 (RTC)\n");
 			k_printf("  - irq: 9 (reserved)\n");
@@ -2599,5 +2601,24 @@ static void k_startMultiprocessing(const char* paramBuffer) {
 	k_startSymmetricIoMode(paramBuffer);
 	k_startInterruptLoadBalancing(paramBuffer);
 	k_startTaskLoadBalancing(paramBuffer);
+}
+
+static void k_showVbeModeInfo(const char* paramBuffer) {
+	VbeModeInfoBlock* vbeMode;
+	
+	vbeMode = k_getVbeModeInfoBlock();
+	
+	k_printf("*** VBE Mode Info ***\n");
+	k_printf("window granularity          : 0x%x\n", vbeMode->winGranularity);
+	k_printf("x resolution                : %d pixels\n", vbeMode->xResolution);
+	k_printf("y resolution                : %d pixels\n", vbeMode->yResolution);
+	k_printf("bits per pixel              : %d bits\n", vbeMode->bitsPerPixel);
+	k_printf("red field position          : bit %d, mask size: %d bits\n", vbeMode->redFieldPos, vbeMode->redMaskSize);
+	k_printf("green field position        : bit %d, mask size: %d bits\n", vbeMode->greenFieldPos, vbeMode->greenMaskSize);
+	k_printf("blue field position         : bit %d, mask size: %d bits\n", vbeMode->blueFieldPos, vbeMode->blueMaskSize);
+	k_printf("physical base address       : 0x%x bytes\n", vbeMode->physicalBaseAddr);
+	k_printf("linear red field position   : bit %d, mask size: %d bits\n", vbeMode->linearRedFieldPos, vbeMode->linearRedMaskSize);
+	k_printf("linear green field position : bit %d, mask size: %d bits\n", vbeMode->linearGreenFieldPos, vbeMode->linearGreenMaskSize);
+	k_printf("linear blue field position  : bit %d, mask size: %d bits\n", vbeMode->linearBlueFieldPos, vbeMode->linearBlueMaskSize);
 }
 

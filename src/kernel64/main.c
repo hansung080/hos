@@ -14,8 +14,10 @@
 #include "serial_Port.h"
 #include "multiprocessor.h"
 #include "local_apic.h"
+#include "vbe.h"
 
 void k_mainForAp(void);
+void k_startGraphicModeTest(void);
 
 void k_main(void) {
 	// compare BSP flag.
@@ -106,9 +108,16 @@ void k_main(void) {
 	k_initSerialPort();
 	k_printf("pass\n");
 	
-	// create idle task and start shell.
+	// create idle task.
 	k_createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, (qword)k_idleTask, k_getApicId());
-	k_startShell();
+	
+	// check graphic mode flag
+	if (*(byte*)VBE_GRAPHICMODEFLAGADDRESS == 0x00) {
+		k_startShell();
+		
+	} else {
+		k_startGraphicModeTest();
+	}
 }
 
 void k_mainForAp(void) {
@@ -137,3 +146,32 @@ void k_mainForAp(void) {
 	// run idle task.
 	k_idleTask();
 }
+
+void k_startGraphicModeTest(void) {
+	VbeModeInfoBlock* vbeMode;
+	word* frameBufferAddr;
+	word color = 0;
+	int bandHeight;
+	int i, j;
+	
+	k_getch();
+	
+	vbeMode = k_getVbeModeInfoBlock();
+	frameBufferAddr = (word*)((qword)vbeMode->physicalBaseAddr);
+	bandHeight = vbeMode->yResolution / 32;
+	
+	while (true) {
+		for (i = 0; i < vbeMode->yResolution; i++) {
+			for (j = 0; j < vbeMode->xResolution; j++) {
+				frameBufferAddr[(i * vbeMode->xResolution) + j] = color;
+			}
+			
+			if ((i % bandHeight) == 0) {
+				color = k_random() & 0xFFFF;
+			}
+		}
+		
+		k_getch();
+	}
+}
+
