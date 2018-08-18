@@ -53,7 +53,7 @@ typedef struct k_VbeModeInfoBlock {
 	//--------------------------------------------------
 	// Common Fields in VEB Version 2.0 or Higher
 	//--------------------------------------------------
-	dword physicalBaseAddr; // linear frame buffer address (video memory address in graphic mode) -> 0xF0000000 bytes
+	dword physicalBaseAddr; // video memory address in graphic mode (linear frame buffer address) -> 0xF0000000 bytes
 	dword reserved2;        // reserved field
 	dword reserved3;        // reserved field
 	

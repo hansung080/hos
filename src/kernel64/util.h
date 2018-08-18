@@ -4,12 +4,15 @@
 #include <stdarg.h>
 #include "types.h"
 
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y)     (((x) < (y)) ? (x) : (y))
+#define MAX(x, y)     (((x) > (y)) ? (x) : (y))
+#define ABS(x)        (((x) >= 0) ? (x) : -(x))
+#define SWAP(x, y, t) ((t) = (x)), ((x) = (y)), ((y) = (t))
 
 void k_memset(void* dest, byte data, int size);
 int k_memcpy(void* dest, const void* src, int size);
 int k_memcmp(const void* dest, const void* src, int size);
+void k_memsetWord(void* dest, word data, int wordSize);
 bool k_equalStr(const char* str1, const char* str2);
 bool k_setInterruptFlag(bool interruptFlag);
 int k_strlen(const char* buffer);

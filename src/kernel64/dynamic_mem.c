@@ -58,11 +58,11 @@ void k_initDynamicMem(void) {
 			currentBitmapPos++;
 		}
 		
-		// process the remained blocks with block count which is not divided by 8.
+		// process the remaining blocks with block count which is not divided by 8.
 		if ((blockCountOfLevel % 8) != 0) {
 			*currentBitmapPos = DMEM_EMPTY;
 			
-			// If remained block count is odd, the last block can't be combined with high block.
+			// If remaining block count is odd, the last block can't be combined with high block.
 			// Thus, it sets the last block as a leftover block in current block list.
 			i = blockCountOfLevel % 8;
 			if ((i % 2) == 1) {

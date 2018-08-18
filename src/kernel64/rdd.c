@@ -36,7 +36,7 @@ bool k_readRddInfo(bool primary, bool master, HddInfo* hddInfo) {
 int k_readRddSector(bool primary, bool master, dword lba, int sectorCount, char* buffer) {
 	int realReadCount; // real read sector count
 	
-	// read read sector count = MIN(remained sector count of RAM disk, requested sector count)
+	// read read sector count = MIN(remaining sector count of RAM disk, requested sector count)
 	// [Note] modified by hs.kwon
 	//realReadCount = MIN(g_rddManager->totalSectorCount - (dwLBA + sectorCount), sectorCount);
 	realReadCount = MIN(g_rddManager.totalSectorCount - lba, sectorCount);
@@ -51,7 +51,7 @@ int k_readRddSector(bool primary, bool master, dword lba, int sectorCount, char*
 int k_writeRddSector(bool primary, bool master, dword lba, int sectorCount, char* buffer) {
 	int realWriteCount; // real written sector count
 	
-	// real written sector count = MIN(remained sector count of RAM disk, requested sector count)
+	// real written sector count = MIN(remaining sector count of RAM disk, requested sector count)
 	// [Note] modified by hs.kwon
 	//realWriteCount = MIN(g_rddManager.totalSectorCount - (dwLBA + sectorCount), sectorCount);
 	realWriteCount = MIN(g_rddManager.totalSectorCount - lba, sectorCount);

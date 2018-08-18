@@ -47,7 +47,7 @@ int k_memcmp(const void* dest, const void* src, int size) {
 void k_memset(void* dest, byte data, int size) {
 	int i;
 	qword qwdata;
-	int remainByteStartOffset;
+	int remainBytesOffset;
 	
 	// make 8 bytes-sized data.
 	qwdata = 0;
@@ -60,27 +60,27 @@ void k_memset(void* dest, byte data, int size) {
 		((qword*)dest)[i] = qwdata;
 	}
 	
-	// set remained memory by 1 byte.
-	remainByteStartOffset = i * 8;
+	// set remaining memory by 1 byte.
+	remainBytesOffset = i * 8;
 	for (i = 0; i < (size % 8); i++) {
-		((char*)dest)[remainByteStartOffset++] = data;
+		((char*)dest)[remainBytesOffset++] = data;
 	}
 }
 
 int k_memcpy(void* dest, const void* src, int size) {
 	int i;
-	int remainByteStartOffset;
+	int remainBytesOffset;
 	
 	// copy memory by 8 bytes.
 	for (i = 0; i < (size / 8); i++) {
 		((qword*)dest)[i] = ((qword*)src)[i];
 	}
 	
-	// copy remained memory by 1 bytes.
-	remainByteStartOffset = i * 8;
+	// copy remaining memory by 1 bytes.
+	remainBytesOffset = i * 8;
 	for (i = 0; i < (size % 8); i++) {
-		((char*)dest)[remainByteStartOffset] = ((char*)src)[remainByteStartOffset];
-		remainByteStartOffset++;
+		((char*)dest)[remainBytesOffset] = ((char*)src)[remainBytesOffset];
+		remainBytesOffset++;
 	}
 	
 	// return copied memory size.
@@ -89,7 +89,7 @@ int k_memcpy(void* dest, const void* src, int size) {
 
 int k_memcmp(const void* dest, const void* src, int size) {
 	int i, j;
-	int remainByteStartOffset;
+	int remainBytesOffset;
 	qword qwvalue;
 	char cvalue;
 	
@@ -107,19 +107,42 @@ int k_memcmp(const void* dest, const void* src, int size) {
 		}
 	}
 	
-	// compare remained memory by 1 byte.
-	remainByteStartOffset = i * 8;
+	// compare remaining memory by 1 byte.
+	remainBytesOffset = i * 8;
 	for (i = 0; i < (size % 8); i++) {
-		cvalue = ((char*)dest)[remainByteStartOffset] - ((char*)src)[remainByteStartOffset];
+		cvalue = ((char*)dest)[remainBytesOffset] - ((char*)src)[remainBytesOffset];
 		if (cvalue != 0) {
 			return cvalue;
 		}
 		
-		remainByteStartOffset++;
+		remainBytesOffset++;
 	}
 	
 	// return 0 if values are the same.
 	return 0;
+}
+
+inline void k_memsetWord(void* dest, word data, int wordSize) {
+	int i;
+	qword qwdata;
+	int remainWordsOffset;
+	
+	// make 4 words-sized data.
+	qwdata = 0;
+	for (i = 0; i < 4; i++) {
+		qwdata = (qwdata << 16) | data;
+	}
+	
+	// set memory by 4 words.
+	for (i = 0; i < (wordSize / 4); i++) {
+		((qword*)dest)[i] = qwdata;
+	}
+	
+	// set remaining memory by 1 word.
+	remainWordsOffset = i * 4;
+	for (i = 0; i < (wordSize % 4); i++) {
+		((word*)dest)[remainWordsOffset++] = data;
+	}
 }
 
 bool k_equalStr(const char* str1, const char* str2) {

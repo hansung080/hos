@@ -120,3 +120,6 @@ on your computer or QEMU.
 - dep: dependency
 - ret: return
 - ptr: pointer
+- rect: rectangle
+- han: hangul
+- eng: english

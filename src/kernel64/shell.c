@@ -2609,16 +2609,16 @@ static void k_showVbeModeInfo(const char* paramBuffer) {
 	vbeMode = k_getVbeModeInfoBlock();
 	
 	k_printf("*** VBE Mode Info ***\n");
-	k_printf("window granularity          : 0x%x\n", vbeMode->winGranularity);
-	k_printf("x resolution                : %d pixels\n", vbeMode->xResolution);
-	k_printf("y resolution                : %d pixels\n", vbeMode->yResolution);
-	k_printf("bits per pixel              : %d bits\n", vbeMode->bitsPerPixel);
-	k_printf("red field position          : bit %d, mask size: %d bits\n", vbeMode->redFieldPos, vbeMode->redMaskSize);
-	k_printf("green field position        : bit %d, mask size: %d bits\n", vbeMode->greenFieldPos, vbeMode->greenMaskSize);
-	k_printf("blue field position         : bit %d, mask size: %d bits\n", vbeMode->blueFieldPos, vbeMode->blueMaskSize);
-	k_printf("physical base address       : 0x%x bytes\n", vbeMode->physicalBaseAddr);
-	k_printf("linear red field position   : bit %d, mask size: %d bits\n", vbeMode->linearRedFieldPos, vbeMode->linearRedMaskSize);
-	k_printf("linear green field position : bit %d, mask size: %d bits\n", vbeMode->linearGreenFieldPos, vbeMode->linearGreenMaskSize);
-	k_printf("linear blue field position  : bit %d, mask size: %d bits\n", vbeMode->linearBlueFieldPos, vbeMode->linearBlueMaskSize);
+	k_printf("- window granularity          : 0x%x\n", vbeMode->winGranularity);
+	k_printf("- x resolution                : %d pixels\n", vbeMode->xResolution);
+	k_printf("- y resolution                : %d pixels\n", vbeMode->yResolution);
+	k_printf("- bits per pixel              : %d bits\n", vbeMode->bitsPerPixel);
+	k_printf("- red field position          : bit %d, mask size: %d bits\n", vbeMode->redFieldPos, vbeMode->redMaskSize);
+	k_printf("- green field position        : bit %d, mask size: %d bits\n", vbeMode->greenFieldPos, vbeMode->greenMaskSize);
+	k_printf("- blue field position         : bit %d, mask size: %d bits\n", vbeMode->blueFieldPos, vbeMode->blueMaskSize);
+	k_printf("- physical base address       : 0x%x bytes\n", vbeMode->physicalBaseAddr);
+	k_printf("- linear red field position   : bit %d, mask size: %d bits\n", vbeMode->linearRedFieldPos, vbeMode->linearRedMaskSize);
+	k_printf("- linear green field position : bit %d, mask size: %d bits\n", vbeMode->linearGreenFieldPos, vbeMode->linearGreenMaskSize);
+	k_printf("- linear blue field position  : bit %d, mask size: %d bits\n", vbeMode->linearBlueFieldPos, vbeMode->linearBlueMaskSize);
 }
 

@@ -56,7 +56,7 @@ void k_sendSerialData(byte* buffer, int size) {
 			k_sleep(0);
 		}
 		
-		// sending byte count = MIN(remained byte count, FIFO max size)
+		// sending byte count = MIN(remaining byte count, FIFO max size)
 		iTempSize = MIN(size - iSentByte, SERIAL_FIFOMAXSIZE);
 		for (i = 0; i < iTempSize; i++) {
 			// send data to Transmit Buffer Register by 1 byte.

@@ -857,7 +857,7 @@ dword k_readFile(void* buffer, dword size, dword count, File* file) {
 		return 0;
 	}
 	
-	// total byte count = MIN(requested byte count, remained byte count of file)
+	// total byte count = MIN(requested byte count, remaining byte count of file)
 	totalCount = MIN(size * count, fileHandle->fileSize - fileHandle->currentOffset);
 	
 	k_lock(&(g_fileSystemManager.mutex));
@@ -878,8 +878,8 @@ dword k_readFile(void* buffer, dword size, dword count, File* file) {
 		// calculate file pointer position in cluster.
 		offsetInCluster = fileHandle->currentOffset % FS_CLUSTERSIZE;
 		
-		// If total byte count covers over many clusters, read as many as remained byte count in current cluster, and move to next cluster.
-		// byte count coping to buffer = MIX(remained byte count in cluster, read byte count more)
+		// If total byte count covers over many clusters, read as many as remaining byte count in current cluster, and move to next cluster.
+		// byte count coping to buffer = MIX(remaining byte count in cluster, read byte count more)
 		copySize = MIN(FS_CLUSTERSIZE - offsetInCluster, totalCount - readCount);
 		
 		// copy to buffer.
@@ -1000,8 +1000,8 @@ dword k_writeFile(const void* buffer, dword size, dword count, File* file) {
 		// calculate file pointer offset in cluster.
 		offsetInCluster = fileHandle->currentOffset % FS_CLUSTERSIZE;
 		
-		// If total byte count covers over many clusters, write as many as remained byte count of current cluster, move to next cluster.
-		// byte count coping to buffer = MIN(remained byte count of cluster, write byte count more)
+		// If total byte count covers over many clusters, write as many as remaining byte count of current cluster, move to next cluster.
+		// byte count coping to buffer = MIN(remaining byte count of cluster, write byte count more)
 		copySize = MIN(FS_CLUSTERSIZE - offsetInCluster, totalCount - writeCount);
 		
 		// copy from buffer to temporary buffer.
@@ -1194,7 +1194,7 @@ int k_seekFile(File* file, int offset, int origin) {
 	}
 	
 	//----------------------------------------------------------------------------------------------------
-	// If moving offset exceeds file size, put 0 to the remained part, update current file pointer offset.
+	// If moving offset exceeds file size, put 0 to the remaining part, update current file pointer offset.
 	//----------------------------------------------------------------------------------------------------
 	
 	// If moving offset exceeds file size.
@@ -1203,7 +1203,7 @@ int k_seekFile(File* file, int offset, int origin) {
 		
 		k_unlock(&(g_fileSystemManager.mutex));
 		
-		// put 0 to the remained part in order to expand file size.
+		// put 0 to the remaining part in order to expand file size.
 		if (k_writeZero(file, realOffset - fileHandle->fileSize) == false) {
 			return 0;
 		}

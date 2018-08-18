@@ -37,8 +37,8 @@ global k_enableGlobalLocalApic
 ; -------------------------------------------
 ; ==============================================================================
 
-; param  : word port(RDI)
-; return : byte data(RAX)
+; - param  : word port(RDI)
+; - return : byte data(RAX)
 k_inPortByte:
 	push rdx
 	
@@ -50,8 +50,8 @@ k_inPortByte:
 	pop rdx
 	ret
 
-; param  : word port(RDI), byte data(RSI)
-; return : void
+; - param  : word port(RDI), byte data(RSI)
+; - return : void
 k_outPortByte:
 	push rdx
 	push rax
@@ -65,8 +65,8 @@ k_outPortByte:
 	pop rdx
 	ret
 
-; Param  : word port(RDI)
-; return : word data(RAX)
+; - param  : word port(RDI)
+; - return : word data(RAX)
 k_inPortWord:
 	push rdx
 	
@@ -78,8 +78,8 @@ k_inPortWord:
 	pop rdx
 	ret
 
-; param  : word port(RDI), word data(RSI)
-; return : void
+; - param  : word port(RDI), word data(RSI)
+; - return : void
 k_outPortWord:
 	push rdx
 	push rax
@@ -93,48 +93,48 @@ k_outPortWord:
 	pop rdx
 	ret
 
-; param  : qword gdtrAddr(RDI)
-; return : void
+; - param  : qword gdtrAddr(RDI)
+; - return : void
 k_loadGdt:
 	; set the address of GDTR structure to GDTR register, and load GDT table on processor.
 	lgdt [rdi]
 	ret
 
-; param  : word tssSegmentOffset(DI)
-; return : void
+; - param  : word tssSegmentOffset(DI)
+; - return : void
 k_loadTss:
 	; set the offset of TSS segment descriptor to TR register, and load TSS segment on processor.
 	ltr di
 	ret
 
-; param  : qword idtrAddr(RDI)
-; return : void
+; - param  : qword idtrAddr(RDI)
+; - return : void
 k_loadIdt:
 	; set the address of IDTR structure to IDTR register, and load IDT table on processor.
 	lidt [rdi]
 	ret
 
-; param  : void
-; return : void
+; - param  : void
+; - return : void
 k_enableInterrupt:
 	sti ; start interrupt only in the current core.
 	ret
 
-; param  : void
-; return : void
+; - param  : void
+; - return : void
 k_disableInterrupt:
 	cli ; close interrupt only in the current core.
 	ret
 
-; param  : void
-; return : qword data(RAX)
+; - param  : void
+; - return : qword data(RAX)
 k_readRflags:
 	pushfq  ; push RFLAGS register to stack.
 	pop rax ; pop RFLAGS register from stack, save it to RAX (RAX will be used as a return value.)
 	ret
 
-; param  : void
-; return : qword data(RAX)
+; - param  : void
+; - return : qword data(RAX)
 k_readTsc:
 	push rdx
 	
@@ -200,8 +200,8 @@ k_readTsc:
 	pop rbp
 %endmacro
 
-; param  : Context* currentContext(RDI), Context* nextContext(RSI)
-; return : void
+; - param  : Context* currentContext(RDI), Context* nextContext(RSI)
+; - return : void
 k_switchContext:
 	push rbp
 	mov rbp, rsp
@@ -254,26 +254,26 @@ k_switchContext:
 	; restore left 5 registers from Context structure (nextContext), return to the address of RIP.
 	iretq
 
-; param  : void
-; return : void
+; - param  : void
+; - return : void
 k_halt:
 	; halt processor.
 	hlt
 	hlt
 	ret
 
-; param  : void
-; return : void
+; - param  : void
+; - return : void
 k_pause:
 	; pause processor.
 	pause
 	ret
 
-; param  : volatile byte* dest(RDI), byte cmp(RSI), byte src(RDX)
-; return : bool ret(RAX)
-; desc   : atomic operation for compare and set, same as <AX==cmp, A==*dest, B==src>
-;          -> If cmp == *dest, set src to *dest, return true(1).
-;          -> If cmp != *dest, return false(0)
+; - param  : volatile byte* dest(RDI), byte cmp(RSI), byte src(RDX)
+; - return : bool ret(RAX)
+; - desc   : atomic operation for compare and set, same as <AX==cmp, A==*dest, B==src>
+;            -> If cmp == *dest, set src to *dest, return true(1).
+;            -> If cmp != *dest, return false(0)
 k_testAndSet:
 	; 1. lock
 	;    -> This command is used as a preposition in assembly code,
@@ -293,26 +293,26 @@ k_testAndSet:
 	mov rax, 0x01 ; return true(1)
 	ret
 
-; param  : void
-; return : void
+; - param  : void
+; - return : void
 k_initFpu:
 	finit ; initialize FPU
 	ret
 
-; param  : void* fpuContext(RDI)
-; return : void
+; - param  : void* fpuContext(RDI)
+; - return : void
 k_saveFpuContext:
 	fxsave [rdi] ; save FPU register (512 bytes) to fpuContext.
 	ret
 
-; param  : void* fpuContext(RDI)
-; return : void
+; - param  : void* fpuContext(RDI)
+; - return : void
 k_loadFpuContext:
 	fxrstor [rdi] ; restore FPU register (512 bytes) from fpuContext.
 	ret
 
-; param  : void
-; return : void
+; - param  : void
+; - return : void
 k_setTs:
 	push rax
 	
@@ -324,15 +324,15 @@ k_setTs:
 	pop rax
 	ret
 
-; param  : void
-; return : void
+; - param  : void
+; - return : void
 k_clearTs:
 	; set CR0.TS (bit 3) to 0
 	clts
 	ret
 
-; param  : void
-; return : void
+; - param  : void
+; - return : void
 k_enableGlobalLocalApic:
 	push rax
 	push rcx
