@@ -1,8 +1,12 @@
 ###### Setting up OS Development Environment ######
 
-### download binutils and gcc (linux, mac) ###
+### download binutils, gcc and install libraries (mac) ###
 $ curl https://ftp.gnu.org/gnu/binutils/binutils-2.31.tar.gz -o binutils-2.31.tar.gz
 $ curl https://ftp.gnu.org/gnu/gcc/gcc-8.2.0/gcc-8.2.0.tar.gz -o gcc-8.2.0.tar.gz
+$ brew install gmp
+$ brew install mpfr
+$ brew install mpc
+$ brew install libmpc
 
 ### install cygwin (windows) ###
 # create directories
@@ -115,6 +119,8 @@ $ export TARGET=x86_64-pc-linux
 $ export PREFIX=/usr/cross
 $ export PATH=$PATH:$PREFIX/bin
 $ ./configure --target=$TARGET --prefix=$PREFIX --disable-nls --enable-languages=c --without-headers --disable-shared --enable-multilib
+# If gmp.h or mpfr.h or mpc.h is not found, execute 'configure' command with 'with' options.
+$ ./configure --target=$TARGET --prefix=$PREFIX --disable-nls --enable-languages=c --without-headers --disable-shared --enable-multilib --with-gmp=/usr/local/include --with-mpfr=/usr/local/include --with-mpc=/usr/local/include
 $ ls -alF config.status -> exist
 $ ls -alF Makefile -> exist
 $ make configure-host
@@ -128,7 +134,7 @@ $ make install-gcc
 # check result
 $ /usr/cross/bin/x86_64-pc-linux-gcc -dumpspecs | grep -A1 multilib_options -> m64/m32
 
-### install nasm (linux, mac) ###
+### install nasm (mac) ###
 $ brew install nasm
 
 ### install nasm (windows) ###
@@ -164,7 +170,7 @@ eclipse > Properties > C/C++ General > Paths and Symbols > includes (Languages: 
 -> C:/work/cygwin64/usr/include
 -> C:/work/cygwin64/lib/gcc/x86_64-pc-cygwin/5.4.0/include
 
-### install qemu (linux, mac) ###
+### install qemu (mac) ###
 $ brew install qemu
 
 ### install qemu (windows) ###
@@ -178,6 +184,7 @@ qemu-0.10.4.zip
 
 # create hdd image
 > qemu-img.exe create hdd.img 20M
+> chmod 644 hdd.img
 
 # move hdd image
 - file: hdd.img

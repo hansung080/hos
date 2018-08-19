@@ -4,9 +4,9 @@ OUT_DIR=../../build/output/kernel64
 SRC_DIR_FROM_OUT=../../../src/kernel64
 
 NASM64=nasm -f elf64
-GCC64=x86_64-pc-linux-gcc.exe -m64 -ffreestanding
-LD64=x86_64-pc-linux-ld.exe -melf_x86_64 -T $(SRC_DIR_FROM_OUT)/linker_scripts/elf_x86_64.x -nostdlib -e k_main -Ttext 0x200000
-OBJCOPY64=x86_64-pc-linux-objcopy.exe -j .text -j .data -j .rodata -j .bss -S -O binary
+GCC64=x86_64-pc-linux-gcc -m64 -ffreestanding
+LD64=x86_64-pc-linux-ld -melf_x86_64 -T $(SRC_DIR_FROM_OUT)/linker_scripts/elf_x86_64.x -nostdlib -e k_main -Ttext 0x200000
+OBJCOPY64=x86_64-pc-linux-objcopy -j .text -j .data -j .rodata -j .bss -S -O binary
 
 TARGET=$(OUT_DIR)/kernel64.bin
 

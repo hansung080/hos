@@ -2,7 +2,11 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
+#ifdef __APPLE__
+#include <sys/uio.h>
+#else
 #include <io.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>

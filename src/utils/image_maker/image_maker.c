@@ -1,13 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#ifdef __APPLE__
+#include <sys/uio.h>
+#else
 #include <io.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <unistd.h>
 
-#define MY_O_BINARY     0x10000 // O_BINARY causes symbol error on Eclipse, so re-define it by myself.
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 #define BYTES_OF_SECTOR 512
 
 int copyFile(int srcfd, int targetfd);
@@ -34,14 +40,14 @@ int main(int argc, const char** argv) {
 	const char* srcFile3 = argv[4];
 	
 	// open target file.
-	if ((targetfd = open(targetFile, O_RDWR | O_CREAT | O_TRUNC | MY_O_BINARY | S_IREAD | S_IWRITE)) == -1) {
+	if ((targetfd = open(targetFile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | S_IREAD | S_IWRITE)) == -1) {
 		fprintf(stderr, "[error] %s opening failure\n", targetFile);
 		exit(8);
 	}
 	
 	// open source file 1, copy it, and adjust size.
 	printf("[info] copy %s to %s\n", srcFile1, targetFile);
-	if ((srcfd = open(srcFile1, O_RDONLY | MY_O_BINARY)) == -1) {
+	if ((srcfd = open(srcFile1, O_RDONLY | O_BINARY)) == -1) {
 		fprintf(stderr, "[error] %s opening failure\n", srcFile1);
 		exit(8);
 	}
@@ -54,7 +60,7 @@ int main(int argc, const char** argv) {
 	
 	// open source file 2, copy it, and adjust size.
 	printf("[info] copy %s to %s\n", srcFile2, targetFile);
-	if ((srcfd = open(srcFile2, O_RDONLY | MY_O_BINARY)) == -1) {
+	if ((srcfd = open(srcFile2, O_RDONLY | O_BINARY)) == -1) {
 		fprintf(stderr, "[error] %s opening failure\n", srcFile2);
 		exit(8);
 	}
@@ -67,7 +73,7 @@ int main(int argc, const char** argv) {
 	
 	// open source file 3, copy it, and adjust size.
 	printf("[info] copy %s to %s\n", srcFile3, targetFile);
-	if ((srcfd = open(srcFile3, O_RDONLY | MY_O_BINARY)) == -1) {
+	if ((srcfd = open(srcFile3, O_RDONLY | O_BINARY)) == -1) {
 		fprintf(stderr, "[error] %s opening failure\n", srcFile3);
 		exit(8);
 	}
@@ -124,14 +130,14 @@ int adjustInSectorSize(int fd, int srcSize) {
 	
 	if (ajustSize != 0) {
 		ajustSize = BYTES_OF_SECTOR - ajustSize;
-		printf("[info] align file size: file size: %lu, fill size: %u\n", srcSize, ajustSize);
+		printf("[info] align file size: file size: %d, fill size: %u\n", srcSize, ajustSize);
 		
 		for (i = 0; i < ajustSize; i++) {
 			write(fd, &zero, 1);
 		}
 		
 	} else {
-		printf("[info] already aligned: file size (%lu) has been already aligned with sector size.\n", srcSize);
+		printf("[info] already aligned: file size (%d) has been already aligned with sector size.\n", srcSize);
 	}
 	
 	sectorCount = (srcSize + ajustSize) / BYTES_OF_SECTOR;
@@ -146,7 +152,7 @@ void writeKernelInfo(int targetfd, int totalSectorCount, int kernel32SectorCount
 	// move file pointer to the physical address (0x7C05) of boot-loader
 	pos = lseek(targetfd, 5, SEEK_SET);
 	if (pos == -1) {
-		fprintf(stderr, "[error] file seeking failure: file pointer: %d, errno: %d, seek option: %d\n", pos, errno, SEEK_SET);
+		fprintf(stderr, "[error] file seeking failure: file pointer: %ld, errno: %d, seek option: %d\n", pos, errno, SEEK_SET);
 		exit(8);
 	}
 	
