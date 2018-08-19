@@ -1,6 +1,10 @@
-###### OS Development Environment Setting up ######
+###### Setting up OS Development Environment ######
 
-### install cygwin ###
+### download binutils and gcc (linux, mac) ###
+$ curl https://ftp.gnu.org/gnu/binutils/binutils-2.31.tar.gz -o binutils-2.31.tar.gz
+$ curl https://ftp.gnu.org/gnu/gcc/gcc-8.2.0/gcc-8.2.0.tar.gz -o gcc-8.2.0.tar.gz
+
+### install cygwin (windows) ###
 # create directories
 C:\work\cygwin64
 C:\work\cygwin64\packages
@@ -124,7 +128,10 @@ $ make install-gcc
 # check result
 $ /usr/cross/bin/x86_64-pc-linux-gcc -dumpspecs | grep -A1 multilib_options -> m64/m32
 
-### install nasm ###
+### install nasm (linux, mac) ###
+$ brew install nasm
+
+### install nasm (windows) ###
 # download web page
 https://www.nasm.us/
 
@@ -157,7 +164,10 @@ eclipse > Properties > C/C++ General > Paths and Symbols > includes (Languages: 
 -> C:/work/cygwin64/usr/include
 -> C:/work/cygwin64/lib/gcc/x86_64-pc-cygwin/5.4.0/include
 
-### install qemu ###
+### install qemu (linux, mac) ###
+$ brew install qemu
+
+### install qemu (windows) ###
 # install qemu from zip file
 qemu-0.10.4.zip
 

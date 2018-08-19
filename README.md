@@ -6,7 +6,7 @@ The functions HanOS provides and other helpful infomations are written below.
 First of all, clone HansOS git-hub repository to your local computer.
 $ git clone https://github.com/hansung080/hans-os.git
 
-To set up OS development environmet, refer to the text file below.
+To set up OS development environment, refer to the text file below.
 -> docs/os_install.txt
 
 Put the commands below on the root directory of HansOS repository to build it,
