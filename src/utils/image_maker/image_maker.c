@@ -11,6 +11,8 @@
 #include <errno.h>
 #include <unistd.h>
 
+// Unix-based OS such as linux, macOS has no difference between binary file and text file.
+// Thus, O_BINARY option can be ignored on those OS.
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif

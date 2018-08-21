@@ -178,104 +178,130 @@ Color k_getRandomColor(void) {
 }
 
 void k_drawWindowFrame(int x, int y, int width, int height, const char* title) {
+	VbeModeInfoBlock* vbeMode;
+	Color* videoMem;
+	Rect screen;	
+	//char* testStr1 = "This is HansOS window prototype.";
 	char* testStr1 = "This is HansOS window prototype.";
 	char* testStr2 = "Coming soon!";
-	
+
+	// get video memory.
+	vbeMode = k_getVbeModeInfoBlock();
+	videoMem = (Color*)((qword)vbeMode->physicalBaseAddr & 0xFFFFFFFF);
+
+	// set screen.
+	screen.x1 = 0;
+	screen.y1 = 0;
+	screen.x2 = vbeMode->xResolution - 1;
+	screen.y2 = vbeMode->yResolution - 1;
+
 	// draw edges of window frame (2 pixes-thick).
-	k_drawRect(x, y, x + width, y + height, RGB(109, 218, 22), false);
-	k_drawRect(x + 1, y + 1, x + width - 1, y + height - 1, RGB(109, 218, 22), false);
+	__k_drawRect(videoMem, &screen, x, y, x + width, y + height, RGB(109, 218, 22), false);
+	__k_drawRect(videoMem, &screen, x + 1, y + 1, x + width - 1, y + height - 1, RGB(109, 218, 22), false);
 	
 	// draw a title bar.
-	k_drawRect(x, y + 3, x + width - 1, y + 21, RGB(79, 204, 11), true);
+	__k_drawRect(videoMem, &screen, x, y + 3, x + width - 1, y + 21, RGB(79, 204, 11), true);
 	
 	// draw a title.
-	k_drawText(x + 6, y + 3, RGB( 255, 255, 255 ), RGB( 79, 204, 11 ), title);
+	__k_drawText(videoMem, &screen, x + 6, y + 3, RGB( 255, 255, 255 ), RGB( 79, 204, 11 ), title);
 	
 	// draw upper lines of title bar (2 pixels-thick) in order to make it 3-dimensional.
-	k_drawLine(x + 1, y + 1, x + width - 1, y + 1, RGB(183, 249, 171));
-	k_drawLine(x + 1, y + 2, x + width - 1, y + 2, RGB(150, 210, 140));
+	__k_drawLine(videoMem, &screen, x + 1, y + 1, x + width - 1, y + 1, RGB(183, 249, 171));
+	__k_drawLine(videoMem, &screen, x + 1, y + 2, x + width - 1, y + 2, RGB(150, 210, 140));
 	
-	k_drawLine(x + 1, y + 2, x + 1, y + 20, RGB(183, 249, 171));
-	k_drawLine(x + 2, y + 2, x + 2, y + 20, RGB(150, 210, 140));
+	__k_drawLine(videoMem, &screen, x + 1, y + 2, x + 1, y + 20, RGB(183, 249, 171));
+	__k_drawLine(videoMem, &screen, x + 2, y + 2, x + 2, y + 20, RGB(150, 210, 140));
 	
 	// draw lower lines of title bar.
-	k_drawLine(x + 2, y + 19, x + width - 2, y + 19, RGB(46, 59, 30));
-	k_drawLine(x + 2, y + 20, x + width - 2, y + 20, RGB(46, 59, 30));
+	__k_drawLine(videoMem, &screen, x + 2, y + 19, x + width - 2, y + 19, RGB(46, 59, 30));
+	__k_drawLine(videoMem, &screen, x + 2, y + 20, x + width - 2, y + 20, RGB(46, 59, 30));
 	
 	// draw a close button in top-right.
-	k_drawRect(x + width - 2 - 18, y + 1, x + width - 2, y + 19, RGB(255, 255, 255), true);
+	__k_drawRect(videoMem, &screen, x + width - 2 - 18, y + 1, x + width - 2, y + 19, RGB(255, 255, 255), true);
 	
 	// draw edges of close button (2 pixels-thick) in order to make it 3-dimensional.
-	k_drawRect(x + width - 2, y + 1, x + width - 2, y + 19 - 1, RGB(86, 86, 86), true);
-	k_drawRect(x + width - 2 - 1, y + 1, x + width - 2 - 1, y + 19 - 1, RGB(86, 86, 86), true);
-	k_drawRect(x + width - 2 - 18 + 1, y + 19, x + width - 2, y + 19, RGB(86, 86, 86), true);
-	k_drawRect(x + width - 2 - 18 + 1, y + 19 - 1, x + width - 2, y + 19 - 1, RGB(86, 86, 86), true);
+	__k_drawRect(videoMem, &screen, x + width - 2, y + 1, x + width - 2, y + 19 - 1, RGB(86, 86, 86), true);
+	__k_drawRect(videoMem, &screen, x + width - 2 - 1, y + 1, x + width - 2 - 1, y + 19 - 1, RGB(86, 86, 86), true);
+	__k_drawRect(videoMem, &screen, x + width - 2 - 18 + 1, y + 19, x + width - 2, y + 19, RGB(86, 86, 86), true);
+	__k_drawRect(videoMem, &screen, x + width - 2 - 18 + 1, y + 19 - 1, x + width - 2, y + 19 - 1, RGB(86, 86, 86), true);
 	
-	k_drawLine(x + width - 2 - 18, y + 1, x + width - 2 - 1, y + 1, RGB(229, 229, 229));
-	k_drawLine(x + width - 2 - 18, y + 1 + 1, x + width - 2 - 2, y + 1 + 1, RGB(229, 229, 229));
-	k_drawLine(x + width - 2 - 18, y + 1, x + width - 2 - 18, y + 19, RGB(229, 229, 229));
-	k_drawLine(x + width - 2 - 18 + 1, y + 1, x + width - 2 - 18 + 1, y + 19 - 1, RGB(229, 229, 229));
+	__k_drawLine(videoMem, &screen, x + width - 2 - 18, y + 1, x + width - 2 - 1, y + 1, RGB(229, 229, 229));
+	__k_drawLine(videoMem, &screen, x + width - 2 - 18, y + 1 + 1, x + width - 2 - 2, y + 1 + 1, RGB(229, 229, 229));
+	__k_drawLine(videoMem, &screen, x + width - 2 - 18, y + 1, x + width - 2 - 18, y + 19, RGB(229, 229, 229));
+	__k_drawLine(videoMem, &screen, x + width - 2 - 18 + 1, y + 1, x + width - 2 - 18 + 1, y + 19 - 1, RGB(229, 229, 229));
 	
 	// draw 'X' mark on close button (3 pixels-thick).
-	k_drawLine(x + width - 2 - 18 + 4, y + 1 + 4, x + width - 2 - 4, y + 19 - 4, RGB(71, 199, 21));
-	k_drawLine(x + width - 2 - 18 + 5, y + 1 + 4, x + width - 2 - 4, y + 19 - 5, RGB(71, 199, 21));
-	k_drawLine(x + width - 2 - 18 + 4, y + 1 + 5, x + width - 2 - 5, y + 19 - 4, RGB(71, 199, 21));
+	__k_drawLine(videoMem, &screen, x + width - 2 - 18 + 4, y + 1 + 4, x + width - 2 - 4, y + 19 - 4, RGB(71, 199, 21));
+	__k_drawLine(videoMem, &screen, x + width - 2 - 18 + 5, y + 1 + 4, x + width - 2 - 4, y + 19 - 5, RGB(71, 199, 21));
+	__k_drawLine(videoMem, &screen, x + width - 2 - 18 + 4, y + 1 + 5, x + width - 2 - 5, y + 19 - 4, RGB(71, 199, 21));
 	
-	k_drawLine(x + width - 2 - 18 + 4, y + 19 - 4, x + width - 2 - 4, y + 1 + 4, RGB(71, 199, 21));
-	k_drawLine(x + width - 2 - 18 + 5, y + 19 - 4, x + width - 2 - 4, y + 1 + 5, RGB(71, 199, 21));
-	k_drawLine(x + width - 2 - 18 + 4, y + 19 - 5, x + width - 2 - 5, y + 1 + 4, RGB(71, 199, 21));
+	__k_drawLine(videoMem, &screen, x + width - 2 - 18 + 4, y + 19 - 4, x + width - 2 - 4, y + 1 + 4, RGB(71, 199, 21));
+	__k_drawLine(videoMem, &screen, x + width - 2 - 18 + 5, y + 19 - 4, x + width - 2 - 4, y + 1 + 5, RGB(71, 199, 21));
+	__k_drawLine(videoMem, &screen, x + width - 2 - 18 + 4, y + 19 - 5, x + width - 2 - 5, y + 1 + 4, RGB(71, 199, 21));
 	
 	// draw the inner part of window frame.
-	k_drawRect(x + 2, y + 21, x + width - 2, y + height - 2, RGB(255, 255, 255), true);
+	__k_drawRect(videoMem, &screen, x + 2, y + 21, x + width - 2, y + height - 2, RGB(255, 255, 255), true);
 	
 	// draw test strings.
-	k_drawText(x + 10, y + 30, RGB( 0, 0, 0 ), RGB( 255, 255, 255 ), testStr1);
-	k_drawText(x + 10, y + 50, RGB( 0, 0, 0 ), RGB( 255, 255, 255 ), testStr2);
+	__k_drawText(videoMem, &screen, x + 10, y + 30, RGB( 0, 0, 0 ), RGB( 255, 255, 255 ), testStr1);
+	__k_drawText(videoMem, &screen, x + 10, y + 50, RGB( 0, 0, 0 ), RGB( 255, 255, 255 ), testStr2);
 }
 
 void k_startGraphicModeTest(void) {
 	VbeModeInfoBlock* vbeMode;
+	Color* videoMem;
+	Rect screen;
 	int x1, y1, x2, y2;
 	Color color1, color2;
 	int i;
 	char* strs[] = {"Points", "Lines", "Rectangles", "Circles", "HansOS"};
 	
+	// get video memory.
+	vbeMode = k_getVbeModeInfoBlock();
+	videoMem = (Color*)((qword)vbeMode->physicalBaseAddr & 0xFFFFFFFF);
+
+	// set screen.
+	screen.x1 = 0;
+	screen.y1 = 0;
+	screen.x2 = vbeMode->xResolution - 1;
+	screen.y2 = vbeMode->yResolution - 1;
+
 	/* draw point, line, rectangle, circle, text in the simple way. */
 	
 	// draw text of 'Points' with white text color and black background color at (0, 0).
-	k_drawText(0, 0, RGB(255, 255, 255), RGB(0, 0, 0), strs[0]);
+	__k_drawText(videoMem, &screen, 0, 0, RGB(255, 255, 255), RGB(0, 0, 0), strs[0]);
 	
 	// draw 2 points with white color at (1, 20) and (2, 20).
-	k_drawPixel(1, 20, RGB(255, 255, 255));
-	k_drawPixel(2, 20, RGB(255, 255, 255));
+	__k_drawPixel(videoMem, &screen, 1, 20, RGB(255, 255, 255));
+	__k_drawPixel(videoMem, &screen, 2, 20, RGB(255, 255, 255));
 	
 	// draw text of 'Lines' with red text color and black background color at (0, 25).
-	k_drawText(0, 25, RGB(255, 0, 0), RGB(0, 0, 0), strs[1]);
+	__k_drawText(videoMem, &screen, 0, 25, RGB(255, 0, 0), RGB(0, 0, 0), strs[1]);
 	
 	// draw 5 lines with red color from (20, 50) to (1000, 50), (1000, 100), (1000, 150), (1000, 200), (1000, 250).
-	k_drawLine(20, 50, 1000, 50, RGB(255, 0, 0));
-	k_drawLine(20, 50, 1000, 100, RGB(255, 0, 0));
-	k_drawLine(20, 50, 1000, 150, RGB(255, 0, 0));
-	k_drawLine(20, 50, 1000, 200, RGB(255, 0, 0));
-	k_drawLine(20, 50, 1000, 250, RGB(255, 0, 0));
+	__k_drawLine(videoMem, &screen, 20, 50, 1000, 50, RGB(255, 0, 0));
+	__k_drawLine(videoMem, &screen, 20, 50, 1000, 100, RGB(255, 0, 0));
+	__k_drawLine(videoMem, &screen, 20, 50, 1000, 150, RGB(255, 0, 0));
+	__k_drawLine(videoMem, &screen, 20, 50, 1000, 200, RGB(255, 0, 0));
+	__k_drawLine(videoMem, &screen, 20, 50, 1000, 250, RGB(255, 0, 0));
 	
 	// draw text of 'Rectangles' with green text color and black background color at (0, 180).
-	k_drawText(0, 180, RGB(0, 255, 0), RGB(0, 0, 0), strs[2]);
+	__k_drawText(videoMem, &screen, 0, 180, RGB(0, 255, 0), RGB(0, 0, 0), strs[2]);
 	
 	// draw 4 rectangles with green color and 50, 100, 150, 200 length starting from (20, 200).
-	k_drawRect(20, 200, 70, 250, RGB(0, 255, 0), false);
-	k_drawRect(120, 200, 220, 300, RGB(0, 255, 0), true);
-	k_drawRect(270, 200, 420, 350, RGB(0, 255, 0), false);
-	k_drawRect(470, 200, 670, 400, RGB(0, 255, 0), true);
+	__k_drawRect(videoMem, &screen, 20, 200, 70, 250, RGB(0, 255, 0), false);
+	__k_drawRect(videoMem, &screen, 120, 200, 220, 300, RGB(0, 255, 0), true);
+	__k_drawRect(videoMem, &screen, 270, 200, 420, 350, RGB(0, 255, 0), false);
+	__k_drawRect(videoMem, &screen, 470, 200, 670, 400, RGB(0, 255, 0), true);
 	
 	// draw text of 'Circles' with blue text color and black background color at (0, 550).
-	k_drawText(0, 550, RGB(0, 0, 255), RGB(0, 0, 0), strs[3]);
+	__k_drawText(videoMem, &screen, 0, 550, RGB(0, 0, 255), RGB(0, 0, 0), strs[3]);
 	
 	// draw 4 circles with blue color and 25, 50, 75, 100 radius starting from (45, 600).
-	k_drawCircle(45, 600, 25, RGB(0, 0, 255), false);
-	k_drawCircle(170, 600, 50, RGB(0, 0, 255), true);
-	k_drawCircle(345, 600, 75, RGB(0, 0, 255), false);
-	k_drawCircle(570, 600, 100, RGB(0, 0, 255), true);
+	__k_drawCircle(videoMem, &screen, 45, 600, 25, RGB(0, 0, 255), false);
+	__k_drawCircle(videoMem, &screen, 170, 600, 50, RGB(0, 0, 255), true);
+	__k_drawCircle(videoMem, &screen, 345, 600, 75, RGB(0, 0, 255), false);
+	__k_drawCircle(videoMem, &screen, 570, 600, 100, RGB(0, 0, 255), true);
 	
 	// wait until any key will be input.
 	k_getch();
@@ -285,42 +311,42 @@ void k_startGraphicModeTest(void) {
 	// loop until 'q' key will be input.
 	do {
 		// draw background in order to clear screen.
-		k_drawRect(0, 0, 1024, 768, RGB(0, 0, 0), true);
+		__k_drawRect(videoMem, &screen, 0, 0, 1024, 768, RGB(0, 0, 0), true);
 		
 		// draw a random point.
 		k_getRandomXy(&x1, &y1);
 		color1 = k_getRandomColor();
-		k_drawPixel(x1, y1, color1);
+		__k_drawPixel(videoMem, &screen, x1, y1, color1);
 		
 		// draw a random line.
 		k_getRandomXy(&x1, &y1);
 		k_getRandomXy(&x2, &y2);
 		color1 = k_getRandomColor();
-		k_drawLine(x1, y1, x2, y2, color1);
+		__k_drawLine(videoMem, &screen, x1, y1, x2, y2, color1);
 		
 		// draw a random rectangle.
 		k_getRandomXy(&x1, &y1);
 		k_getRandomXy(&x2, &y2);
 		color1 = k_getRandomColor();
-		k_drawRect(x1, y1, x2, y2, color1, k_random() % 2);
+		__k_drawRect(videoMem, &screen, x1, y1, x2, y2, color1, k_random() % 2);
 		
 		// draw a random circle.
 		k_getRandomXy(&x1, &y1);
 		color1 = k_getRandomColor();
-		k_drawCircle(x1, y1, ABS((k_random() % 50) + 1), color1, k_random() % 2);
+		__k_drawCircle(videoMem, &screen, x1, y1, ABS((k_random() % 50) + 1), color1, k_random() % 2);
 		
 		// draw a random text of 'HansOS'.
 		k_getRandomXy(&x1, &y1);
 		color1 = k_getRandomColor();
 		color2 = k_getRandomColor();
-		k_drawText(x1, y1, color1, color2, strs[4]);
+		__k_drawText(videoMem, &screen, x1, y1, color1, color2, strs[4]);
 		
 	} while (k_getch() != 'q');
 	
 	/* draw window prototype. */
 	while (true) {
 		// draw background.
-		k_drawRect(0, 0, 1024, 768, RGB(232, 255, 232), true);
+		__k_drawRect(videoMem, &screen, 0, 0, 1024, 768, RGB(232, 255, 232), true);
 		
 		// draw 3 window frames.
 		for (i = 0; i < 3; i++) {
@@ -332,4 +358,3 @@ void k_startGraphicModeTest(void) {
 		k_getch();
 	}
 }
-

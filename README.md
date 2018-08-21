@@ -123,3 +123,4 @@ on your computer or QEMU.
 - rect: rectangle
 - han: hangul
 - eng: english
+- over: overlapped
