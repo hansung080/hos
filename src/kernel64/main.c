@@ -16,11 +16,17 @@
 #include "local_apic.h"
 #include "vbe.h"
 #include "2d_graphics.h"
+#include "mp_config_table.h"
+#include "mouse.h"
+#include "interrupt_handlers.h"
+#include "io_apic.h"
 
 void k_mainForAp(void);
+bool k_switchToMultiprocessorMode(void);
 void k_getRandomXy(int* x, int* y);
 Color k_getRandomColor(void);
 void k_drawWindowFrame(int x, int y, int width, int height, const char* title);
+void k_drawCursor(Color* outMem, Rect* area, int x, int y);
 void k_startGraphicModeTest(void);
 
 void k_main(void) {
@@ -89,6 +95,17 @@ void k_main(void) {
 		while (true);
 	}
 	
+	// initialize mouse.
+	k_printf("- initialize mouse...........................");
+	if (k_initMouse() == true) {
+		k_enableMouseInterrupt();
+		k_printf("pass\n");
+
+	} else {
+		k_printf("fail\n");
+		while (true);	
+	}
+
 	// initialize PIC and enable interrupt.
 	k_printf("- initialize PIC and enable interrupt........");
 	k_initPic();
@@ -112,10 +129,19 @@ void k_main(void) {
 	k_initSerialPort();
 	k_printf("pass\n");
 	
+	// switch to multiprocessor or multi-core processor mode.
+	k_printf("- switch to multiprocessor mode..............");
+	if (k_switchToMultiprocessorMode() == true) {
+		k_printf("pass\n");
+
+	} else {
+		k_printf("fail\n");
+	}
+
 	// create idle task.
 	k_createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, (qword)k_idleTask, k_getApicId());
 	
-	// check graphic mode flag
+	// check graphic mode flag.
 	if (*(byte*)VBE_GRAPHICMODEFLAGADDRESS == 0x00) {
 		k_startShell();
 		
@@ -145,10 +171,49 @@ void k_mainForAp(void) {
 	k_initLocalVectorTable();
 	k_enableInterrupt();
 	
-	k_printf("AP (%d) has been activated.\n", k_getApicId());
+	//k_printf("AP (%d) has been activated.\n", k_getApicId());
 	
 	// run idle task.
 	k_idleTask();
+}
+
+bool k_switchToMultiprocessorMode(void) {
+	MpConfigManager* mpManager;
+	bool interruptFlag;
+	int i;
+
+	/* start application processors */
+	if (k_startupAp() == false) {
+		return false;
+	}
+
+	/* start symmetric IO mode */
+	// If it's PIC mode, disable PIC mode using IMCR Register.
+	mpManager = k_getMpConfigManager();
+	if (mpManager->picMode == true) {
+		k_outPortByte(0x22, 0x70);
+		k_outPortByte(0x23, 0x01);
+	}
+
+	k_maskPicInterrupt(0xFFFF);
+	k_enableGlobalLocalApic();
+	k_enableSoftwareLocalApic();
+	interruptFlag = k_setInterruptFlag(false);
+	k_setInterruptPriority(0);
+	k_initLocalVectorTable();
+	k_setSymmetricIoMode(true);
+	k_initIoRedirectionTable();
+	k_setInterruptFlag(interruptFlag);
+
+	/* start interrupt load balancing */
+	k_setInterruptLoadBalancing(true);
+
+	/* start task load balancing */	
+	for (i = 0; i < MAXPROCESSORCOUNT; i++) {
+		k_setTaskLoadBalancing(i, true);
+	}
+
+	return true;
 }
 
 void k_getRandomXy(int* x, int* y) {
@@ -181,7 +246,6 @@ void k_drawWindowFrame(int x, int y, int width, int height, const char* title) {
 	VbeModeInfoBlock* vbeMode;
 	Color* videoMem;
 	Rect screen;	
-	//char* testStr1 = "This is HansOS window prototype.";
 	char* testStr1 = "This is HansOS window prototype.";
 	char* testStr2 = "Coming soon!";
 
@@ -247,15 +311,76 @@ void k_drawWindowFrame(int x, int y, int width, int height, const char* title) {
 	__k_drawText(videoMem, &screen, x + 10, y + 50, RGB( 0, 0, 0 ), RGB( 255, 255, 255 ), testStr2);
 }
 
+#define MOUSE_CURSOR_WIDTH  20
+#define MOUSE_CURSOR_HEIGHT 20
+
+// mouse cursor bitmap (400 bytes)
+static byte g_mouseCursorBitmap[MOUSE_CURSOR_WIDTH * MOUSE_CURSOR_HEIGHT] = {
+	1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	1, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+	1, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0,
+	0, 1, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1,
+	0, 1, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 1, 1,
+	0, 1, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 1, 1, 0, 0,
+	0, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 1, 1, 0, 0, 0, 0,
+	0, 0, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0,
+	0, 0, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 1, 2, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1, 0, 0, 0, 0, 0, 0,
+	0, 0, 1, 2, 2, 3, 3, 3, 2, 2, 3, 3, 3, 2, 1, 0, 0, 0, 0, 0,
+	0, 0, 0, 1, 2, 3, 3, 2, 1, 1, 2, 3, 2, 2, 2, 1, 0, 0, 0, 0,
+	0, 0, 0, 1, 2, 3, 2, 2, 1, 0, 1, 2, 2, 2, 2, 2, 1, 0, 0, 0,
+	0, 0, 0, 1, 2, 3, 2, 1, 0, 0, 0, 1, 2, 2, 2, 2, 2, 1, 0, 0,
+	0, 0, 0, 1, 2, 2, 2, 1, 0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 1, 0,
+	0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 1,
+	0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 1, 0,
+	0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 0,
+	0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0
+};
+
+// mouse cursor bitmap color
+#define MOUSE_CURSOR_COLOR_OUTERLINE RGB(0, 0, 0)       // black color, 1 in bitmap
+#define MOUSE_CURSOR_COLOR_OUTER     RGB(79, 204, 11)   // dark green color, 2 in bitmap
+#define MOUSE_CURSOR_COLOR_INNER     RGB(232, 255, 232) // bright color, 3 in bitmap
+
+void k_drawCursor(Color* outMem, Rect* area, int x, int y) {
+	int i, j;
+	byte* currentPos;
+
+	currentPos = g_mouseCursorBitmap;
+
+	for (i = 0; i < MOUSE_CURSOR_HEIGHT; i++) {
+		for (j = 0; j < MOUSE_CURSOR_WIDTH; j++) {
+			switch (*currentPos) {
+			case 0:
+				break;
+
+			case 1:
+				__k_drawPixel(outMem, area, x + j, y + i, MOUSE_CURSOR_COLOR_OUTERLINE);
+				break;
+
+			case 2:
+				__k_drawPixel(outMem, area, x + j, y + i, MOUSE_CURSOR_COLOR_OUTER);
+				break;
+
+			case 3:
+				__k_drawPixel(outMem, area, x + j, y + i, MOUSE_CURSOR_COLOR_INNER);
+				break;
+			}
+
+			currentPos++;
+		}
+	}
+}
+
 void k_startGraphicModeTest(void) {
 	VbeModeInfoBlock* vbeMode;
 	Color* videoMem;
 	Rect screen;
-	int x1, y1, x2, y2;
-	Color color1, color2;
-	int i;
-	char* strs[] = {"Points", "Lines", "Rectangles", "Circles", "HansOS"};
-	
+	int x, y; // x, y to draw cursor
+	byte buttonStatus;
+	int relativeX, relativeY;
+
 	// get video memory.
 	vbeMode = k_getVbeModeInfoBlock();
 	videoMem = (Color*)((qword)vbeMode->physicalBaseAddr & 0xFFFFFFFF);
@@ -266,95 +391,58 @@ void k_startGraphicModeTest(void) {
 	screen.x2 = vbeMode->xResolution - 1;
 	screen.y2 = vbeMode->yResolution - 1;
 
-	/* draw point, line, rectangle, circle, text in the simple way. */
-	
-	// draw text of 'Points' with white text color and black background color at (0, 0).
-	__k_drawText(videoMem, &screen, 0, 0, RGB(255, 255, 255), RGB(0, 0, 0), strs[0]);
-	
-	// draw 2 points with white color at (1, 20) and (2, 20).
-	__k_drawPixel(videoMem, &screen, 1, 20, RGB(255, 255, 255));
-	__k_drawPixel(videoMem, &screen, 2, 20, RGB(255, 255, 255));
-	
-	// draw text of 'Lines' with red text color and black background color at (0, 25).
-	__k_drawText(videoMem, &screen, 0, 25, RGB(255, 0, 0), RGB(0, 0, 0), strs[1]);
-	
-	// draw 5 lines with red color from (20, 50) to (1000, 50), (1000, 100), (1000, 150), (1000, 200), (1000, 250).
-	__k_drawLine(videoMem, &screen, 20, 50, 1000, 50, RGB(255, 0, 0));
-	__k_drawLine(videoMem, &screen, 20, 50, 1000, 100, RGB(255, 0, 0));
-	__k_drawLine(videoMem, &screen, 20, 50, 1000, 150, RGB(255, 0, 0));
-	__k_drawLine(videoMem, &screen, 20, 50, 1000, 200, RGB(255, 0, 0));
-	__k_drawLine(videoMem, &screen, 20, 50, 1000, 250, RGB(255, 0, 0));
-	
-	// draw text of 'Rectangles' with green text color and black background color at (0, 180).
-	__k_drawText(videoMem, &screen, 0, 180, RGB(0, 255, 0), RGB(0, 0, 0), strs[2]);
-	
-	// draw 4 rectangles with green color and 50, 100, 150, 200 length starting from (20, 200).
-	__k_drawRect(videoMem, &screen, 20, 200, 70, 250, RGB(0, 255, 0), false);
-	__k_drawRect(videoMem, &screen, 120, 200, 220, 300, RGB(0, 255, 0), true);
-	__k_drawRect(videoMem, &screen, 270, 200, 420, 350, RGB(0, 255, 0), false);
-	__k_drawRect(videoMem, &screen, 470, 200, 670, 400, RGB(0, 255, 0), true);
-	
-	// draw text of 'Circles' with blue text color and black background color at (0, 550).
-	__k_drawText(videoMem, &screen, 0, 550, RGB(0, 0, 255), RGB(0, 0, 0), strs[3]);
-	
-	// draw 4 circles with blue color and 25, 50, 75, 100 radius starting from (45, 600).
-	__k_drawCircle(videoMem, &screen, 45, 600, 25, RGB(0, 0, 255), false);
-	__k_drawCircle(videoMem, &screen, 170, 600, 50, RGB(0, 0, 255), true);
-	__k_drawCircle(videoMem, &screen, 345, 600, 75, RGB(0, 0, 255), false);
-	__k_drawCircle(videoMem, &screen, 570, 600, 100, RGB(0, 0, 255), true);
-	
-	// wait until any key will be input.
-	k_getch();
-	
-	/* draw point, line, rectangle, circle, text in the random way. */
-	
-	// loop until 'q' key will be input.
-	do {
-		// draw background in order to clear screen.
-		__k_drawRect(videoMem, &screen, 0, 0, 1024, 768, RGB(0, 0, 0), true);
-		
-		// draw a random point.
-		k_getRandomXy(&x1, &y1);
-		color1 = k_getRandomColor();
-		__k_drawPixel(videoMem, &screen, x1, y1, color1);
-		
-		// draw a random line.
-		k_getRandomXy(&x1, &y1);
-		k_getRandomXy(&x2, &y2);
-		color1 = k_getRandomColor();
-		__k_drawLine(videoMem, &screen, x1, y1, x2, y2, color1);
-		
-		// draw a random rectangle.
-		k_getRandomXy(&x1, &y1);
-		k_getRandomXy(&x2, &y2);
-		color1 = k_getRandomColor();
-		__k_drawRect(videoMem, &screen, x1, y1, x2, y2, color1, k_random() % 2);
-		
-		// draw a random circle.
-		k_getRandomXy(&x1, &y1);
-		color1 = k_getRandomColor();
-		__k_drawCircle(videoMem, &screen, x1, y1, ABS((k_random() % 50) + 1), color1, k_random() % 2);
-		
-		// draw a random text of 'HansOS'.
-		k_getRandomXy(&x1, &y1);
-		color1 = k_getRandomColor();
-		color2 = k_getRandomColor();
-		__k_drawText(videoMem, &screen, x1, y1, color1, color2, strs[4]);
-		
-	} while (k_getch() != 'q');
-	
-	/* draw window prototype. */
-	while (true) {
-		// draw background.
-		__k_drawRect(videoMem, &screen, 0, 0, 1024, 768, RGB(232, 255, 232), true);
-		
-		// draw 3 window frames.
-		for (i = 0; i < 3; i++) {
-			k_getRandomXy(&x1, &y1);
-			k_drawWindowFrame(x1, y1, 400, 200, "Window Prototype");
+	// set initial mouse cursor position to the center of screen.
+	x = vbeMode->xResolution / 2;
+	y = vbeMode->yResolution / 2;
+
+	/* print mouse cursor and process mouse movement. */
+
+	// draw background.
+	__k_drawRect(videoMem, &screen, screen.x1, screen.y1, screen.x2, screen.y2, RGB(232, 255, 232), true);
+
+	// draw initial mouse cursor.
+	k_drawCursor(videoMem, &screen, x, y);
+
+	while (1) {
+		// get mouse data from mouse queue.
+		if (k_getMouseDataFromMouseQueue(&buttonStatus, &relativeX, &relativeY) == false) {
+			k_sleep(0);
+			continue;
 		}
-		
-		// wait until any key will be input.
-		k_getch();
+
+		// clear previous mouse cursor.
+		__k_drawRect(videoMem, &screen, x, y, x + MOUSE_CURSOR_WIDTH, y + MOUSE_CURSOR_HEIGHT, RGB(232, 255, 232), true);
+
+		// move mouse cursor.
+		x += relativeX;
+		y += relativeY;
+
+		// limit x inside screen.
+		if (x < screen.x1) {
+			x = screen.x1;
+
+		} else if (x > screen.x2) {
+			x = screen.x2;
+		}
+
+		// limit y inside screen.
+		if (y < screen.y1) {
+			y = screen.y1;
+
+		} else if (y > screen.y2) {
+			y = screen.y2;
+		}
+
+		// process button click.
+		if (buttonStatus & MOUSE_LBUTTONDOWN) {
+			k_drawWindowFrame(x - 10, y - 10, 400, 200, "Window Prototype");
+
+		} else if (buttonStatus & MOUSE_RBUTTONDOWN) {
+			// clear screen.
+			__k_drawRect(videoMem, &screen, screen.x1, screen.y1, screen.x2, screen.y2, RGB(232, 255, 232), true);	
+		}
+
+		// draw current mouse cursor.
+		k_drawCursor(videoMem, &screen, x, y);
 	}
 }

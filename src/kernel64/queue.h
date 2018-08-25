@@ -8,9 +8,9 @@
 typedef struct k_Queue {
 	int dataSize;
 	int maxDataCount;
-	void* array;  // save address of array for general queue.
-	int getIndex; // get data from head of array.
-	int putIndex; // put data to tail of array.
+	void* array;  // array (buffer): save address of array user declared in order to make queue general.
+	int getIndex; // get index: get data from head of array.
+	int putIndex; // put index: put data to tail of array.
 	bool lastOperationPut;
 } Queue;
 

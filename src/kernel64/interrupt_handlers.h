@@ -64,6 +64,7 @@ void k_deviceNotAvailableHandler(int vector);
 void k_commonInterruptHandler(int vector);
 void k_timerHandler(int vector);
 void k_keyboardHandler(int vector);
+void k_mouseHandler(int vector);
 void k_hddHandler(int vector);
 
 #endif // __INTERRUPT_HANDLERS_H__

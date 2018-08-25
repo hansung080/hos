@@ -66,7 +66,7 @@ static ShellCommandEntry g_commandTable[] = {
 		{"intcnt", "show interrupt count by core * IRQ, usage) intcnt <irq>", k_showInterruptCounts},
 		{"sttlb", "start task load balancing", k_startTaskLoadBalancing},
 		{"chaf" ,"change task affinity, usage) chaf <taskId> <affinity>", k_changeTaskAffinity},
-		{"stmp", "start multi-core processing", k_startMultiprocessing},
+		{"stmp", "start multiprocessor or multi-core processor mode", k_startMultiprocessorMode},
 		{"vbe", "show VBE mode info", k_showVbeModeInfo}
 };
 
@@ -2596,7 +2596,7 @@ static void k_changeTaskAffinity(const char* paramBuffer) {
 	}
 }
 
-static void k_startMultiprocessing(const char* paramBuffer) {
+static void k_startMultiprocessorMode(const char* paramBuffer) {
 	k_startAp(paramBuffer);
 	k_startSymmetricIoMode(paramBuffer);
 	k_startInterruptLoadBalancing(paramBuffer);

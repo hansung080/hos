@@ -11,6 +11,7 @@
 #include "mp_config_table.h"
 #include "multiprocessor.h"
 #include "io_apic.h"
+#include "mouse.h"
 
 static InterruptManager g_interruptManager = {0, };
 
@@ -105,7 +106,7 @@ void k_deviceNotAvailableHandler(int vector) {
 	byte currentApicId;
 	
 	//====================================================================================================
-	/* Print FPU Exception Message */
+	/* print FPU exception message */
 	char buffer[] = "[EXC:  , ]";
 	static int fpuExceptionCount = 0;
 	
@@ -161,7 +162,7 @@ void k_commonInterruptHandler(int vector) {
 	int irq;
 	
 	//====================================================================================================
-	/* Print Interrupt Message */
+	/* print interrupt message */
 	// set vector number (2 digits integer).
 	buffer[5] = '0' + vector / 10;
 	buffer[6] = '0' + vector % 10;
@@ -190,7 +191,7 @@ void k_timerHandler(int vector) {
 	byte currentApicId;
 	
 	//====================================================================================================
-	/* Print Interrupt Message */
+	/* print interrupt message */
 	// set vector number (2 digits integer).
 	buffer[5] = '0' + vector / 10;
 	buffer[6] = '0' + vector % 10;
@@ -225,11 +226,11 @@ void k_timerHandler(int vector) {
 void k_keyboardHandler(int vector) {
 	char buffer[] = "[INT:  , ]";
 	static int keyboardInterruptCount = 0;
-	byte scanCode;
+	byte data;
 	int irq;
 	
 	//====================================================================================================
-	/* Print Interrupt Message */
+	/* print interrupt message */
 	// set vector number (2 digits integer).
 	buffer[5] = '0' + vector / 10;
 	buffer[6] = '0' + vector % 10;
@@ -243,8 +244,68 @@ void k_keyboardHandler(int vector) {
 	//====================================================================================================
 	
 	if (k_isOutputBufferFull() == true) {
-		scanCode = k_getKeyboardScanCode();
-		k_convertScanCodeAndPutQueue(scanCode);
+		if (k_isMouseDataInOutputBuffer() == false) {
+			data = k_getKeyboardScanCode();
+			k_convertScanCodeAndPutQueue(data);
+
+		} else {
+			/**
+			  The reason why it processes mouse data here in keyboard handler is that
+			  mouse data could be in Output Buffer when keyboard interrupt occurs.
+			  Because, some functions disable interrupts, wait ACK, and enable interrupts.
+			  In this case, pending keyboard interrupt could occur when the function enables interrupts,
+			  and mouse data could be in Output Buffer just in time.
+			*/
+			data = k_getKeyboardScanCode();
+			k_accumulateMouseDataAndPutQueue(data);
+		}
+	}
+	
+	irq = vector - PIC_IRQSTARTVECTOR;
+	
+	k_sendEoi(irq);
+	
+	k_increaseInterruptCount(irq);
+	
+	k_processLoadBalancing(irq);
+}
+
+void k_mouseHandler(int vector) {
+	char buffer[] = "[INT:  , ]";
+	static int mouseInterruptCount = 0;
+	byte data;
+	int irq;
+	
+	//====================================================================================================
+	/* print interrupt message */
+	// set vector number (2 digits integer).
+	buffer[5] = '0' + vector / 10;
+	buffer[6] = '0' + vector % 10;
+	
+	// set interrupt-occurred count (1 digit integer).
+	mouseInterruptCount = (mouseInterruptCount + 1) % 10;
+	buffer[8] = '0' + mouseInterruptCount;
+	
+	// print in the first position of the first line.
+	k_printStrXy(0, 0, buffer);
+	//====================================================================================================
+	
+	if (k_isOutputBufferFull() == true) {
+		if (k_isMouseDataInOutputBuffer() == false) {
+			/**
+			  The reason why it processes keyboard data here in mouse handler is that
+			  keyboard data could be in Output Buffer when mouse interrupt occurs.
+			  Because, some functions disable interrupts, wait ACK, and enable interrupts.
+			  In this case, pending mouse interrupt could occur when the function enables interrupts,
+			  and keyboard data could be in Output Buffer just in time.
+			*/
+			data = k_getKeyboardScanCode();
+			k_convertScanCodeAndPutQueue(data);
+
+		} else {
+			data = k_getKeyboardScanCode();
+			k_accumulateMouseDataAndPutQueue(data);
+		}
 	}
 	
 	irq = vector - PIC_IRQSTARTVECTOR;
@@ -262,7 +323,7 @@ void k_hddHandler(int vector) {
 	int irq;
 	
 	//====================================================================================================
-	/* Print Interrupt Message */
+	/* print interrupt message */
 	// set vector number (2 digits integer).
 	buffer[5] = '0' + vector / 10;
 	buffer[6] = '0' + vector % 10;

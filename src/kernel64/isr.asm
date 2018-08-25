@@ -2,9 +2,9 @@
 
 SECTION .text
 
-; handlers (6)
-extern k_commonExceptionHandler, k_commonInterruptHandler, k_keyboardHandler, k_timerHandler, k_deviceNotAvailableHandler
-extern k_hddHandler
+; handlers (7)
+extern k_commonExceptionHandler, k_deviceNotAvailableHandler, k_commonInterruptHandler, k_timerHandler, k_keyboardHandler
+extern k_mouseHandler, k_hddHandler
 
 ; Exception Handling ISR (21)
 global k_isrDivideError, k_isrDebug, k_isrNmi, k_isrBreakPoint, k_isrOverflow
@@ -440,7 +440,7 @@ k_isrMouse:
 	KSAVECONTEXT                  ; save context and switch segment selectors.
 	
 	mov rdi, 44                   ; set vector number to first parameter.
-	call k_commonInterruptHandler ; call C handler function.
+	call k_mouseHandler           ; call C handler function.
 	
 	KLOADCONTEXT                  ; restore context.
 	iretq                         ; restore context saved by processor, and return to the code where had be running.

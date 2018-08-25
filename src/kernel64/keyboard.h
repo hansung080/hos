@@ -5,16 +5,26 @@
 #include "sync.h"
 
 /**
-  < Registers and Port I/O Functions of Keyboard Controller >
-    1. Control Register: k_outPortByte(0x64, bData)
-    2. Status Register: k_inPortByte(0x64) : bData
-    3. Input Buffer: k_outPortByte(0x60, bData)
-    4. Output BUffer: k_inPortByte(0x60) : bData
+  < Keyboard Controller's Registers >
+    - Control Register : port 0x64, write only, control Keyboard Controller.
+                         k_outPortByte(0x64, data)
+
+    - Status Register  : port 0x64, read only, show status of Keyboard Controller.
+                         k_inPortByte(0x64) : data
+
+    - Input Buffer     : port 0x60, write only, save command/data from processor to keyboard/mouse/output port.
+                         k_outPortByte(0x60, data)
+
+    - Output Buffer    : port 0x60, read only, save data from keyboard/mouse/output port to processor.
+                         k_inPortByte(0x60) : data
+
+      [Ref] Output port is inside Keyboard Controller.
+            To read/write data from/to output port, It requires to send the command to Control Register before.
  */
 
 #define KEY_SKIPCOUNTFORPAUSE 2
 
-// key status flag
+// key status flags
 #define KEY_FLAGS_UP          0x00
 #define KEY_FLAGS_DOWN        0x01
 #define KEY_FLAGS_EXTENDEDKEY 0x02
@@ -60,7 +70,7 @@
 #define KEY_F12         0x9F
 #define KEY_PAUSE       0xA0
 
-// macros related with key queue
+// key queue-related macro
 #define KEY_MAXQUEUECOUNT 100
 
 #pragma pack(push, 1)
@@ -87,7 +97,7 @@ typedef struct k_KeyboardManager {
 typedef struct k_Key {
 	byte scanCode;  // scan code
 	byte asciiCode; // ASCII code
-	byte flags;     // key status flag (UP, DOWN, EXTENDEDKEY)
+	byte flags;     // key status flags (UP, DOWN, EXTENDEDKEY)
 } Key;
 
 #pragma pack(pop)

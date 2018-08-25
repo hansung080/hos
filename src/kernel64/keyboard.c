@@ -4,6 +4,7 @@
 #include "queue.h"
 #include "util.h"
 #include "sync.h"
+#include "mouse.h"
 
 bool k_isOutputBufferFull(void) {
 	
@@ -25,32 +26,6 @@ bool k_isInputBufferFull(void) {
 	return false;
 }
 
-bool k_waitAckAndPutOtherScanCode(void) {
-	int i, j;
-	byte data;
-	bool result = false;
-	
-	for (j = 0; j < 100; j++) {
-		for (i = 0; i < 0xFFFF; i++) {
-			if (k_isOutputBufferFull() == true) {
-				break;
-			}
-		}
-		
-		// check if data which is read from Output Buffer == [0xFA:ACK].
-		data = k_inPortByte(0x60);
-		if (data == 0xFA) {
-			result = true;
-			break;
-			
-		} else {
-			k_convertScanCodeAndPutQueue(data);
-		}
-	}
-	
-	return result;
-}
-
 bool k_activateKeyboard(void) {
 	int i, j;
 	bool result;
@@ -58,19 +33,24 @@ bool k_activateKeyboard(void) {
 	
 	interruptFlag = k_setInterruptFlag(false);
 	
-	// activate keyboard device of Keyboard Controller: send [0xAE:Keyboard Device Enable Command] to Control Register.
+	/* activate keyboard of Keyboard Controller */
+
+	// send [0xAE: Keyboard Activation Command] to Control Register.
 	k_outPortByte(0x64, 0xAE);
 	
+	/* activate keyboard */
+
+	// wait until Input Buffer will be empty before sending the command.
 	for (i = 0; i < 0xFFFF; i++) {
 		if (k_isInputBufferFull() == false) {
 			break;
 		}
 	}
 	
-	// activate keyboard: send [0xF4:Keyboard Enable Command] to Input Buffer.
+	// send [0xF4: Keyboard Activation Command] to Input Buffer.
 	k_outPortByte(0x60, 0xF4);
 	
-	// check ACK: wait until ACK is received.
+	// wait until ACK will be received.
 	result = k_waitAckAndPutOtherScanCode();
 	
 	k_setInterruptFlag(interruptFlag);
@@ -83,7 +63,9 @@ byte k_getKeyboardScanCode(void) {
 		;
 	}
 	
-	// return data (scan code) which is read from Output Buffer.
+	// return data reading from Output Buffer.
+	// The data might be keyboard data (scan code) or mouse data.
+	// Thus, you need to check what kind of data it is using k_isMouseDataInOutputBuffer before calling this function.
 	return k_inPortByte(0x60);
 }
 
@@ -100,7 +82,7 @@ bool k_changeKeyboardLed(bool capslockOn, bool numlockOn, bool scrolllockOn) {
 		}
 	}
 	
-	// send Keyboard LED Status Change Command: send [0xED:Keyboard LED Status Change Command] to Input Buffer.
+	// send Keyboard LED Status Change Command: send [0xED: Keyboard LED Status Change Command] to Input Buffer.
 	k_outPortByte(0x60, 0xED);
 	
 	for (i = 0; i < 0xFFFF; i++) {
@@ -109,7 +91,7 @@ bool k_changeKeyboardLed(bool capslockOn, bool numlockOn, bool scrolllockOn) {
 		}
 	}
 	
-	// check ACK: wait until ACK is received.
+	// wait until ACK will be received.
 	result = k_waitAckAndPutOtherScanCode();
 	
 	if (result == false) {
@@ -126,7 +108,7 @@ bool k_changeKeyboardLed(bool capslockOn, bool numlockOn, bool scrolllockOn) {
 		}
 	}
 	
-	// check ACK: wait until ACK is received.
+	// wait until ACK will be received.
 	result = k_waitAckAndPutOtherScanCode();
 	
 	k_setInterruptFlag(interruptFlag);
@@ -135,34 +117,42 @@ bool k_changeKeyboardLed(bool capslockOn, bool numlockOn, bool scrolllockOn) {
 }
 
 void k_enableA20gate(void) {
-	byte outPortData; // Output Port data
+	byte outPortData; // output port data
 	int i;
 	
-	// send [0xD0:Output Port Read Command] to Control Register.
+	/* read output port data */
+
+	// send [0xD0: Output Port Read Command] to Control Register.
 	k_outPortByte(0x64, 0xD0);
 	
+	// wait until Output Buffer is full before reading data.
 	for (i = 0; i < 0xFFFF; i++) {
 		if (k_isOutputBufferFull() == true) {
 			break;
 		}
 	}
 	
-	// read data from Output Port.
+	// read data from output port.
 	outPortData = k_inPortByte(0x60);
+	
+	/* change output port data */
 	
 	// set A20 Gate Enable Bit(bit 1) to 1.
 	outPortData |= 0x02;
 	
+	/* write output port data */
+
+	// wait until Input Buffer is empty before sending the command.
 	for (i = 0; i < 0xFFFF; i++) {
 		if (k_isInputBufferFull() == false) {
 			break;
 		}
 	}
 	
-	// send [0xD1:Output Port Write Command] to Control Register.
+	// send [0xD1: Output Port Write Command] to Control Register.
 	k_outPortByte(0x64, 0xD1);
 	
-	// write data to Output Port.
+	// write data to output port.
 	k_outPortByte(0x60, outPortData);
 }
 
@@ -175,7 +165,7 @@ void k_rebootSystem(void) {
 		}
 	}
 	
-	// send [0xD1:Output Port Write Command] to Control Register.
+	// send [0xD1: Output Port Write Command] to Control Register.
 	k_outPortByte(0x64, 0xD1);
 	
 	// set Processor Reset Bit (bit 0) to 0.
@@ -403,14 +393,14 @@ bool k_convertScanCodeToAsciiCode(byte scanCode, byte* asciiCode, byte* flags) {
 		return false;
 	}
 	
-	// If [0xE1:Pause key].
+	// If [0xE1: Pause key].
 	if (scanCode == 0xE1) {
 		*asciiCode = KEY_PAUSE;
 		*flags = KEY_FLAGS_DOWN;
 		g_keyboardManager.skipCountForPause = KEY_SKIPCOUNTFORPAUSE;
 		return true;
 		
-	// If [0xE0:extended key].
+	// If [0xE0: extended key].
 	} else if (scanCode == 0xE0) {
 		g_keyboardManager.extendedCodeIn = true;
 		return false;
@@ -486,6 +476,47 @@ bool k_getKeyFromKeyQueue(Key* key) {
 	result = k_getQueue(&g_keyQueue, key);
 	
 	k_unlockSpin(&(g_keyboardManager.spinlock));
+	
+	return result;
+}
+
+bool k_waitAckAndPutOtherScanCode(void) {
+	int i, j;
+	byte data;
+	bool result = false;
+	bool isMouseData;
+	
+	// It is possible that data already exists in Output Buffer before receiving ACK from keyboard/mouse.
+	// Thus, check data as much as 100 times.
+	for (i = 0; i < 100; i++) {
+		for (j = 0; j < 0xFFFF; j++) {
+			if (k_isOutputBufferFull() == true) {
+				break;
+			}
+		}
+		
+		if (k_isMouseDataInOutputBuffer() == true) {
+			isMouseData = true;
+
+		} else {
+			isMouseData = false;
+		}
+
+		// check if data reading from Output Buffer == [0xFA: ACK].
+		data = k_inPortByte(0x60);
+		if (data == 0xFA) {
+			result = true;
+			break;
+			
+		} else {
+			if (isMouseData == false) {
+				k_convertScanCodeAndPutQueue(data);
+
+			} else {
+				k_accumulateMouseDataAndPutQueue(data);
+			}
+		}
+	}
 	
 	return result;
 }
