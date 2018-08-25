@@ -129,6 +129,11 @@ void k_main(void) {
 	k_initSerialPort();
 	k_printf("pass\n");
 	
+	// create idle task.
+	k_createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, (qword)k_idleTask, k_getApicId());
+	
+	// [Note] Calling k_switchToMultiprocessorMode before k_createTask is the original order.
+	//        But, it changed the order because k_startupAp has a problem in the original order on Mac QEMU.
 	// switch to multiprocessor or multi-core processor mode.
 	k_printf("- switch to multiprocessor mode..............");
 	if (k_switchToMultiprocessorMode() == true) {
@@ -138,9 +143,6 @@ void k_main(void) {
 		k_printf("fail\n");
 	}
 
-	// create idle task.
-	k_createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, (qword)k_idleTask, k_getApicId());
-	
 	// check graphic mode flag.
 	if (*(byte*)VBE_GRAPHICMODEFLAGADDRESS == 0x00) {
 		k_startShell();
