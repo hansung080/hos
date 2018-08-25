@@ -51,9 +51,9 @@ void k_processLoadBalancing(int irq);
 /**
   < Exception/Interrupt Message Print Position >
   1. big print in top-center                        : k_commonExceptionHandler(Exception)
-  2. print in the first position of the first line  : k_keyboardHandler(INT), k_deviceNotAvailableHandler(EXC)
+  2. print in the first position of the first line  : k_deviceNotAvailableHandler(EXC), k_keyboardHandler(INT), k_mouseHandler(INT)
   3. print in the second position of the first line : k_hddHandler(INT)
-  4. print in the last position of the first line   : k_timerHandler(INT), k_commonInterruptHandler(INT)
+  4. print in the last position of the first line   : k_commonInterruptHandler(INT), k_timerHandler(INT)
 */
 
 /* Exception Handlers */

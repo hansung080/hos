@@ -49,7 +49,7 @@ static void k_testTask1(void);
 static void k_testTask2(void);
 static void k_testTask3(void);
 static void k_createTestTask(const char* paramBuffer);
-static void k_changeTaskPriority(const char* paramBuffer);
+static void k_changePriority(const char* paramBuffer);
 static void k_showTaskList(const char* paramBuffer);
 static void k_killTask(const char* paramBuffer);
 static void k_cpuLoad(const char* paramBuffer);
@@ -90,7 +90,7 @@ static void k_showIrqToIntinMap(const char* paramBuffer);
 static void k_startInterruptLoadBalancing(const char* paramBuffer);
 static void k_showInterruptCounts(const char* paramBuffer);
 static void k_startTaskLoadBalancing(const char* paramBuffer);
-static void k_changeTaskAffinity(const char* paramBuffer);
+static void k_changeAffinity(const char* paramBuffer);
 static void k_startMultiprocessorMode(const char* paramBuffer);
 static void k_showVbeModeInfo(const char* paramBuffer);
 

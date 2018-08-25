@@ -51,7 +51,7 @@ bool k_activateKeyboard(void) {
 	k_outPortByte(0x60, 0xF4);
 	
 	// wait until ACK will be received.
-	result = k_waitAckAndPutOtherScanCode();
+	result = k_waitAckAndPutOtherScanCodes();
 	
 	k_setInterruptFlag(interruptFlag);
 	
@@ -92,7 +92,7 @@ bool k_changeKeyboardLed(bool capslockOn, bool numlockOn, bool scrolllockOn) {
 	}
 	
 	// wait until ACK will be received.
-	result = k_waitAckAndPutOtherScanCode();
+	result = k_waitAckAndPutOtherScanCodes();
 	
 	if (result == false) {
 		k_setInterruptFlag(interruptFlag);
@@ -109,7 +109,7 @@ bool k_changeKeyboardLed(bool capslockOn, bool numlockOn, bool scrolllockOn) {
 	}
 	
 	// wait until ACK will be received.
-	result = k_waitAckAndPutOtherScanCode();
+	result = k_waitAckAndPutOtherScanCodes();
 	
 	k_setInterruptFlag(interruptFlag);
 	
@@ -305,45 +305,45 @@ bool k_isNumberPadScanCode(byte downScanCode) {
 	return false;
 }
 
-bool k_isUseCombinedCode(byte scanCode) {
+bool k_isCombinedKeyUsing(byte scanCode) {
 	byte downScanCode;
-	bool useCombinedKey = false;
+	bool isCombinedKey = false;
 	
 	downScanCode = scanCode & 0x7F;
 	
 	// Alphabet keys get affected by Shift or Caps Lock key.
 	if (k_isAlphabetScanCode(downScanCode) == true) {
 		if (g_keyboardManager.shiftDown ^ g_keyboardManager.capslockOn) {
-			useCombinedKey = true;
+			isCombinedKey = true;
 		
 		} else {
-			useCombinedKey = false;
+			isCombinedKey = false;
 		}
 	
 	// Number or Symbol keys get affected by Shift key.
 	} else if (k_isNumberOrSymbolScanCode(downScanCode) == true) {
 		if(g_keyboardManager.shiftDown == true){
-			useCombinedKey = true;
+			isCombinedKey = true;
 			
 		} else {
-			useCombinedKey = false;
+			isCombinedKey = false;
 		}
 		
 	// Number pad keys get affected by Num Lock key.
 	// and process only when extended key codes are not received, because extended key codes and number pad key codes are duplicated except 0xE0.
 	} else if ((k_isNumberPadScanCode(downScanCode) == true) && (g_keyboardManager.extendedCodeIn == false)) {
 		if(g_keyboardManager.numlockOn == true){
-			useCombinedKey = true;
+			isCombinedKey = true;
 			
 		} else {
-			useCombinedKey = false;
+			isCombinedKey = false;
 		}
 	}
 	
-	return useCombinedKey;
+	return isCombinedKey;
 }
 
-void k_updateCombinationKeyStatusAndLed(byte scanCode) {
+void k_updateCombinedKeyStatusAndLed(byte scanCode) {
 	bool down = false;
 	byte downScanCode;
 	bool ledStatusChanged = false;
@@ -386,7 +386,7 @@ void k_updateCombinationKeyStatusAndLed(byte scanCode) {
 }
 
 bool k_convertScanCodeToAsciiCode(byte scanCode, byte* asciiCode, byte* flags) {
-	bool useCombinedKey = false;
+	bool isCombinedKey = false;
 	
 	if (g_keyboardManager.skipCountForPause > 0) {
 		g_keyboardManager.skipCountForPause--;
@@ -406,9 +406,9 @@ bool k_convertScanCodeToAsciiCode(byte scanCode, byte* asciiCode, byte* flags) {
 		return false;
 	}
 	
-	useCombinedKey = k_isUseCombinedCode(scanCode);
+	isCombinedKey = k_isCombinedKeyUsing(scanCode);
 	
-	if (useCombinedKey == true) {
+	if (isCombinedKey == true) {
 		*asciiCode = g_keyMappingTable[scanCode & 0x7F].combinedCode;
 		
 	} else {
@@ -427,7 +427,7 @@ bool k_convertScanCodeToAsciiCode(byte scanCode, byte* asciiCode, byte* flags) {
 		*flags |= KEY_FLAGS_DOWN;
 	}
 	
-	k_updateCombinationKeyStatusAndLed(scanCode);
+	k_updateCombinedKeyStatusAndLed(scanCode);
 	
 	return true;
 }
@@ -480,7 +480,7 @@ bool k_getKeyFromKeyQueue(Key* key) {
 	return result;
 }
 
-bool k_waitAckAndPutOtherScanCode(void) {
+bool k_waitAckAndPutOtherScanCodes(void) {
 	int i, j;
 	byte data;
 	bool result = false;

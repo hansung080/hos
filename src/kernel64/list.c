@@ -15,7 +15,7 @@ void k_addListToTail(List* list, void* item) {
 	
 	// originally (not general), item->link->next = null;
 	// changed the code from above to below in order to make ListItem general.
-	link = (ListLink*)item; // get ListLink from ListItem pointed by item (This code is possible, because ListLink must be positioned at the first of the structure.)
+	link = (ListLink*)item; // get ListLink from ListItem pointed by item (This code is possible, because ListLink must be the first field.)
 	link->next = null;
 	
 	// If list items == 0 (list is empty).

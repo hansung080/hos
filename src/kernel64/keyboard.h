@@ -80,6 +80,12 @@ typedef struct k_KeyMappingEntry {
 	byte combinedCode; // ASCII code of combined key
 } KeyMappingEntry;
 
+typedef struct k_Key {
+	byte scanCode;  // scan code
+	byte asciiCode; // ASCII code
+	byte flags;     // key status flags (UP, DOWN, EXTENDEDKEY)
+} Key;
+
 typedef struct k_KeyboardManager {
 	Spinlock spinlock;
 	
@@ -94,12 +100,6 @@ typedef struct k_KeyboardManager {
 	int skipCountForPause;
 } KeyboardManager;
 
-typedef struct k_Key {
-	byte scanCode;  // scan code
-	byte asciiCode; // ASCII code
-	byte flags;     // key status flags (UP, DOWN, EXTENDEDKEY)
-} Key;
-
 #pragma pack(pop)
 
 bool k_isOutputBufferFull(void);
@@ -112,12 +112,12 @@ void k_rebootSystem(void);
 bool k_isAlphabetScanCode(byte downScanCode);
 bool k_isNumberOrSymbolScanCode(byte downScanCode);
 bool k_isNumberPadScanCode(byte downScanCode);
-bool k_isUseCombinedCode(byte scanCode);
-void k_updateCombinationKeyStatusAndLed(byte scanCode);
+bool k_isCombinedKeyUsing(byte scanCode);
+void k_updateCombinedKeyStatusAndLed(byte scanCode);
 bool k_convertScanCodeToAsciiCode(byte scanCode, byte* asciiCode, byte* flags);
 bool k_initKeyboard(void); // initialize key queue and enable keyboard.
 bool k_convertScanCodeAndPutQueue(byte scanCode); // convert scan code to ASCII code and put key to key queue.
 bool k_getKeyFromKeyQueue(Key* key); // get key from key queue.
-bool k_waitAckAndPutOtherScanCode(void);
+bool k_waitAckAndPutOtherScanCodes(void);
 
 #endif // __KEYBOARD_H__

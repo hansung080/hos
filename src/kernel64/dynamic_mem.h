@@ -7,7 +7,7 @@
 
 // dynamic memory area start address (0x1100000, 17MB)
 // - aligned with 1MB unit (set it to the multiple of 1MB, rounding up)
-// - It's 17MB if TCB size <= 1KB.
+// - It's 17MB if task size <= 1KB.
 #define DMEM_START_ADDRESS ((TASK_STACKPOOLADDRESS + (TASK_STACKSIZE * TASK_MAXCOUNT) + 0xfffff) & 0xfffffffffff00000)
 
 // smallest block size (1KB)

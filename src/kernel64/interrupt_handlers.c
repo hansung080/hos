@@ -100,8 +100,8 @@ void k_commonExceptionHandler(int vector, qword errorCode) {
 }
 
 void k_deviceNotAvailableHandler(int vector) {
-	Tcb* fpuTask;        // last FPU-used task
-	Tcb* currentTask;    // current task
+	Task* fpuTask;       // last FPU-used task
+	Task* currentTask;   // current task
 	qword lastFpuTaskId; // last FPU-used task ID
 	byte currentApicId;
 	
@@ -136,7 +136,7 @@ void k_deviceNotAvailableHandler(int vector) {
 		
 	// If last FPU-used task exists, save current FPU context to memory.
 	} else if (lastFpuTaskId != TASK_INVALIDID) {
-		fpuTask = k_getTaskFromTcbPool(GETTCBOFFSET(lastFpuTaskId));
+		fpuTask = k_getTaskFromPool(GETTASKOFFSET(lastFpuTaskId));
 		if ((fpuTask != null) && (fpuTask->link.id == lastFpuTaskId)) {
 			k_saveFpuContext(fpuTask->fpuContext);
 		}

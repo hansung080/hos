@@ -55,7 +55,7 @@ bool k_activateMouse(void) {
 	k_outPortByte(0x60, 0xF4);
 
 	// wait until ACK will be received.
-	result = k_waitAckAndPutOtherScanCode();
+	result = k_waitAckAndPutOtherScanCodes();
 
 	k_setInterruptFlag(interruptFlag);
 

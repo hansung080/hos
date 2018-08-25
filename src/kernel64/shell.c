@@ -31,7 +31,7 @@ static ShellCommandEntry g_commandTable[] = {
 		{"cpus", "show CPU speed", k_measureProcessorSpeed},
 		{"date", "show current date and time", k_showDateAndTime},
 		{"testtask", "test task, usage) testtask <type> <count>", k_createTestTask},
-		{"chpr" ,"change task priority, usage) chpr <taskId> <priority>", k_changeTaskPriority},
+		{"chpr" ,"change task priority, usage) chpr <taskId> <priority>", k_changePriority},
 		{"ts", "show task status, usage) ts <option>", k_showTaskList},
 		{"ps", "show task status, usage) ps <option>", k_showTaskList},
 		{"kill", "kill task, usage) kill <taskId>", k_killTask},
@@ -65,7 +65,7 @@ static ShellCommandEntry g_commandTable[] = {
 		{"stilb", "start interrupt load balancing", k_startInterruptLoadBalancing},
 		{"intcnt", "show interrupt count by core * IRQ, usage) intcnt <irq>", k_showInterruptCounts},
 		{"sttlb", "start task load balancing", k_startTaskLoadBalancing},
-		{"chaf" ,"change task affinity, usage) chaf <taskId> <affinity>", k_changeTaskAffinity},
+		{"chaf" ,"change task affinity, usage) chaf <taskId> <affinity>", k_changeAffinity},
 		{"stmp", "start multiprocessor or multi-core processor mode", k_startMultiprocessorMode},
 		{"vbe", "show VBE mode info", k_showVbeModeInfo}
 };
@@ -451,9 +451,9 @@ static void k_testTask1(void) {
 	byte data;
 	int i = 0, x = 0, y = 0, margin, j;
 	Char* screen = (Char*)CONSOLE_VIDEOMEMORYADDRESS;
-	Tcb* runningTask;
+	Task* runningTask;
 	
-	// use the serial number of TCB.ID as screen offset.
+	// use the serial number of task ID as screen offset.
 	runningTask = k_getRunningTask(k_getApicId());
 	margin = (runningTask->link.id & 0xFFFFFFFF) % 10;
 	
@@ -504,7 +504,7 @@ static void k_testTask1(void) {
 static void k_testTask2(void) {
 	int i = 0, offset;
 	Char* screen = (Char*)CONSOLE_VIDEOMEMORYADDRESS;
-	Tcb* runningTask;
+	Task* runningTask;
 	char data[4] = {'-', '\\', '|', '/'};
 	
 	// use the offset of running task ID as screen offset.
@@ -527,7 +527,7 @@ static void k_testTask2(void) {
 // test-task-3: print task ID and core ID whenever the task moves to another core.
 static void k_testTask3(void) {
 	qword taskId;
-	Tcb* runningTask;
+	Task* runningTask;
 	byte lastApicId;
 	qword lastTick;
 	
@@ -630,7 +630,7 @@ static void k_createTestTask(const char* paramBuffer) {
 	}
 }
 
-static void k_changeTaskPriority(const char* paramBuffer) {
+static void k_changePriority(const char* paramBuffer) {
 	ParamList list;
 	char param[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	qword taskId;
@@ -673,7 +673,7 @@ static void k_changeTaskPriority(const char* paramBuffer) {
 		return;
 	}
 	
-	if (k_changePriority(taskId, priority) == true) {
+	if (k_changeTaskPriority(taskId, priority) == true) {
 		k_printf("task priority changing success\n");
 		
 	} else {
@@ -686,7 +686,7 @@ static void k_showTaskList(const char* paramBuffer) {
 	char option[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	int optionLen;
 	int i;
-	Tcb* task;
+	Task* task;
 	int count = 0;
 	int totalTaskCount = 0;
 	char buffer[20];
@@ -753,9 +753,9 @@ static void k_showTaskList(const char* paramBuffer) {
 	k_printf("No  TID  PPID  Child  S  P/T  Priority  MemAddr  MemSize  Affinity  Core\n");
 	
 	for (i = 0; i < TASK_MAXCOUNT; i++) {
-		task = k_getTaskFromTcbPool(i);
+		task = k_getTaskFromPool(i);
 		
-		// check if high 32 bits of task ID (TCB allocation count) != 0.
+		// check if high 32 bits of task ID (task allocation count) != 0.
 		if ((task->link.id >> 32) != 0) {
 			
 			// ask a user to print more items, every after 10 items are printed.
@@ -777,7 +777,7 @@ static void k_showTaskList(const char* paramBuffer) {
 					,(task->flags & TASK_FLAGS_SYSTEM) ? "S" : "-"
 					,(task->flags & TASK_FLAGS_PROCESS) ? "P" : ""
 					,(task->flags & TASK_FLAGS_THREAD) ? "T" : ""
-					,GETPRIORITY(task->flags)
+					,GETTASKPRIORITY(task->flags)
 					,task->memAddr
 					,task->memSize
 					,task->affinity
@@ -790,7 +790,7 @@ static void k_killTask(const char* paramBuffer) {
 	ParamList list;
 	char taskId_[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	qword taskId;
-	Tcb* task;
+	Task* task;
 	int i;
 	
 	// initialize parameter.
@@ -815,8 +815,8 @@ static void k_killTask(const char* paramBuffer) {
 		}
 		
 		// [Note] To exit the task, it requires only the offset (low 32 bits) of parameter TaskID,
-		//        because parameter TaskID has been overrided with real TaskID from TCB pool.
-		task = k_getTaskFromTcbPool(GETTCBOFFSET(taskId));
+		//        because parameter TaskID has been overrided with real TaskID from task pool.
+		task = k_getTaskFromPool(GETTASKOFFSET(taskId));
 		taskId = task->link.id;
 		
 		// exit tasks except not-allocated tasks and system tasks.
@@ -843,7 +843,7 @@ static void k_killTask(const char* paramBuffer) {
 	// exit all tasks except a console shell task and a idle task.
 	} else {
 		for (i = 0; i < TASK_MAXCOUNT; i++) {
-			task = k_getTaskFromTcbPool(i);
+			task = k_getTaskFromPool(i);
 			taskId = task->link.id;
 			
 			// exit tasks except not-allocated tasks and system tasks.
@@ -952,7 +952,7 @@ static void k_createThreadTask(void) {
 }
 
 static void k_testThread(const char* paramBuffer) {
-	Tcb* process;
+	Task* process;
 	
 	// create 1 process and 3 threads.
 	process = k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void*)0xEEEEEEEE, 0x1000, (qword)k_createThreadTask, TASK_AFFINITY_LOADBALANCING);
@@ -1017,7 +1017,7 @@ static void k_matrixProcess(void) {
 }
 
 static void k_showMatrix(const char* paramBuffer) {
-	Tcb* process;
+	Task* process;
 	
 	process = k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void*)0xE00000, 0xE00000, (qword)k_matrixProcess, TASK_AFFINITY_LOADBALANCING);
 	if (process != null) {
@@ -1036,7 +1036,7 @@ static void k_showMatrix(const char* paramBuffer) {
 static void k_fpuTestTask(void) {
 	double value1;
 	double value2;
-	Tcb* runningTask;
+	Task* runningTask;
 	qword count = 0;
 	qword randomValue;
 	int i;
@@ -1199,7 +1199,7 @@ static void k_testSeqAlloc(void) {
 }
 
 static void k_randomAllocTask(void) {
-	Tcb* task;
+	Task* task;
 	qword memSize;
 	char buffer[200];
 	byte* allocBuffer;
@@ -2539,7 +2539,7 @@ static void k_startTaskLoadBalancing(const char* paramBuffer) {
 	k_printf("task load balancing success\n");
 }
 
-static void k_changeTaskAffinity(const char* paramBuffer) {
+static void k_changeAffinity(const char* paramBuffer) {
 	ParamList list;
 	char param[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	qword taskId;
@@ -2588,7 +2588,7 @@ static void k_changeTaskAffinity(const char* paramBuffer) {
 		return;
 	}
 	
-	if (k_changeProcessorAffinity(taskId, affinity) == true) {
+	if (k_changeTaskAffinity(taskId, affinity) == true) {
 		k_printf("task affinity changing success\n");
 		
 	} else {

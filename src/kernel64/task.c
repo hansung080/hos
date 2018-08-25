@@ -8,93 +8,93 @@
 #include "mp_config_table.h"
 
 static Scheduler g_schedulers[MAXPROCESSORCOUNT];
-static TcbPoolManager g_tcbPoolManager;
+static TaskPoolManager g_taskPoolManager;
 
-static void k_initTcbPool(void) {
+static void k_initTaskPool(void) {
 	int i;
 	
-	// initialize TCB pool manager.
-	k_memset(&g_tcbPoolManager, 0, sizeof(g_tcbPoolManager));
+	// initialize task pool manager.
+	k_memset(&g_taskPoolManager, 0, sizeof(g_taskPoolManager));
 	
-	// initialize TCB pool area.
-	g_tcbPoolManager.startAddr = (Tcb*)TASK_TCBPOOLADDRESS;
-	k_memset((void*)TASK_TCBPOOLADDRESS, 0, sizeof(Tcb) * TASK_MAXCOUNT);
+	// initialize task pool area.
+	g_taskPoolManager.startAddr = (Task*)TASK_TASKPOOLADDRESS;
+	k_memset((void*)TASK_TASKPOOLADDRESS, 0, sizeof(Task) * TASK_MAXCOUNT);
 	
-	// allocate ID (offset) to TCB.
+	// allocate ID (offset) to task.
 	for(i = 0; i < TASK_MAXCOUNT; i++){
-		g_tcbPoolManager.startAddr[i].link.id = i;
+		g_taskPoolManager.startAddr[i].link.id = i;
 	}
 	
-	// initialize max count and allocated count of TCB.
-	g_tcbPoolManager.maxCount = TASK_MAXCOUNT;
-	g_tcbPoolManager.allocedCount = 1;
+	// initialize max count and allocate count of task.
+	g_taskPoolManager.maxCount = TASK_MAXCOUNT;
+	g_taskPoolManager.allocCount = 1;
 	
 	// initialize spinlock.
-	k_initSpinlock(&(g_tcbPoolManager.spinlock));
+	k_initSpinlock(&(g_taskPoolManager.spinlock));
 }
 
-static Tcb* k_allocTcb(void) {
-	Tcb* emptyTcb;
+static Task* k_allocTask(void) {
+	Task* emptyTask;
 	int i;
 	
-	k_lockSpin(&(g_tcbPoolManager.spinlock));
+	k_lockSpin(&(g_taskPoolManager.spinlock));
 	
-	if (g_tcbPoolManager.useCount == g_tcbPoolManager.maxCount) {
-		k_unlockSpin(&(g_tcbPoolManager.spinlock));
+	if (g_taskPoolManager.useCount == g_taskPoolManager.maxCount) {
+		k_unlockSpin(&(g_taskPoolManager.spinlock));
 		return null;
 	}
 	
-	for (i = 0; i < g_tcbPoolManager.maxCount; i++) {
-		// If high 32 bits of TCB ID (64 bits) == 0, it's not allocated.
-		if ((g_tcbPoolManager.startAddr[i].link.id >> 32) == 0) {
-			emptyTcb = &(g_tcbPoolManager.startAddr[i]);
+	for (i = 0; i < g_taskPoolManager.maxCount; i++) {
+		// If high 32 bits of task ID (64 bits) == 0, it's not allocated.
+		if ((g_taskPoolManager.startAddr[i].link.id >> 32) == 0) {
+			emptyTask = &(g_taskPoolManager.startAddr[i]);
 			break;
 		}
 	}
 	
-	// set not-0 to high 32 bits of TCB ID to allocate.
-	// TCB ID consists of TCB allocation count (high 32 bits) and TCB offset (low 32 bits).
-	emptyTcb->link.id = ((qword)g_tcbPoolManager.allocedCount << 32) | i;
-	g_tcbPoolManager.useCount++;
-	g_tcbPoolManager.allocedCount++;
+	// set not-0 to high 32 bits of task ID to allocate.
+	// task ID consists of task allocation count (high 32 bits) and task offset (low 32 bits).
+	emptyTask->link.id = ((qword)g_taskPoolManager.allocCount << 32) | i;
+	g_taskPoolManager.useCount++;
+	g_taskPoolManager.allocCount++;
 	
-	if (g_tcbPoolManager.allocedCount == 0) {
-		g_tcbPoolManager.allocedCount = 1;
+	if (g_taskPoolManager.allocCount == 0) {
+		g_taskPoolManager.allocCount = 1;
 	}
 	
-	k_unlockSpin(&(g_tcbPoolManager.spinlock));
+	k_unlockSpin(&(g_taskPoolManager.spinlock));
 	
-	return emptyTcb;
+	return emptyTask;
 }
 
-static void k_freeTcb(qword id) {
+static void k_freeTask(qword taskId) {
 	int i;
 	
-	// get TCB offset (low 32 bits) of TCB ID.
-	i = GETTCBOFFSET(id);
+	// get task offset (low 32 bits) of task ID.
+	i = GETTASKOFFSET(taskId);
 	
-	// initialize context and TCB allocation count as 0.
-	k_memset(&(g_tcbPoolManager.startAddr[i].context), 0, sizeof(Context));
+	// initialize context and task allocation count as 0.
+	k_memset(&(g_taskPoolManager.startAddr[i].context), 0, sizeof(Context));
 	
-	k_lockSpin(&(g_tcbPoolManager.spinlock));
+	k_lockSpin(&(g_taskPoolManager.spinlock));
 	
-	g_tcbPoolManager.startAddr[i].link.id = i;
+	g_taskPoolManager.startAddr[i].link.id = i;
 	
-	g_tcbPoolManager.useCount--;
+	g_taskPoolManager.useCount--;
 	
-	k_unlockSpin(&(g_tcbPoolManager.spinlock));
+	k_unlockSpin(&(g_taskPoolManager.spinlock));
 }
 
-Tcb* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr, byte affinity) {
-	Tcb* task;    // task to create (task means process or thread)
-	Tcb* process; // process with running task in it (It means process which has created the task, or it means parent process.)
+Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr, byte affinity) {
+	Task* task;    // task to create (task means process or thread)
+	Task* process; // process with running task in it (It means process which has created the task, or it means parent process.)
 	void* stackAddr;
 	byte currentApicId;
 	
 	currentApicId = k_getApicId();
 	
 	// allocate task.
-	task = k_allocTcb();
+	task = k_allocTask();
 	if (task == null) {
 		return null;
 	}
@@ -104,7 +104,7 @@ Tcb* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAdd
 	// get process with running task in it.
 	process = k_getProcessByThread(k_getRunningTask(currentApicId));
 	if (process == null) {
-		k_freeTcb(task->link.id);
+		k_freeTask(task->link.id);
 		k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
 		return null;
 	}
@@ -120,12 +120,12 @@ Tcb* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAdd
 	  
 	  2. End P2 Process
 	    ------------
-	    |T3->T4->P2|  -> wait list
+	    |T3->T4->P2|  -> end list
 	    ------------
 	  
 	  3. End T3 Thread
 	    ----
-	    |T3|  -> wait list
+	    |T3|  -> end list
 	    ----
 	*/
 	
@@ -155,16 +155,16 @@ Tcb* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAdd
 	
 	k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
 	
-	// set stack address of task. (use TCB ID offset as stack pool offset.)
-	stackAddr = (void*)(TASK_STACKPOOLADDRESS + (TASK_STACKSIZE * GETTCBOFFSET(task->link.id)));
+	// set stack address of task. (use task ID offset as stack pool offset.)
+	stackAddr = (void*)(TASK_STACKPOOLADDRESS + (TASK_STACKSIZE * GETTASKOFFSET(task->link.id)));
 	
 	// set task.
-	k_setupTask(task, flags, entryPointAddr, stackAddr, TASK_STACKSIZE);
+	k_setTask(task, flags, entryPointAddr, stackAddr, TASK_STACKSIZE);
 	
 	// initialize child thread list.
 	k_initList(&(task->childThreadList));
 	
-	// initialize FPU used flag, APIC ID, and processor affinity.
+	// initialize FPU used flag, APIC ID, and affinity.
 	task->fpuUsed = false;
 	task->apicId = currentApicId;
 	task->affinity = affinity;
@@ -175,7 +175,7 @@ Tcb* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAdd
 	return task;
 }
 
-static void k_setupTask(Tcb* task, qword flags, qword entryPointAddr, void* stackAddr, qword stackSize) {
+static void k_setTask(Task* task, qword flags, qword entryPointAddr, void* stackAddr, qword stackSize) {
 	
 	// initialize context
 	k_memset(task->context.registers, 0, sizeof(task->context.registers));
@@ -209,14 +209,14 @@ static void k_setupTask(Tcb* task, qword flags, qword entryPointAddr, void* stac
 void k_initScheduler(void) {
 	int i, j;
 	byte currentApicId;
-	Tcb* task;
+	Task* task;
 	
 	currentApicId = k_getApicId();
 	
-	// initialize TCB pool and scheduler only If current core is BSP.
+	// initialize task pool and scheduler only If current core is BSP.
 	if (currentApicId == APICID_BSP) {
-		// initialize TCB pool.
-		k_initTcbPool();
+		// initialize task pool.
+		k_initTaskPool();
 		
 		for (i = 0; i < MAXPROCESSORCOUNT; i++ ) {
 			for (j = 0; j < TASK_MAXREADYLISTCOUNT; j++) {
@@ -227,17 +227,17 @@ void k_initScheduler(void) {
 				g_schedulers[i].executeCounts[j] = 0;
 			}
 			
-			// initialize wait list.
-			k_initList(&(g_schedulers[i].waitList));
+			// initialize end list.
+			k_initList(&(g_schedulers[i].endList));
 			
 			// initialize spinlock.
 			k_initSpinlock(&(g_schedulers[i].spinlock));
 		}
 	}
 	
-	// allocate TCB and set it as a running task. (This TCB is for the booting task.)
+	// allocate task and set it as a running task. (This task is for the booting task.)
 	// The booting task is the first task of kernel.
-	task = k_allocTcb();
+	task = k_allocTask();
 	g_schedulers[currentApicId].runningTask = task;
 	
 	// The shell task of BSP and the idle task of AP have to be running only on current core.
@@ -270,7 +270,7 @@ void k_initScheduler(void) {
 	g_schedulers[currentApicId].lastFpuUsedTaskId = TASK_INVALIDID;
 }
 
-void k_setRunningTask(byte apicId, Tcb* task) {
+void k_setRunningTask(byte apicId, Task* task) {
 	k_lockSpin(&(g_schedulers[apicId].spinlock));
 	
 	g_schedulers[apicId].runningTask = task;
@@ -278,8 +278,8 @@ void k_setRunningTask(byte apicId, Tcb* task) {
 	k_unlockSpin(&(g_schedulers[apicId].spinlock));
 }
 
-Tcb* k_getRunningTask(byte apicId) {
-	Tcb* runningTask;
+Task* k_getRunningTask(byte apicId) {
+	Task* runningTask;
 	
 	k_lockSpin(&(g_schedulers[apicId].spinlock));
 	
@@ -290,8 +290,8 @@ Tcb* k_getRunningTask(byte apicId) {
 	return runningTask;
 }
 
-static Tcb* k_getNextTaskToRun(byte apicId) {
-	Tcb* target = null;
+static Task* k_getNextTaskToRun(byte apicId) {
+	Task* target = null;
 	int taskCount;
 	int i, j;
 	
@@ -306,7 +306,7 @@ static Tcb* k_getNextTaskToRun(byte apicId) {
 			
 			// If task execute count < task count, select task with current priority.
 			if (g_schedulers[apicId].executeCounts[i] < taskCount) {
-				target = (Tcb*)k_removeListFromHead(&(g_schedulers[apicId].readyLists[i]));
+				target = (Task*)k_removeListFromHead(&(g_schedulers[apicId].readyLists[i]));
 				g_schedulers[apicId].executeCounts[i]++;
 				break;
 				
@@ -325,12 +325,12 @@ static Tcb* k_getNextTaskToRun(byte apicId) {
 	return target;
 }
 
-static bool k_addTaskToReadyList(byte apicId, Tcb* task) {
+static bool k_addTaskToReadyList(byte apicId, Task* task) {
 	byte priority;
 	
-	priority = GETPRIORITY(task->flags);
-	if (priority == TASK_FLAGS_WAIT) {
-		k_addListToTail(&(g_schedulers[apicId].waitList), task);
+	priority = GETTASKPRIORITY(task->flags);
+	if (priority == TASK_FLAGS_END) {
+		k_addListToTail(&(g_schedulers[apicId].endList), task);
 		return true;
 		
 	} else if (priority >= TASK_MAXREADYLISTCOUNT) {
@@ -341,22 +341,22 @@ static bool k_addTaskToReadyList(byte apicId, Tcb* task) {
 	return true;
 }
 
-static Tcb* k_removeTaskFromReadyList(byte apicId, qword taskId) {
-	Tcb* target;
+static Task* k_removeTaskFromReadyList(byte apicId, qword taskId) {
+	Task* target;
 	byte priority;
 	
 	// check if task ID is valid.
-	if (GETTCBOFFSET(taskId) >= TASK_MAXCOUNT) {
+	if (GETTASKOFFSET(taskId) >= TASK_MAXCOUNT) {
 		return null;
 	}
 	
-	// check if task ID matches task ID which is searched from TCB pool.
-	target = &(g_tcbPoolManager.startAddr[GETTCBOFFSET(taskId)]);
+	// check if task ID matches task ID which is searched from task pool.
+	target = &(g_taskPoolManager.startAddr[GETTASKOFFSET(taskId)]);
 	if (target->link.id != taskId) {
 		return null;
 	}
 	
-	priority = GETPRIORITY(target->flags);
+	priority = GETTASKPRIORITY(target->flags);
 	if (priority >= TASK_MAXREADYLISTCOUNT) {
 		return null;
 	}
@@ -367,12 +367,12 @@ static Tcb* k_removeTaskFromReadyList(byte apicId, qword taskId) {
 	return target;
 }
 
-static bool k_findSchedulerOfTaskAndLock(qword taskId, byte* apicId) {
-	Tcb* target;
+static bool k_findSchedulerByTaskWithLock(qword taskId, byte* apicId) {
+	Task* target;
 	byte targetApicId;
 	
 	while (true) {
-		target = &(g_tcbPoolManager.startAddr[GETTCBOFFSET(taskId)]);
+		target = &(g_taskPoolManager.startAddr[GETTASKOFFSET(taskId)]);
 		if (target == null || target->link.id != taskId) {
 			return false;
 		}
@@ -383,7 +383,7 @@ static bool k_findSchedulerOfTaskAndLock(qword taskId, byte* apicId) {
 		
 		// If APIC ID has not changed (task has not moved to another core) while getting a lock,
 		// got a right lock, so break the loop.
-		target = &(g_tcbPoolManager.startAddr[GETTCBOFFSET(taskId)]);
+		target = &(g_taskPoolManager.startAddr[GETTASKOFFSET(taskId)]);
 		if (target != null && target->apicId == targetApicId) {
 			break;
 		}
@@ -398,15 +398,15 @@ static bool k_findSchedulerOfTaskAndLock(qword taskId, byte* apicId) {
 	return true;
 }
 
-bool k_changePriority(qword taskId, byte priority) {
-	Tcb* target;
+bool k_changeTaskPriority(qword taskId, byte priority) {
+	Task* target;
 	byte apicId;
 	
 	if (priority >= TASK_MAXREADYLISTCOUNT) {
 		return false;
 	}
 	
-	if (k_findSchedulerOfTaskAndLock(taskId, &apicId) == false) {
+	if (k_findSchedulerByTaskWithLock(taskId, &apicId) == false) {
 		return false;
 	}
 	
@@ -415,22 +415,22 @@ bool k_changePriority(qword taskId, byte priority) {
 	// If it's a running task, only change priority.
 	// It's because the task will move to ready list with the changed priority, when timer interrupt (IRQ 0) causes task switching.
 	if (target->link.id == taskId) {
-		SETPRIORITY(target->flags, priority);
+		SETTASKPRIORITY(target->flags, priority);
 		
 	// If it's not a running task, remove it from ready list, change priority, and move it to ready list with the changed priority.
 	} else {
 		target = k_removeTaskFromReadyList(apicId, taskId);
 		
-		// If the task dosen't exist in ready list, change priority in searching it from TCB pool.
+		// If the task dosen't exist in ready list, change priority in searching it from task pool.
 		if (target == null) {
-			target = k_getTaskFromTcbPool(GETTCBOFFSET(taskId));
+			target = k_getTaskFromPool(GETTASKOFFSET(taskId));
 			if (target != null) {
-				SETPRIORITY(target->flags, priority);
+				SETTASKPRIORITY(target->flags, priority);
 			}
 			
 		// If the task exists in ready list, change priority and move it to ready list with the changed priority.
 		} else {
-			SETPRIORITY(target->flags, priority);
+			SETTASKPRIORITY(target->flags, priority);
 			k_addTaskToReadyList(apicId, target);
 		}
 	}
@@ -460,7 +460,7 @@ bool k_changePriority(qword taskId, byte priority) {
      
   2. task switching: It occurs when task requests such as waiting, sleeping, and etc.
   
-     registers    k_schedule   TCB pool
+     registers    k_schedule   task pool
      ----------     --->       -------
      | A -> B |                | ... |
      ----------     <---       |  A  |
@@ -468,13 +468,13 @@ bool k_changePriority(qword taskId, byte priority) {
                                | ... |
                                -------
      - process task A.
-     - save task A context from registers to TCB pool by k_schedule.
-     - restore task B context from TCB pool to registers by k_schedule.
+     - save task A context from registers to task pool by k_schedule.
+     - restore task B context from task pool to registers by k_schedule.
      - process task B.
   
   3. interrupt switching and task switching: It occurs when timer interrupt occurs.
   
-     registers    processor/ISR     IST      k_scheduleInInterrupt   TCB pool
+     registers    processor/ISR     IST      k_scheduleInInterrupt   task pool
      ----------      --->       ----------          --->             -------
      | A -> B |                 | A -> B |                           | ... |
      ----------      <---       ----------          <---             |  A  |
@@ -484,8 +484,8 @@ bool k_changePriority(qword taskId, byte priority) {
      - process task A.
      - save task A context from registers to IST by processor and ISR.
      - process timer interrupt handler.
-     - save task A context from IST to TCB pool by k_scheduleInInterrupt.
-     - restore task B context from TCB pool to IST by k_scheduleInInterrupt.
+     - save task A context from IST to task pool by k_scheduleInInterrupt.
+     - restore task B context from task pool to IST by k_scheduleInInterrupt.
      - restore task B context from IST to registers by processor and ISR.
      - process task B.
   
@@ -494,7 +494,7 @@ bool k_changePriority(qword taskId, byte priority) {
   - There are a IST and a scheduler per a core.
   - process task load balancing when a task is added to ready list.
   
-       core 0     processor/ISR    IST 0     k_scheduleInInterrupt   TCB pool
+       core 0     processor/ISR    IST 0     k_scheduleInInterrupt   task pool
      ----------      --->       ----------          --->             -------
      | A -> B |                 | A -> B |                           | ... |
      ----------      <---       ----------          <---             |  A  |
@@ -536,7 +536,7 @@ bool k_changePriority(qword taskId, byte priority) {
 */
 
 bool k_schedule(void) {
-	Tcb* runningTask, * nextTask;
+	Task* runningTask, * nextTask;
 	bool interruptFlag;
 	byte currentApicId;
 	
@@ -581,19 +581,19 @@ bool k_schedule(void) {
 	  - restore context: next task -> registers (by k_switchContext)
 	 */
 	
-	// If it's switched from end task, move end task to wait list, switch task.
+	// If it's switched from end task, move end task to end list, switch task.
 	if ((runningTask->flags & TASK_FLAGS_ENDTASK) == TASK_FLAGS_ENDTASK) {
-		k_addListToTail(&(g_schedulers[currentApicId].waitList), runningTask);
+		k_addListToTail(&(g_schedulers[currentApicId].endList), runningTask);
 		k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
-		// restore next task context from TCB pool to registers.
+		// restore next task context from task pool to registers.
 		k_switchContext(null, &(nextTask->context));
 		
 	// If it's switched from normal task, move normal task to ready list, switch task.
 	} else {
 		k_addTaskToReadyList(currentApicId, runningTask);
 		k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
-		// save running task context from registers to TCB pool,
-		// and restore next task context from TCB pool to registers.
+		// save running task context from registers to task pool,
+		// and restore next task context from task pool to registers.
 		k_switchContext(&(runningTask->context), &(nextTask->context));
 	}
 	
@@ -606,7 +606,7 @@ bool k_schedule(void) {
 }
 
 bool k_scheduleInInterrupt(void) {
-	Tcb* runningTask, * nextTask;
+	Task* runningTask, * nextTask;
 	char* contextAddr; // context address in IST
 	byte currentApicId;
 	qword istEndAddr; // IST end address of current core
@@ -639,13 +639,13 @@ bool k_scheduleInInterrupt(void) {
 	  - restore context: next task -> IST (by k_memcpy) -> registers (by processor and ISR)
 	 */
 	
-	// If it's switched from end task, move end task to wait list, switch task.
+	// If it's switched from end task, move end task to end list, switch task.
 	if ((runningTask->flags & TASK_FLAGS_ENDTASK) == TASK_FLAGS_ENDTASK) {
-		k_addListToTail(&(g_schedulers[currentApicId].waitList), runningTask);
+		k_addListToTail(&(g_schedulers[currentApicId].endList), runningTask);
 		
 	// If it's switched from normal task, move normal task to ready list, switch task.
 	} else {
-		// save running task context from IST to TCB pool.
+		// save running task context from IST to task pool.
 		k_memcpy(&(runningTask->context), contextAddr, sizeof(Context));
 	}
 	
@@ -659,7 +659,7 @@ bool k_scheduleInInterrupt(void) {
 	
 	k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
 	
-	// restore next task context from TCB pool to IST.
+	// restore next task context from task pool to IST.
 	k_memcpy(contextAddr, &(nextTask->context), sizeof(Context));
 	
 	if ((runningTask->flags & TASK_FLAGS_ENDTASK) != TASK_FLAGS_ENDTASK) {
@@ -685,11 +685,11 @@ bool k_isProcessorTimeExpired(byte apicId) {
 }
 
 bool k_endTask(qword taskId) {
-	Tcb* target;
+	Task* target;
 	byte priority;
 	byte apicId;
 	
-	if (k_findSchedulerOfTaskAndLock(taskId, &apicId) == false) {
+	if (k_findSchedulerByTaskWithLock(taskId, &apicId) == false) {
 		return false;
 	}
 	
@@ -698,7 +698,7 @@ bool k_endTask(qword taskId) {
 	// If it's a running task, set end task flag, and switch task
 	if (target->link.id == taskId) {
 		target->flags |= TASK_FLAGS_ENDTASK;
-		SETPRIORITY(target->flags, TASK_FLAGS_WAIT);
+		SETTASKPRIORITY(target->flags, TASK_FLAGS_END);
 		
 		k_unlockSpin(&(g_schedulers[apicId].spinlock));
 		
@@ -716,13 +716,13 @@ bool k_endTask(qword taskId) {
 		return true;
 	}
 	
-	// If it's not a running task, remove it from ready list, set end task flag, move it to wait list.
+	// If it's not a running task, remove it from ready list, set end task flag, move it to end list.
 	target = k_removeTaskFromReadyList(apicId, taskId);
 	if (target == null) {
-		target = k_getTaskFromTcbPool(GETTCBOFFSET(taskId));
+		target = k_getTaskFromPool(GETTASKOFFSET(taskId));
 		if (target != null) {
 			target->flags |= TASK_FLAGS_ENDTASK;
-			SETPRIORITY(target->flags, TASK_FLAGS_WAIT);
+			SETTASKPRIORITY(target->flags, TASK_FLAGS_END);
 		}
 		
 		k_unlockSpin(&(g_schedulers[apicId].spinlock));
@@ -731,8 +731,8 @@ bool k_endTask(qword taskId) {
 	}
 	
 	target->flags |= TASK_FLAGS_ENDTASK;
-	SETPRIORITY(target->flags, TASK_FLAGS_WAIT);
-	k_addListToTail(&(g_schedulers[apicId].waitList), target);
+	SETTASKPRIORITY(target->flags, TASK_FLAGS_END);
+	k_addListToTail(&(g_schedulers[apicId].endList), target);
 	
 	k_unlockSpin(&(g_schedulers[apicId].spinlock));
 	
@@ -766,25 +766,25 @@ int k_getTaskCount(byte apicId) {
 	k_lockSpin(&(g_schedulers[apicId].spinlock));
 	
 	// total task count = ready task count + wait task count + running task count
-	totalCount += k_getListCount(&(g_schedulers[apicId].waitList)) + 1;
+	totalCount += k_getListCount(&(g_schedulers[apicId].endList)) + 1;
 	
 	k_unlockSpin(&(g_schedulers[apicId].spinlock));
 	
 	return totalCount;
 }
 
-Tcb* k_getTaskFromTcbPool(int offset) {
+Task* k_getTaskFromPool(int offset) {
 	if ((offset <= -1) && (offset >= TASK_MAXCOUNT)) {
 		return null;
 	}
 	
-	return &(g_tcbPoolManager.startAddr[offset]);
+	return &(g_taskPoolManager.startAddr[offset]);
 }
 
-bool k_isTaskExist(qword taskId) {
-	Tcb* task;
+bool k_existTask(qword taskId) {
+	Task* task;
 	
-	task = k_getTaskFromTcbPool(GETTCBOFFSET(taskId));
+	task = k_getTaskFromPool(GETTASKOFFSET(taskId));
 	if ((task == null) || (task->link.id != taskId)) {
 		return false;
 	}
@@ -796,8 +796,8 @@ qword k_getProcessorLoad(byte apicId) {
 	return g_schedulers[apicId].processorLoad;
 }
 
-static Tcb* k_getProcessByThread(Tcb* thread) {
-	Tcb* process;
+static Task* k_getProcessByThread(Task* thread) {
+	Task* process;
 	
 	// If parameter is process, return process itself.
 	if (thread->flags & TASK_FLAGS_PROCESS) {
@@ -805,7 +805,7 @@ static Tcb* k_getProcessByThread(Tcb* thread) {
 	}
 	
 	// If parameter is thread, return parent process.
-	process = k_getTaskFromTcbPool(GETTCBOFFSET(thread->parentProcessId));
+	process = k_getTaskFromPool(GETTASKOFFSET(thread->parentProcessId));
 	if ((process == null) || (process->link.id != thread->parentProcessId)) {
 		return null;
 	}
@@ -813,7 +813,7 @@ static Tcb* k_getProcessByThread(Tcb* thread) {
 	return process;
 }
 
-void k_addTaskToSchedulerWithLoadBalancing(Tcb* task) {
+void k_addTaskToSchedulerWithLoadBalancing(Task* task) {
 	byte currentApicId;
 	byte targetApicId;
 	
@@ -821,7 +821,7 @@ void k_addTaskToSchedulerWithLoadBalancing(Tcb* task) {
 	
 	/* find target scheduler */
 	if ((g_schedulers[currentApicId].loadBalancing == true) && (task->affinity == TASK_AFFINITY_LOADBALANCING)) {
-		targetApicId = k_findSchedulerOfMinTaskCount(task);
+		targetApicId = k_findSchedulerByMinTaskCount(task);
 		
 	} else if ((task->affinity != currentApicId) && (task->affinity != TASK_AFFINITY_LOADBALANCING)) {
 		targetApicId = task->affinity;
@@ -853,7 +853,7 @@ void k_addTaskToSchedulerWithLoadBalancing(Tcb* task) {
 	k_unlockSpin(&(g_schedulers[targetApicId].spinlock));
 }
 
-static byte k_findSchedulerOfMinTaskCount(const Tcb* task) {
+static byte k_findSchedulerByMinTaskCount(const Task* task) {
 	byte priority;
 	byte i;
 	int currentTaskCount;
@@ -867,7 +867,7 @@ static byte k_findSchedulerOfMinTaskCount(const Tcb* task) {
 		return task->apicId;
 	}
 	
-	priority = GETPRIORITY(task->flags);
+	priority = GETTASKPRIORITY(task->flags);
 	currentTaskCount = k_getListCount(&(g_schedulers[task->apicId].readyLists[priority]));
 	
 	/**
@@ -895,11 +895,11 @@ void k_setTaskLoadBalancing(byte apicId, bool loadBalancing) {
 	g_schedulers[apicId].loadBalancing = loadBalancing;
 }
 
-bool k_changeProcessorAffinity(qword taskId, byte affinity) {
-	Tcb* target;
+bool k_changeTaskAffinity(qword taskId, byte affinity) {
+	Task* target;
 	byte apicId;
 	
-	if (k_findSchedulerOfTaskAndLock(taskId, &apicId) == false) {
+	if (k_findSchedulerByTaskWithLock(taskId, &apicId) == false) {
 		return false;
 	}
 	
@@ -915,9 +915,9 @@ bool k_changeProcessorAffinity(qword taskId, byte affinity) {
 	} else {
 		target = k_removeTaskFromReadyList(apicId, taskId);
 		
-		// If the task dosen't exist in ready list, change affinity in searching it from TCB pool.
+		// If the task dosen't exist in ready list, change affinity in searching it from task pool.
 		if (target == null) {
-			target = k_getTaskFromTcbPool(GETTCBOFFSET(taskId));
+			target = k_getTaskFromPool(GETTASKOFFSET(taskId));
 			if (target != null) {
 				target->affinity = affinity;
 			}
@@ -937,7 +937,7 @@ bool k_changeProcessorAffinity(qword taskId, byte affinity) {
 }
 
 void k_idleTask(void) {
-	Tcb* task, * childThread, * process;
+	Task* task, * childThread, * process;
 	qword lastMeasureTickCount, lastSpendTickInIdleTask;
 	qword currentMeasureTickCount, currentSpendTickInIdleTask;
 	qword taskId, childThreadId;
@@ -974,15 +974,15 @@ void k_idleTask(void) {
 		// halt processor by processor load.
 		k_haltProcessorByLoad(currentApicId);
 		
-		/* 3. completely end the end tasks in wait list */
+		/* 3. completely end the end tasks in end list */
 		
-		// If end task exists in wait list, remove end task from wait list, free memory of end task.
-		if (k_getListCount(&(g_schedulers[currentApicId].waitList)) > 0) {
+		// If end task exists in end list, remove end task from end list, free memory of end task.
+		if (k_getListCount(&(g_schedulers[currentApicId].endList)) > 0) {
 			while (true) {
 				k_lockSpin(&(g_schedulers[currentApicId].spinlock));
 				
-				// remove end task from wait list.
-				task = k_removeListFromHead(&(g_schedulers[currentApicId].waitList));
+				// remove end task from end list.
+				task = k_removeListFromHead(&(g_schedulers[currentApicId].endList));
 				
 				k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
 				
@@ -991,36 +991,36 @@ void k_idleTask(void) {
 				}
 				
 				/**
-				  [Code Block 1] If end task is process, end all child threads of process which means to move them from ready list to wait list,
-				                 wait until child threads in wait list are completely ended, and finally completely end process itself.
-				                 (End means to move tasks from ready list to wait list.)
-				                 (Totally end means to free memory of tasks in wait list.)
-				  [Ref] free memory of process: free code/data area, TCB, stack.
-				        free memory of thread: free TCB, stack.
+				  [Code Block 1] If end task is process, end all child threads of process which means to move them from ready list to end list,
+				                 wait until child threads in end list are completely ended, and finally completely end process itself.
+				                 (End means to move tasks from ready list to end list.)
+				                 (Totally end means to free memory of tasks in end list.)
+				  [Ref] free memory of process: free code/data area, task, stack.
+				        free memory of thread: free task, stack.
 				 */
 				if (task->flags & TASK_FLAGS_PROCESS) {
 					count = k_getListCount(&(task->childThreadList));
 					for (i = 0; i < count; i++) {
 						k_lockSpin(&(g_schedulers[currentApicId].spinlock));
 						
-						threadLink = (Tcb*)k_removeListFromHead(&(task->childThreadList));
+						threadLink = (Task*)k_removeListFromHead(&(task->childThreadList));
 						if (threadLink == null) {
 							k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
 							break;
 						}
 						
-						childThread = GETTCBFROMTHREADLINK(threadLink);
+						childThread = GETTASKFROMTHREADLINK(threadLink);
 						
 						// the reasons why re-put child thread to child thread list, after removing it from child thread list.
 						// - first reason: When thread ends, it removes itself from child thread list in [Code Block 2].
-						// - second reason: Under multi-core processor, If child thread is running on the other cores, it can't be moved to wait list immediately.
+						// - second reason: Under multi-core processor, If child thread is running on the other cores, it can't be moved to end list immediately.
 						k_addListToTail(&(task->childThreadList), &(childThread->threadLink));
 						
 						childThreadId = childThread->link.id;
 						
 						k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
 						
-						// end all child threads (move them from ready list to wait list.)
+						// end all child threads (move them from ready list to end list.)
 						k_endTask(childThreadId);
 					}
 					
@@ -1028,7 +1028,7 @@ void k_idleTask(void) {
 					if (k_getListCount(&(task->childThreadList)) > 0) {
 						k_lockSpin(&(g_schedulers[currentApicId].spinlock));
 						
-						k_addListToTail(&(g_schedulers[currentApicId].waitList), task);
+						k_addListToTail(&(g_schedulers[currentApicId].endList), task);
 						
 						k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
 						
@@ -1046,16 +1046,16 @@ void k_idleTask(void) {
 				} else if (task->flags & TASK_FLAGS_THREAD) {
 					process = k_getProcessByThread(task);
 					if (process != null) {
-						if (k_findSchedulerOfTaskAndLock(process->link.id, &processApicId) == true) {
+						if (k_findSchedulerByTaskWithLock(process->link.id, &processApicId) == true) {
 							k_removeList(&(process->childThreadList), task->link.id);
 							k_unlockSpin(&(g_schedulers[processApicId].spinlock));
 						}
 					}
 				}
 				
-				// free TCB of end task (If TCB is freed, then also stack is freed automatically.)
+				// free task of end task (If task is freed, then also stack is freed automatically.)
 				taskId = task->link.id;
-				k_freeTcb(taskId);
+				k_freeTask(taskId);
 				//k_printf("IDLE: Task (0x%q) has completely ended.\n", taskId);
 			}
 		}
