@@ -2,8 +2,8 @@
 #define __FONTS_H__
 
 /* Bitstream Vera Sans Mono (English) */
-#define FONT_VERAMONO_ENG_WIDTH  8
-#define FONT_VERAMONO_ENG_HEIGHT 16
+#define FONT_VERAMONO_ENG_WIDTH  8  // 8 pixels per a character
+#define FONT_VERAMONO_ENG_HEIGHT 16 // 16 pixels per a character
 
 /**
   Bitmap Font Data

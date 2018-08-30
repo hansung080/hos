@@ -130,11 +130,11 @@ void __k_drawLine(Color* outMem, const Rect* area, int x1, int y1, int x2, int y
 	int deltaError;
 	int x, y; // x, y to draw line.
 	int stepX, stepY;
-	Rect lineRect;
+	Rect lineArea;
 
 	// process clipping.
-	k_setRect(&lineRect, x1, y1, x2, y2);
-	if (k_isRectOverlapped(area, &lineRect) == false) {
+	k_setRect(&lineArea, x1, y1, x2, y2);
+	if (k_isRectOverlapped(area, &lineArea) == false) {
 		return;
 	}
 
@@ -195,7 +195,7 @@ void __k_drawRect(Color* outMem, const Rect* area, int x1, int y1, int x2, int y
 	int temp;
 	int y; // y to draw rectangle.
 	Rect drawRect;
-	Rect overRect;
+	Rect overArea;
 	int areaWidth;
 	int overWidth;
 	
@@ -209,16 +209,16 @@ void __k_drawRect(Color* outMem, const Rect* area, int x1, int y1, int x2, int y
 	} else {
 		// process clipping.
 		k_setRect(&drawRect, x1, y1, x2, y2);
-		if (k_getOverlappedRect(area, &drawRect, &overRect) == false) {
+		if (k_getOverlappedRect(area, &drawRect, &overArea) == false) {
 			return;
 		}
 		
-		overWidth = k_getRectWidth(&overRect);
+		overWidth = k_getRectWidth(&overArea);
 		areaWidth = k_getRectWidth(area);
 				
-		outMem += overRect.y1 * areaWidth + overRect.x1;
+		outMem += overArea.y1 * areaWidth + overArea.x1;
 		
-		for (y = overRect.y1; y < overRect.y2; y++) {
+		for (y = overArea.y1; y < overArea.y2; y++) {
 			k_memsetWord(outMem, color, overWidth);
 			outMem += areaWidth;
 		}
@@ -332,8 +332,8 @@ void __k_drawText(Color* outMem, const Rect* area, int x, int y, Color textColor
 	byte currentBitmask;
 	int bitmapIndex;
 	int areaWidth;
-	Rect fontRect;
-	Rect overRect;
+	Rect fontArea;
+	Rect overArea;
 	int startXOffset;
 	int startYOffset;
 	int overWidth;
@@ -353,8 +353,8 @@ void __k_drawText(Color* outMem, const Rect* area, int x, int y, Color textColor
 		currentY = y * areaWidth;
 		
 		// process clipping.
-		k_setRect(&fontRect, currentX, y, currentX + FONT_VERAMONO_ENG_WIDTH - 1, y + FONT_VERAMONO_ENG_HEIGHT - 1);
-		if (k_getOverlappedRect(area, &fontRect, &overRect) == false) {
+		k_setRect(&fontArea, currentX, y, currentX + FONT_VERAMONO_ENG_WIDTH - 1, y + FONT_VERAMONO_ENG_HEIGHT - 1);
+		if (k_getOverlappedRect(area, &fontArea, &overArea) == false) {
 			// move to the next character.
 			currentX += FONT_VERAMONO_ENG_WIDTH;
 			continue;
@@ -365,10 +365,10 @@ void __k_drawText(Color* outMem, const Rect* area, int x, int y, Color textColor
 		// Thus, bitmap index indicates a byte (8 bits) of current character in the font data.
 		bitmapIndex = str[i] * FONT_VERAMONO_ENG_HEIGHT;
 		
-		startXOffset = overRect.x1 - currentX;
-		startYOffset = overRect.y1 - y;
-		overWidth = k_getRectWidth(&overRect);
-		overHeight = k_getRectHeight(&overRect);
+		startXOffset = overArea.x1 - currentX;
+		startYOffset = overArea.y1 - y;
+		overWidth = k_getRectWidth(&overArea);
+		overHeight = k_getRectHeight(&overArea);
 
 		bitmapIndex += startYOffset;
 

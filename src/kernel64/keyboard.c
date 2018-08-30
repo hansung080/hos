@@ -307,40 +307,40 @@ bool k_isNumberPadScanCode(byte downScanCode) {
 
 bool k_isCombinedKeyUsing(byte scanCode) {
 	byte downScanCode;
-	bool isCombinedKey = false;
+	bool combinedKey = false;
 	
 	downScanCode = scanCode & 0x7F;
 	
 	// Alphabet keys get affected by Shift or Caps Lock key.
 	if (k_isAlphabetScanCode(downScanCode) == true) {
 		if (g_keyboardManager.shiftDown ^ g_keyboardManager.capslockOn) {
-			isCombinedKey = true;
+			combinedKey = true;
 		
 		} else {
-			isCombinedKey = false;
+			combinedKey = false;
 		}
 	
 	// Number or Symbol keys get affected by Shift key.
 	} else if (k_isNumberOrSymbolScanCode(downScanCode) == true) {
 		if(g_keyboardManager.shiftDown == true){
-			isCombinedKey = true;
+			combinedKey = true;
 			
 		} else {
-			isCombinedKey = false;
+			combinedKey = false;
 		}
 		
 	// Number pad keys get affected by Num Lock key.
 	// and process only when extended key codes are not received, because extended key codes and number pad key codes are duplicated except 0xE0.
 	} else if ((k_isNumberPadScanCode(downScanCode) == true) && (g_keyboardManager.extendedCodeIn == false)) {
 		if(g_keyboardManager.numlockOn == true){
-			isCombinedKey = true;
+			combinedKey = true;
 			
 		} else {
-			isCombinedKey = false;
+			combinedKey = false;
 		}
 	}
 	
-	return isCombinedKey;
+	return combinedKey;
 }
 
 void k_updateCombinedKeyStatusAndLed(byte scanCode) {
@@ -386,7 +386,7 @@ void k_updateCombinedKeyStatusAndLed(byte scanCode) {
 }
 
 bool k_convertScanCodeToAsciiCode(byte scanCode, byte* asciiCode, byte* flags) {
-	bool isCombinedKey = false;
+	bool combinedKey = false;
 	
 	if (g_keyboardManager.skipCountForPause > 0) {
 		g_keyboardManager.skipCountForPause--;
@@ -406,9 +406,9 @@ bool k_convertScanCodeToAsciiCode(byte scanCode, byte* asciiCode, byte* flags) {
 		return false;
 	}
 	
-	isCombinedKey = k_isCombinedKeyUsing(scanCode);
+	combinedKey = k_isCombinedKeyUsing(scanCode);
 	
-	if (isCombinedKey == true) {
+	if (combinedKey == true) {
 		*asciiCode = g_keyMappingTable[scanCode & 0x7F].combinedCode;
 		
 	} else {
@@ -484,7 +484,7 @@ bool k_waitAckAndPutOtherScanCodes(void) {
 	int i, j;
 	byte data;
 	bool result = false;
-	bool isMouseData;
+	bool mouseData;
 	
 	// It is possible that data already exists in Output Buffer before receiving ACK from keyboard/mouse.
 	// Thus, check data as much as 100 times.
@@ -496,10 +496,10 @@ bool k_waitAckAndPutOtherScanCodes(void) {
 		}
 		
 		if (k_isMouseDataInOutputBuffer() == true) {
-			isMouseData = true;
+			mouseData = true;
 
 		} else {
-			isMouseData = false;
+			mouseData = false;
 		}
 
 		// check if data reading from Output Buffer == [0xFA: ACK].
@@ -509,7 +509,7 @@ bool k_waitAckAndPutOtherScanCodes(void) {
 			break;
 			
 		} else {
-			if (isMouseData == false) {
+			if (mouseData == false) {
 				k_convertScanCodeAndPutQueue(data);
 
 			} else {

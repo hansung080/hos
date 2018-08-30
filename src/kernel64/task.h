@@ -147,10 +147,12 @@ typedef struct k_Scheduler {
 
 #pragma pack(pop)
 
-/* Task-related Functions */
+/* Task Pool-related Functions */
 static void k_initTaskPool(void);
 static Task* k_allocTask(void);
 static void k_freeTask(qword taskId);
+
+/* Task-related Functions */
 Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr, byte affinity);
 static void k_setTask(Task* task, qword flags, qword entryPointAddr, void* stackAddr, qword stackSize);
 

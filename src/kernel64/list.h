@@ -14,11 +14,12 @@ typedef struct k_ListLink {
   < List Item Definition Example >
       typedef struct k_ListItem {
           ListLink link; // [Note] ListLink must be the first field.
-          int data1;
-          char data2;
+          char data1;
+          int data2;
       } ListItem; // ListItem is a node of list.
  */
 
+// General Linked List
 typedef struct k_List {
 	int count; // item count
 	void* head;

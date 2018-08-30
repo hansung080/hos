@@ -7,8 +7,8 @@
 #include "multiprocessor.h"
 #include "mp_config_table.h"
 
-static Scheduler g_schedulers[MAXPROCESSORCOUNT];
 static TaskPoolManager g_taskPoolManager;
+static Scheduler g_schedulers[MAXPROCESSORCOUNT];
 
 static void k_initTaskPool(void) {
 	int i;
@@ -16,48 +16,48 @@ static void k_initTaskPool(void) {
 	// initialize task pool manager.
 	k_memset(&g_taskPoolManager, 0, sizeof(g_taskPoolManager));
 	
-	// initialize task pool area.
+	// initialize task pool.
 	g_taskPoolManager.startAddr = (Task*)TASK_TASKPOOLADDRESS;
 	k_memset((void*)TASK_TASKPOOLADDRESS, 0, sizeof(Task) * TASK_MAXCOUNT);
 	
-	// allocate ID (offset) to task.
+	// set task ID (offset) to tasks in pool.
 	for(i = 0; i < TASK_MAXCOUNT; i++){
 		g_taskPoolManager.startAddr[i].link.id = i;
 	}
 	
-	// initialize max count and allocate count of task.
+	// initialize task max count and task allocate count.
 	g_taskPoolManager.maxCount = TASK_MAXCOUNT;
 	g_taskPoolManager.allocCount = 1;
 	
-	// initialize spinlock.
+	// initialize spinlock of task pool manager.
 	k_initSpinlock(&(g_taskPoolManager.spinlock));
 }
 
 static Task* k_allocTask(void) {
 	Task* emptyTask;
-	int i;
+	int i; // task offset
 	
 	k_lockSpin(&(g_taskPoolManager.spinlock));
 	
-	if (g_taskPoolManager.useCount == g_taskPoolManager.maxCount) {
+	if (g_taskPoolManager.useCount >= g_taskPoolManager.maxCount) {
 		k_unlockSpin(&(g_taskPoolManager.spinlock));
 		return null;
 	}
 	
 	for (i = 0; i < g_taskPoolManager.maxCount; i++) {
-		// If high 32 bits of task ID (64 bits) == 0, it's not allocated.
+		// If task allocate count (high 32 bits) of task ID == 0, it's not allocated.
 		if ((g_taskPoolManager.startAddr[i].link.id >> 32) == 0) {
 			emptyTask = &(g_taskPoolManager.startAddr[i]);
 			break;
 		}
 	}
 	
-	// set not-0 to high 32 bits of task ID to allocate.
-	// task ID consists of task allocation count (high 32 bits) and task offset (low 32 bits).
-	emptyTask->link.id = ((qword)g_taskPoolManager.allocCount << 32) | i;
+	// set not-0 to task allocate count (high 32 bits) of task ID in order to mark it allocated.
+	// task ID consists of task allocate count (high 32 bits) and task offset (low 32 bits).
+	emptyTask->link.id = (((qword)g_taskPoolManager.allocCount) << 32) | i;
+
 	g_taskPoolManager.useCount++;
 	g_taskPoolManager.allocCount++;
-	
 	if (g_taskPoolManager.allocCount == 0) {
 		g_taskPoolManager.allocCount = 1;
 	}
@@ -68,16 +68,18 @@ static Task* k_allocTask(void) {
 }
 
 static void k_freeTask(qword taskId) {
-	int i;
+	int i; // task offset
 	
 	// get task offset (low 32 bits) of task ID.
 	i = GETTASKOFFSET(taskId);
 	
-	// initialize context and task allocation count as 0.
+	// initialize task context.
 	k_memset(&(g_taskPoolManager.startAddr[i].context), 0, sizeof(Context));
 	
 	k_lockSpin(&(g_taskPoolManager.spinlock));
 	
+	// initialize task ID.
+	// set 0 to task allocate count (high 32 bits) of task ID in order to mark it free.
 	g_taskPoolManager.startAddr[i].link.id = i;
 	
 	g_taskPoolManager.useCount--;
@@ -774,7 +776,7 @@ int k_getTaskCount(byte apicId) {
 }
 
 Task* k_getTaskFromPool(int offset) {
-	if ((offset <= -1) && (offset >= TASK_MAXCOUNT)) {
+	if ((offset < 0) || (offset >= TASK_MAXCOUNT)) {
 		return null;
 	}
 	

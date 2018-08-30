@@ -91,6 +91,7 @@ on your computer or QEMU.
 - LED: Light Emitting Diode
 - ECC: Error Correcting Code
 - VBE: Vesa Bios Extention
+- GUI: Graphic User Interface
 
 < Abbreviation >
 - init: initialize
