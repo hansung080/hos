@@ -31,8 +31,8 @@
 */
 
 // etc macros
-#define WINDOW_MAXCOUNT       2048
-#define WINDOW_MAXTITLELENGTH 40 // exclude last null character
+#define WINDOW_MAXCOUNT       2048 // max window count: 2048 = 1024 (max task count) * 2
+#define WINDOW_MAXTITLELENGTH 40   // max title length: exclude last null character
 #define WINDOW_INVALIDID      0xFFFFFFFFFFFFFFFF
 
 // window flags
@@ -42,8 +42,8 @@
 #define WINDOW_FLAGS_DEFAULT      (WINDOW_FLAGS_SHOW | WINDOW_FLAGS_DRAWFRAME | WINDOW_FLAGS_DRAWTITLEBAR)
 
 // title bar-related macros
-#define WINDOW_TITLEBAR_HEIGHT 21 // title bar height
-#define WINDOW_XBUTTON_SIZE    19 // close button size
+#define WINDOW_TITLEBAR_HEIGHT  21 // title bar height
+#define WINDOW_CLOSEBUTTON_SIZE 19 // close button size
 
 // window color
 #define WINDOW_COLOR_FRAME              RGB(109, 218, 22)
@@ -56,7 +56,7 @@
 #define WINDOW_COLOR_BUTTONBRIGHT       RGB(229, 229, 229) // bright color
 #define WINDOW_COLOR_BUTTONDARK         RGB(86, 86, 86)    // dark color
 #define WINDOW_COLOR_SYSTEMBACKGROUND   RGB(232, 255, 232)
-#define WINDOW_COLOR_XBUTTONLINE        RGB(71, 199, 21)
+#define WINDOW_COLOR_CLOSEBUTTONMARK    RGB(71, 199, 21)   // 'X' mark on close button
 
 // background window tile
 #define WINDOW_BACKGROUNDWINDOWTILE "SYS_BACKGROUND"
@@ -77,7 +77,7 @@
 
 typedef struct k_Window {
 	ListLink link; // window link: It consists of next window address (link.next) and window ID (link.id).
-	               //              window ID consists of window allocate count (high 32 bits) and window offset (low 32 bits).
+	               //              window ID consists of allocated window count (high 32 bits) and window offset (low 32 bits).
 	               //              [Note] ListLink must be the first field.
 	Mutex mutex;   // mutex
 	Rect area;     // window area (screen coordinates)
@@ -90,11 +90,11 @@ typedef struct k_Window {
 } Window; // Window is ListItem.
 
 typedef struct k_WindowPoolManager {
-	Mutex mutex;       // mutex
-	Window* startAddr; // start address of window pool: You can consider it as window array.
-	int maxCount;      // window max count
-	int useCount;      // window use count: currently being-used window count.
-	int allocCount;    // window allocate count: It only increases when allocating window. It's for window ID to be unique.
+	Mutex mutex;        // mutex
+	Window* startAddr;  // start address of window pool: You can consider it as window array.
+	int maxCount;       // max window count
+	int usedCount;      // used window count: currently being-used window count.
+	int allocatedCount; // allocated window count: It only increases when allocating window. It's for window ID to be unique.
 } WindowPoolManager;
 
 typedef struct k_WindowManager {

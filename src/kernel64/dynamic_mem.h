@@ -25,14 +25,14 @@ typedef struct k_Bitmap {
 } Bitmap;
 
 typedef struct k_DynamicMemManager {
-	Spinlock spinlock;           // spinlock
-	int maxLevelCount;           // block list count: level count
-	int smallestBlockCount;      // smallest block count
-	qword usedSize;              // allocated memory size: used memory size
-	qword startAddr;             // block pool start address
-	qword endAddr;               // block pool end address
-	byte* allocedBlockListIndex; // address of index area: address of area saving allocated block index
-	Bitmap* bitmapOfLevel;       // address of bit map structure
+	Spinlock spinlock;             // spinlock
+	int maxLevelCount;             // block list count (level count)
+	int smallestBlockCount;        // smallest block count
+	qword usedSize;                // used memory size
+	qword startAddr;               // block pool start address
+	qword endAddr;                 // block pool end address
+	byte* allocatedBlockListIndex; // address of index area (address of area saving allocated block list index)
+	Bitmap* bitmapOfLevel;         // address of bit map structure
 } DynamicMemManager;
 
 #pragma pack(pop)
@@ -46,7 +46,7 @@ static qword k_calcDynamicMemSize(void);
 static int k_calcMetaBlockCount(qword dynamicRamSize);
 static int k_allocBuddyBlock(qword alignedSize);
 static qword k_getBuddyBlockSize(qword size);
-static int k_getBlockListIndexOfMatchSize(qword alignedSize);
+static int k_getBlockListIndexByMatchSize(qword alignedSize);
 static int k_findFreeBlockInBitmap(int blockListIndex);
 static void k_setFlagInBitmap(int blockListIndex, int offset, byte flag);
 static bool k_freeBuddyBlock(int blockListIndex, int blockOffset);

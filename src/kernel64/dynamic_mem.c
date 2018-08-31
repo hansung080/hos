@@ -26,9 +26,9 @@ void k_initDynamicMem(void) {
 	//----------------------------------------------------------------------------------------------------
 	// Index Area Initialization
 	//----------------------------------------------------------------------------------------------------
-	g_dynamicMemManager.allocedBlockListIndex = (byte*)DMEM_START_ADDRESS;
+	g_dynamicMemManager.allocatedBlockListIndex = (byte*)DMEM_START_ADDRESS;
 	for (i = 0; i < g_dynamicMemManager.smallestBlockCount; i++) {
-		g_dynamicMemManager.allocedBlockListIndex[i] = 0xFF;
+		g_dynamicMemManager.allocatedBlockListIndex[i] = 0xFF;
 	}
 	
 	// set the address of bit map structure.
@@ -74,7 +74,7 @@ void k_initDynamicMem(void) {
 		}
 	}
 	
-	// set block pool address and allocated memory size.
+	// set block pool address and used memory size.
 	g_dynamicMemManager.startAddr = DMEM_START_ADDRESS + (metaBlockCount * DMEM_MIN_SIZE);
 	g_dynamicMemManager.endAddr = DMEM_START_ADDRESS + k_calcDynamicMemSize();
 	g_dynamicMemManager.usedSize = 0;
@@ -99,14 +99,14 @@ static qword k_calcDynamicMemSize(void) {
 
 static int k_calcMetaBlockCount(qword dynamicRamSize) {
 	long smallestBlockCount;
-	dword allocedBlockListIndexSize;
+	dword allocatedBlockListIndexSize;
 	dword bitmapSize;
 	long i;
 	
 	smallestBlockCount = dynamicRamSize / DMEM_MIN_SIZE;
 	
 	// calculate the size of index area.
-	allocedBlockListIndexSize = smallestBlockCount * sizeof(byte);
+	allocatedBlockListIndexSize = smallestBlockCount * sizeof(byte);
 	
 	bitmapSize = 0;
 	for (i = 0; (smallestBlockCount >> i) > 0; i++) {
@@ -118,7 +118,7 @@ static int k_calcMetaBlockCount(qword dynamicRamSize) {
 	}
 	
 	// align the size of meta block area with smallest block count. (rounding up)
-	return (allocedBlockListIndexSize + bitmapSize + (DMEM_MIN_SIZE - 1)) / DMEM_MIN_SIZE;
+	return (allocatedBlockListIndexSize + bitmapSize + (DMEM_MIN_SIZE - 1)) / DMEM_MIN_SIZE;
 }
 
 void* k_allocMem(qword size) {
@@ -149,15 +149,15 @@ void* k_allocMem(qword size) {
 	}
 	
 	// search block list index of block list matching block size.
-	blockListIndex = k_getBlockListIndexOfMatchSize(alignedSize);
+	blockListIndex = k_getBlockListIndexByMatchSize(alignedSize);
 	
 	// save block list index to the byte unit offset position of the allocated block in index area.
-	// When freeing memory, get allocated memory size using block list index.
+	// When freeing memory, get used memory size using block list index.
 	relativeAddr = alignedSize * offset;
 	sizeArrayOffset = relativeAddr / DMEM_MIN_SIZE;
-	g_dynamicMemManager.allocedBlockListIndex[sizeArrayOffset] = (byte)blockListIndex;
+	g_dynamicMemManager.allocatedBlockListIndex[sizeArrayOffset] = (byte)blockListIndex;
 	
-	// increase allocated memory size.
+	// increase used memory size.
 	g_dynamicMemManager.usedSize += alignedSize;
 	
 	// return the absolute address of allocated memory. (absolute address = block pool start address + relative address)
@@ -183,7 +183,7 @@ static int k_allocBuddyBlock(qword alignedSize) {
 	int i;
 	
 	// search block list index matching block size.
-	blockListIndex = k_getBlockListIndexOfMatchSize(alignedSize);
+	blockListIndex = k_getBlockListIndexByMatchSize(alignedSize);
 	if (blockListIndex == -1) {
 		return -1;
 	}
@@ -230,7 +230,7 @@ static int k_allocBuddyBlock(qword alignedSize) {
 	return freeOffset;
 }
 
-static int k_getBlockListIndexOfMatchSize(qword alignedSize) {
+static int k_getBlockListIndexByMatchSize(qword alignedSize) {
 	int i;
 	
 	// search block list index matching block size (block list index means level)
@@ -326,14 +326,14 @@ bool k_freeMem(void* addr) {
 	sizeArrayOffset = relativeAddr / DMEM_MIN_SIZE;
 	
 	// fail if it has not been allocated.
-	if (g_dynamicMemManager.allocedBlockListIndex[sizeArrayOffset] == 0xFF) {
+	if (g_dynamicMemManager.allocatedBlockListIndex[sizeArrayOffset] == 0xFF) {
 		k_printf("dynamic memory error: not allocated memory\n");
 		return false;
 	}
 	
 	// get block list index, and initialize it.
-	blockListIndex = (int)g_dynamicMemManager.allocedBlockListIndex[sizeArrayOffset];
-	g_dynamicMemManager.allocedBlockListIndex[sizeArrayOffset] = 0xFF;
+	blockListIndex = (int)g_dynamicMemManager.allocatedBlockListIndex[sizeArrayOffset];
+	g_dynamicMemManager.allocatedBlockListIndex[sizeArrayOffset] = 0xFF;
 	
 	// calculate the size of free block.
 	blockSize = DMEM_MIN_SIZE << blockListIndex;
@@ -342,7 +342,7 @@ bool k_freeMem(void* addr) {
 	bitmapOffset = relativeAddr / blockSize;
 	if (k_freeBuddyBlock(blockListIndex, bitmapOffset) == true) {
 		
-		// decrease allocated memory size.
+		// decrease used memory size.
 		g_dynamicMemManager.usedSize -= blockSize;
 		return true;
 	}

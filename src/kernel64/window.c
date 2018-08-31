@@ -35,9 +35,9 @@ static void k_initWindowPool(void) {
 		g_windowPoolManager.startAddr[i].link.id = i;
 	}
 
-	// initialize window max count and window allocate count.
+	// initialize max window count and allocated window count.
 	g_windowPoolManager.maxCount = WINDOW_MAXCOUNT;
-	g_windowPoolManager.allocCount = 1;
+	g_windowPoolManager.allocatedCount = 1;
 
 	// initialize mutex of window pool manager.
 	k_initMutex(&g_windowPoolManager.mutex);
@@ -49,27 +49,27 @@ static Window* k_allocWindow(void) {
 
 	k_lock(&g_windowPoolManager.mutex);
 
-	if (g_windowPoolManager.useCount >= g_windowPoolManager.maxCount) {
+	if (g_windowPoolManager.usedCount >= g_windowPoolManager.maxCount) {
 		k_unlock(&g_windowPoolManager.mutex);
 		return null;
 	}
 
 	for (i = 0; i < g_windowPoolManager.maxCount; i++) {
-		// If window allocate count (high 32 bits) of window ID == 0, it's not allocated.
+		// If allocated window count (high 32 bits) of window ID == 0, it's not allocated.
 		if ((g_windowPoolManager.startAddr[i].link.id >> 32) == 0) {
 			emptyWindow = &(g_windowPoolManager.startAddr[i]);
 			break;
 		}
 	}
 
-	// set not-0 to window allocate count (high 32 bits) of window ID in order to mark it allocated.
-	// window ID consists of window allocate count (high 32 bits) and window offset (low 32 bits).
-	emptyWindow->link.id = (((qword)g_windowPoolManager.allocCount) << 32) | i;
+	// set not-0 to allocated window count (high 32 bits) of window ID in order to mark it allocated.
+	// window ID consists of allocated window count (high 32 bits) and window offset (low 32 bits).
+	emptyWindow->link.id = (((qword)g_windowPoolManager.allocatedCount) << 32) | i;
 
-	g_windowPoolManager.useCount++;
-	g_windowPoolManager.allocCount++;
-	if (g_windowPoolManager.allocCount == 0) {
-		g_windowPoolManager.allocCount = 1;
+	g_windowPoolManager.usedCount++;
+	g_windowPoolManager.allocatedCount++;
+	if (g_windowPoolManager.allocatedCount == 0) {
+		g_windowPoolManager.allocatedCount = 1;
 	}
 
 	k_unlock(&g_windowPoolManager.mutex);
@@ -92,10 +92,10 @@ static void k_freeWindow(qword windowId) {
 	k_memset(&(g_windowPoolManager.startAddr[i]), 0, sizeof(Window));
 
 	// initialize window ID.
-	// set 0 to window allocate count (high 32 bits) of window ID in order to mark it free.
+	// set 0 to allocated window count (high 32 bits) of window ID in order to mark it free.
 	g_windowPoolManager.startAddr[i].link.id = i;
 
-	g_windowPoolManager.useCount--;	
+	g_windowPoolManager.usedCount--;
 
 	k_unlock(&g_windowPoolManager.mutex);
 }
@@ -469,9 +469,9 @@ bool k_drawWindowBackground(qword windowId) {
 bool k_drawWindowTitleBar(qword windowId, const char* title) {
 	Window* window;
 	int width;
-	int height;	
+	int height;
 	Rect area;
-	Rect xbuttonArea;
+	Rect closeButtonArea;
 
 	window = k_getWindowWithLock(windowId);
 	if (window == null) {
@@ -508,8 +508,8 @@ bool k_drawWindowTitleBar(qword windowId, const char* title) {
 	/* draw a close button */
 
 	// draw a close button.
-	k_setRect(&xbuttonArea, width - 1 - WINDOW_XBUTTON_SIZE, 1, width - 2, WINDOW_XBUTTON_SIZE - 1);
-	k_drawButton(windowId, &xbuttonArea, WINDOW_COLOR_BACKGROUND, "", WINDOW_COLOR_BACKGROUND);
+	k_setRect(&closeButtonArea, width - 1 - WINDOW_CLOSEBUTTON_SIZE, 1, width - 2, WINDOW_CLOSEBUTTON_SIZE - 1);
+	k_drawButton(windowId, &closeButtonArea, WINDOW_COLOR_BACKGROUND, "", WINDOW_COLOR_BACKGROUND);
 
 	window = k_getWindowWithLock(windowId);
 	if (window == null) {
@@ -517,13 +517,13 @@ bool k_drawWindowTitleBar(qword windowId, const char* title) {
 	}
 
 	// draw 'X' mark (3 pixels-thick) on the close button.
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 1 + 4, width - 2 - 4, WINDOW_TITLEBAR_HEIGHT - 6, WINDOW_COLOR_XBUTTONLINE);
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 5, 1 + 4, width - 2 - 4, WINDOW_TITLEBAR_HEIGHT - 7, WINDOW_COLOR_XBUTTONLINE);
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 1 + 5, width - 2 - 5, WINDOW_TITLEBAR_HEIGHT - 6, WINDOW_COLOR_XBUTTONLINE);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 1 + 4, width - 2 - 4, WINDOW_TITLEBAR_HEIGHT - 6, WINDOW_COLOR_CLOSEBUTTONMARK);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 5, 1 + 4, width - 2 - 4, WINDOW_TITLEBAR_HEIGHT - 7, WINDOW_COLOR_CLOSEBUTTONMARK);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 1 + 5, width - 2 - 5, WINDOW_TITLEBAR_HEIGHT - 6, WINDOW_COLOR_CLOSEBUTTONMARK);
 	
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 19 - 4, width - 2 - 4, 1 + 4, WINDOW_COLOR_XBUTTONLINE);
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 5, 19 - 4, width - 2 - 4, 1 + 5, WINDOW_COLOR_XBUTTONLINE);
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 19 - 5, width - 2 - 5, 1 + 4, WINDOW_COLOR_XBUTTONLINE);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 19 - 4, width - 2 - 4, 1 + 4, WINDOW_COLOR_CLOSEBUTTONMARK);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 5, 19 - 4, width - 2 - 4, 1 + 5, WINDOW_COLOR_CLOSEBUTTONMARK);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 19 - 5, width - 2 - 5, 1 + 4, WINDOW_COLOR_CLOSEBUTTONMARK);
 
 	k_unlock(&window->mutex);
 

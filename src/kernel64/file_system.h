@@ -4,7 +4,6 @@
 #include "types.h"
 #include "sync.h"
 #include "hdd.h"
-#include "task.h"
 #include "cache.h"
 
 // file system macros
@@ -14,8 +13,8 @@
 #define FS_FREECLUSTER            0x00       // free cluster
 #define FS_CLUSTERSIZE            (FS_SECTORSPERCLUSTER * 512)        // cluster size (byte count, 4KB)
 #define FS_MAXDIRECTORYENTRYCOUNT (FS_CLUSTERSIZE / sizeof(DirEntry)) // max directory entry count of root directory (128)
-#define FS_HANDLE_MAXCOUNT        (TASK_MAXCOUNT * 3) // max handle count
-#define FS_MAXFILENAMELENGTH      24                  // max file name length (including file extension and last null character)
+#define FS_HANDLE_MAXCOUNT        3072 // max handle count(max file count, max directory count): 3072 = 1024 (max task count) * 3
+#define FS_MAXFILENAMELENGTH      24   // max file name length (including file extension and last null character)
 
 // handle types
 #define FS_TYPE_FREE      0 // free handle
@@ -133,7 +132,7 @@ typedef struct k_DirHandle {
 
 typedef struct k_FileDirHandle {
 	byte type; // handle type: free handle, file handle, directory handle
-
+	
 	union{
 		FileHandle fileHandle; // file handle
 		DirHandle dirHandle;   // directory handle

@@ -34,7 +34,7 @@ typedef struct k_Rect {
 void k_setRect(Rect* rect, int x1, int y1, int x2, int y2);
 int k_getRectWidth(const Rect* rect);
 int k_getRectHeight(const Rect* rect);
-bool k_isInRect(const Rect* rect, int x, int y);
+bool k_isPointInRect(const Rect* rect, int x, int y);
 bool k_isRectOverlapped(const Rect* rect1, const Rect* rect2);
 bool k_getOverlappedRect(const Rect* rect1, const Rect* rect2, Rect* overRect);
 

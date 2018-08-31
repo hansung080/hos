@@ -25,9 +25,9 @@ static void k_initTaskPool(void) {
 		g_taskPoolManager.startAddr[i].link.id = i;
 	}
 	
-	// initialize task max count and task allocate count.
+	// initialize max task count and allocated task count.
 	g_taskPoolManager.maxCount = TASK_MAXCOUNT;
-	g_taskPoolManager.allocCount = 1;
+	g_taskPoolManager.allocatedCount = 1;
 	
 	// initialize spinlock of task pool manager.
 	k_initSpinlock(&(g_taskPoolManager.spinlock));
@@ -39,27 +39,27 @@ static Task* k_allocTask(void) {
 	
 	k_lockSpin(&(g_taskPoolManager.spinlock));
 	
-	if (g_taskPoolManager.useCount >= g_taskPoolManager.maxCount) {
+	if (g_taskPoolManager.usedCount >= g_taskPoolManager.maxCount) {
 		k_unlockSpin(&(g_taskPoolManager.spinlock));
 		return null;
 	}
 	
 	for (i = 0; i < g_taskPoolManager.maxCount; i++) {
-		// If task allocate count (high 32 bits) of task ID == 0, it's not allocated.
+		// If allocated task count (high 32 bits) of task ID == 0, it's not allocated.
 		if ((g_taskPoolManager.startAddr[i].link.id >> 32) == 0) {
 			emptyTask = &(g_taskPoolManager.startAddr[i]);
 			break;
 		}
 	}
 	
-	// set not-0 to task allocate count (high 32 bits) of task ID in order to mark it allocated.
-	// task ID consists of task allocate count (high 32 bits) and task offset (low 32 bits).
-	emptyTask->link.id = (((qword)g_taskPoolManager.allocCount) << 32) | i;
+	// set not-0 to allocated task count (high 32 bits) of task ID in order to mark it allocated.
+	// task ID consists of allocated task count (high 32 bits) and task offset (low 32 bits).
+	emptyTask->link.id = (((qword)g_taskPoolManager.allocatedCount) << 32) | i;
 
-	g_taskPoolManager.useCount++;
-	g_taskPoolManager.allocCount++;
-	if (g_taskPoolManager.allocCount == 0) {
-		g_taskPoolManager.allocCount = 1;
+	g_taskPoolManager.usedCount++;
+	g_taskPoolManager.allocatedCount++;
+	if (g_taskPoolManager.allocatedCount == 0) {
+		g_taskPoolManager.allocatedCount = 1;
 	}
 	
 	k_unlockSpin(&(g_taskPoolManager.spinlock));
@@ -79,10 +79,10 @@ static void k_freeTask(qword taskId) {
 	k_lockSpin(&(g_taskPoolManager.spinlock));
 	
 	// initialize task ID.
-	// set 0 to task allocate count (high 32 bits) of task ID in order to mark it free.
+	// set 0 to allocated task count (high 32 bits) of task ID in order to mark it free.
 	g_taskPoolManager.startAddr[i].link.id = i;
 	
-	g_taskPoolManager.useCount--;
+	g_taskPoolManager.usedCount--;
 	
 	k_unlockSpin(&(g_taskPoolManager.spinlock));
 }
@@ -225,8 +225,8 @@ void k_initScheduler(void) {
 				// initialize ready lists.
 				k_initList(&(g_schedulers[i].readyLists[j]));
 				
-				// initialize task execute counts by task priority.
-				g_schedulers[i].executeCounts[j] = 0;
+				// initialize executed task counts by task priority.
+				g_schedulers[i].executedCounts[j] = 0;
 			}
 			
 			// initialize end list.
@@ -306,15 +306,15 @@ static Task* k_getNextTaskToRun(byte apicId) {
 			// get task count by priority.
 			taskCount = k_getListCount(&(g_schedulers[apicId].readyLists[i]));
 			
-			// If task execute count < task count, select task with current priority.
-			if (g_schedulers[apicId].executeCounts[i] < taskCount) {
+			// If executed task count < task count, select task with current priority.
+			if (g_schedulers[apicId].executedCounts[i] < taskCount) {
 				target = (Task*)k_removeListFromHead(&(g_schedulers[apicId].readyLists[i]));
-				g_schedulers[apicId].executeCounts[i]++;
+				g_schedulers[apicId].executedCounts[i]++;
 				break;
 				
-			// If task execute count >= task count, select task with next priority.
+			// If executed task count >= task count, select task with next priority.
 			} else {
-				g_schedulers[apicId].executeCounts[i] = 0;
+				g_schedulers[apicId].executedCounts[i] = 0;
 			}
 		}
 		

@@ -47,7 +47,7 @@ inline int k_getRectHeight(const Rect* rect) {
 	return height;
 }
 
-inline bool k_isInRect(const Rect* rect, int x, int y) {
+inline bool k_isPointInRect(const Rect* rect, int x, int y) {
 	// If (x, y) is outside rectangle, return false.
 	if ((x < rect->x1) || (x > rect->x2) || (y < rect->y1) || (y > rect->y2)) {
 		return false;
@@ -98,7 +98,7 @@ inline void __k_drawPixel(Color* outMem, const Rect* area, int x, int y, Color c
 	int width;
 
 	// process clipping.
-	if (k_isInRect(area, x, y) == false) {
+	if (k_isPointInRect(area, x, y) == false) {
 		return;
 	}
 

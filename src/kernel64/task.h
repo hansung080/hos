@@ -37,7 +37,7 @@
 
 // macros related with task pool
 #define TASK_TASKPOOLADDRESS 0x800000 // 8M
-#define TASK_MAXCOUNT       1024
+#define TASK_MAXCOUNT        1024     // max task count
 
 // macros related with stack pool
 #define TASK_STACKPOOLADDRESS (TASK_TASKPOOLADDRESS + (sizeof(Task) * TASK_MAXCOUNT))
@@ -87,7 +87,7 @@ typedef struct k_Task {
 	// Task-related Fields
 	//--------------------------------------------------
 	ListLink link;           // scheduler link: It consists of next task address (link.next) and task ID (link.id).
-	                         //                 task ID consists of task allocate count (high 32 bits) and task offset (low 32 bits).
+	                         //                 task ID consists of allocated task count (high 32 bits) and task offset (low 32 bits).
 	                         //                 [Note] ListLink must be the first field.
 	qword flags;             // task flags: bit 63 is end task flag.
 	                         //             bit 62 is system task flag.
@@ -125,24 +125,24 @@ typedef struct k_Task {
 } Task; // Task is ListItem, and current task size is 816 bytes.
 
 typedef struct k_TaskPoolManager {
-	Spinlock spinlock; // spinlock
-	Task* startAddr;   // start address of task pool: You can consider it as task array.
-	int maxCount;      // task max count
-	int useCount;      // task use count: currently being-used task count.
-	int allocCount;    // task allocate count: It only increases when allocating task. It's for task ID to be unique.
+	Spinlock spinlock;  // spinlock
+	Task* startAddr;    // start address of task pool: You can consider it as task array.
+	int maxCount;       // max task count
+	int usedCount;      // used task count: currently being-used task count.
+	int allocatedCount; // allocated task count: It only increases when allocating task. It's for task ID to be unique.
 } TaskPoolManager;
 
 typedef struct k_Scheduler {
-	Spinlock spinlock;                         // spinlock
-	Task* runningTask;                         // running task (current task)
-	int processorTime;                         // processor time for running task to use
-	List readyLists[TASK_MAXREADYLISTCOUNT];   // ready lists: Tasks which are ready to run are in the lists identified by task priority.
-	List endList;                              // end list: Tasks which have ended are in the list. Idle task will free memory of tasks in end list.
-	int executeCounts[TASK_MAXREADYLISTCOUNT]; // task execute counts by task priority
-	qword processorLoad;                       // processor load (processor usage)
-	qword processorTimeInIdleTask;             // processor time for idle task to use
-	qword lastFpuUsedTaskId;                   // last FPU-used task ID
-	bool loadBalancing;                        // task load balancing flag
+	Spinlock spinlock;                          // spinlock
+	Task* runningTask;                          // running task (current task)
+	int processorTime;                          // processor time for running task to use
+	List readyLists[TASK_MAXREADYLISTCOUNT];    // ready lists: Tasks which are ready to run are in the lists identified by task priority.
+	List endList;                               // end list: Tasks which have ended are in the list. Idle task will free memory of tasks in end list.
+	int executedCounts[TASK_MAXREADYLISTCOUNT]; // executed task counts by task priority
+	qword processorLoad;                        // processor load (processor usage)
+	qword processorTimeInIdleTask;              // processor time for idle task to use
+	qword lastFpuUsedTaskId;                    // last FPU-used task ID
+	bool loadBalancing;                         // task load balancing flag
 } Scheduler;
 
 #pragma pack(pop)
