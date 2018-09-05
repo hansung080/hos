@@ -131,9 +131,8 @@ typedef struct k_DirHandle {
 } DirHandle;
 
 typedef struct k_FileDirHandle {
-	byte type; // handle type: free handle, file handle, directory handle
-	
-	union{
+	byte type; // handle type: free handle, file handle, directory handle	
+	union {
 		FileHandle fileHandle; // file handle
 		DirHandle dirHandle;   // directory handle
 	};

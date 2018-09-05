@@ -24,10 +24,10 @@
 
 #define KEY_SKIPCOUNTFORPAUSE 2
 
-// key status flags
-#define KEY_FLAGS_UP          0x00
-#define KEY_FLAGS_DOWN        0x01
-#define KEY_FLAGS_EXTENDEDKEY 0x02
+// key flags
+#define KEY_FLAGS_UP          0x00 // up
+#define KEY_FLAGS_DOWN        0x01 // down
+#define KEY_FLAGS_EXTENDEDKEY 0x02 // extended key
 
 #define KEY_MAPPINGTABLEMAXCOUNT 89
 
@@ -83,7 +83,7 @@ typedef struct k_KeyMappingEntry {
 typedef struct k_Key {
 	byte scanCode;  // scan code
 	byte asciiCode; // ASCII code
-	byte flags;     // key status flags (UP, DOWN, EXTENDEDKEY)
+	byte flags;     // key flags
 } Key;
 
 typedef struct k_KeyboardManager {

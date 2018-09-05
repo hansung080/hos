@@ -125,3 +125,9 @@ on your computer or QEMU.
 - han: hangul
 - eng: english
 - over: overlapped
+
+< Comment >
+- [Note]: important comment
+- [Ref]: reference comment
+- [Todo]: to do
+- [Temp]: temporary code

@@ -147,16 +147,16 @@ typedef struct k_Scheduler {
 
 #pragma pack(pop)
 
-/* Task Pool-related Functions */
+/* Task Pool Functions */
 static void k_initTaskPool(void);
 static Task* k_allocTask(void);
 static void k_freeTask(qword taskId);
 
-/* Task-related Functions */
+/* Task Functions */
 Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr, byte affinity);
 static void k_setTask(Task* task, qword flags, qword entryPointAddr, void* stackAddr, qword stackSize);
 
-/* Scheduler-related Functions */
+/* Scheduler Functions */
 void k_initScheduler(void);
 void k_setRunningTask(byte apicId, Task* task);
 Task* k_getRunningTask(byte apicId);
@@ -182,11 +182,11 @@ static byte k_findSchedulerByMinTaskCount(const Task* task);
 void k_setTaskLoadBalancing(byte apicId, bool loadBalancing);
 bool k_changeTaskAffinity(qword taskId, byte affinity);
 
-/* Idle Task-related Functions */
+/* Idle Task Functions */
 void k_idleTask(void);
 void k_haltProcessorByLoad(byte apicId);
 
-/* FPU-related Functions */
+/* FPU Functions */
 qword k_getLastFpuUsedTaskId(byte apicId);
 void k_setLastFpuUsedTaskId(byte apicId, qword taskId);
 

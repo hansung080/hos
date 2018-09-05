@@ -123,9 +123,24 @@ void k_initGui(void) {
 
 	k_initList(&g_windowManager.windowList);
 
+	// allocate event buffer
+	g_windowManager.eventBuffer = (Event*)k_allocMem(sizeof(Event) * EVENTQUEUE_WINDOWMANAGER_MAXCOUNT);
+	if (g_windowManager.eventBuffer == null) {
+		k_printf("window error: window manager event buffer allocation error\n");
+		while (true) {
+			;
+		}
+	}
+
+	k_initQueue(&g_windowManager.eventQueue, g_windowManager.eventBuffer, EVENTQUEUE_WINDOWMANAGER_MAXCOUNT, sizeof(Event));
+
+	g_windowManager.prevButtonStatus = 0;
+	g_windowManager.windowMoving = false;
+	g_windowManager.movingWindowId = WINDOW_INVALIDID;
+
 	/* create background window */
 	// set 0 to flags in order not to show. After drawing background color, It will show.
-	backgroundWindowId = k_createWindow(0, 0, vbeMode->xResolution, vbeMode->yResolution, 0, WINDOW_BACKGROUNDWINDOWTILE);
+	backgroundWindowId = k_createWindow(0, 0, vbeMode->xResolution, vbeMode->yResolution, 0, WINDOW_BACKGROUNDWINDOWTITLE);
 	g_windowManager.backgroundWindowId = backgroundWindowId;
 	k_drawRect(backgroundWindowId, 0, 0, vbeMode->xResolution - 1, vbeMode->yResolution - 1, WINDOW_COLOR_SYSTEMBACKGROUND, true);	
 	k_showWindow(backgroundWindowId, true);
@@ -146,6 +161,7 @@ void k_getScreenArea(Rect* screenArea) {
 qword k_createWindow(int x, int y, int width, int height, dword flags, const char* title) {
 	Window* window;
 	Task* task;
+	qword topWindowId;
 
 	if ((width <= 0) || (height <= 0)) {
 		return WINDOW_INVALIDID;
@@ -173,6 +189,16 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 		return WINDOW_INVALIDID;
 	}
 
+	// allocate event buffer.
+	window->eventBuffer = (Event*)k_allocMem(sizeof(Event) * EVENTQUEUE_WINDOW_MAXCOUNT);
+	if (window->eventBuffer == null) {
+		k_freeMem(window->buffer);
+		k_freeWindow(window->link.id);
+		return WINDOW_INVALIDID;	
+	}
+
+	k_initQueue(&window->eventQueue, window->eventBuffer, EVENTQUEUE_WINDOW_MAXCOUNT, sizeof(Event));
+
 	task = k_getRunningTask(k_getApicId());
 	window->taskId = task->link.id;
 
@@ -186,11 +212,13 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 	}
 
 	if (flags & WINDOW_FLAGS_DRAWTITLEBAR) {
-		k_drawWindowTitleBar(window->link.id, title);
+		k_drawWindowTitleBar(window->link.id, title, true);
 	}
 
 	/* add window to window list */
 	k_lock(&g_windowManager.mutex);
+
+	topWindowId = k_getTopWindowId();
 
 	// add window to the top of screen.
 	// Getting closer to the tail in window list means getting closer to the top in screen.
@@ -198,9 +226,13 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 
 	k_unlock(&g_windowManager.mutex);
 
-	/* redraw window (added) to video memory */
-	if (flags & WINDOW_FLAGS_SHOW) {
-		k_redrawWindowByArea(&window->area);
+	/* update screen and send window event */
+	k_updateScreenById(window->link.id);
+	k_sendWindowEventToWindow(window->link.id, EVENT_WINDOW_SELECT);
+
+	if (topWindowId != g_windowManager.backgroundWindowId) {
+		k_updateWindowTitleBar(topWindowId, false);
+		k_sendWindowEventToWindow(topWindowId, EVENT_WINDOW_DESELECT);
 	}
 
 	return window->link.id;
@@ -209,6 +241,8 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 bool k_deleteWindow(qword windowId) {
 	Window* window;
 	Rect area;
+	qword topWindowId;
+	bool top;
 
 	k_lock(&g_windowManager.mutex);
 
@@ -220,6 +254,13 @@ bool k_deleteWindow(qword windowId) {
 
 	k_memcpy(&area, &window->area, sizeof(Rect));
 
+	if (k_getTopWindowId() == windowId) {
+		top = true;
+
+	} else {
+		top = false;
+	}
+
 	/* remove window from window list */
 	if (k_removeList(&g_windowManager.windowList, windowId) == null) {
 		k_unlock(&window->mutex);
@@ -228,10 +269,12 @@ bool k_deleteWindow(qword windowId) {
 	}
 
 	/* free window buffer */
-	// [Note] it's commented out, because a window lock has been already got in k_getWindowWithLock.
-	//k_lock(&window->mutex);
-
 	k_freeMem(window->buffer);
+	window->buffer = null;
+
+	/* free event buffer */
+	k_freeMem(window->eventBuffer);
+	window->eventBuffer = null;
 
 	k_unlock(&window->mutex);
 
@@ -240,8 +283,16 @@ bool k_deleteWindow(qword windowId) {
 
 	k_unlock(&g_windowManager.mutex);
 
-	/* redraw window (removed) to video memory */
-	k_redrawWindowByArea(&area);
+	/* update screen and send window event */
+	k_updateScreenByScreenArea(&area);
+
+	if (top == true) {
+		topWindowId = k_getTopWindowId();
+		if (topWindowId != WINDOW_INVALIDID) {
+			k_updateWindowTitleBar(topWindowId, true);
+			k_sendWindowEventToWindow(topWindowId, EVENT_WINDOW_SELECT);
+		}
+	}
 
 	return true;
 }
@@ -312,6 +363,7 @@ Window* k_getWindowWithLock(qword windowId) {
 
 bool k_showWindow(qword windowId, bool show) {
 	Window* window;
+	Rect windowArea;
 
 	window = k_getWindowWithLock(windowId);
 	if (window == null) {
@@ -327,7 +379,13 @@ bool k_showWindow(qword windowId, bool show) {
 
 	k_unlock(&window->mutex);
 
-	k_redrawWindowByArea(&window->area);
+	if (show == true) {
+		k_updateScreenById(windowId);
+
+	} else {
+		k_getWindowArea(windowId, &windowArea);
+		k_updateScreenByScreenArea(&windowArea);
+	}
 
 	return true;
 }
@@ -408,6 +466,493 @@ static void k_copyWindowBufferToVideoMem(const Window* window, const Rect* copyA
 	}
 }
 
+qword k_findWindowByPoint(int x, int y) {
+	qword windowId;
+	Window* window;
+
+	// set background window ID to default window ID,
+	// because mouse point is always inside background window.
+	windowId = g_windowManager.backgroundWindowId;
+
+	/**
+	  loop from the second window (the next window of background window),
+	  and find the top window among windows which include mouse point.
+	*/
+	k_lock(&g_windowManager.mutex);
+
+	window = k_getHeadFromList(&g_windowManager.windowList);
+
+	do {
+		window = k_getNextFromList(&g_windowManager.windowList, window);
+		if ((window != null) && (window->flags & WINDOW_FLAGS_SHOW) && (k_isPointInRect(&window->area, x, y) == true)) {
+			windowId = window->link.id;
+		}
+
+	} while (window != null);
+
+	k_unlock(&g_windowManager.mutex);
+
+	return windowId;
+}
+
+qword k_findWindowByTitle(const char* title) {
+	qword windowId;
+	Window* window;
+	int titleLen;
+
+	// set invalid window ID to default window ID.
+	windowId = WINDOW_INVALIDID;
+	titleLen = k_strlen(title);
+
+	/**
+	  loop from the first window (background window),
+	  and find the window matching title.
+	*/
+	k_lock(&g_windowManager.mutex);
+
+	window = k_getHeadFromList(&g_windowManager.windowList);
+	while (window != null) {
+		if ((k_strlen(window->title) == titleLen) && (k_memcmp(window->title, title, titleLen) == 0)) {
+			windowId = window->link.id;
+			break;
+		}
+
+		window = k_getNextFromList(&g_windowManager.windowList, window);
+	}
+
+	k_unlock(&g_windowManager.mutex);
+
+	return windowId;
+}
+
+bool k_existWindow(qword windowId) {
+	if (k_getWindow(windowId) == null) {
+		return false;
+	}
+
+	return true;
+}
+
+qword k_getTopWindowId(void) {
+	Window* topWindow;
+	qword topWindowId;
+
+	k_lock(&g_windowManager.mutex);
+
+	topWindow = k_getTailFromList(&g_windowManager.windowList);
+	if (topWindow != null) {
+		topWindowId = topWindow->link.id;
+
+	} else {
+		topWindowId = WINDOW_INVALIDID;
+	}
+
+	k_unlock(&g_windowManager.mutex);
+
+	return topWindowId;
+}
+
+bool k_moveWindowToTop(qword windowId) {
+	Window* window;
+	Rect area;
+	dword flags;
+	qword topWindowId;
+	
+	topWindowId = k_getTopWindowId();
+	if (topWindowId == windowId) {
+		return true;
+	}
+
+	/* move window to top */
+	k_lock(&g_windowManager.mutex);
+
+	window = k_removeList(&g_windowManager.windowList, windowId);
+	if (window != null) {
+		k_addListToTail(&g_windowManager.windowList, window);
+		k_convertRectScreenToWindow(windowId, &window->area, &area);
+		flags = window->flags;
+	}
+
+	k_unlock(&g_windowManager.mutex);
+
+	/* send window event and update screen */
+	if (window != null) {
+		k_sendWindowEventToWindow(windowId, EVENT_WINDOW_SELECT);
+		if (flags & WINDOW_FLAGS_DRAWTITLEBAR) {
+			k_updateWindowTitleBar(windowId, true);
+			area.y1 += WINDOW_TITLEBAR_HEIGHT;
+			k_updateScreenByWindowArea(windowId, &area);
+
+		} else {
+			k_updateScreenById(windowId);
+		}
+
+		k_sendWindowEventToWindow(topWindowId, EVENT_WINDOW_DESELECT);
+		k_updateWindowTitleBar(topWindowId, false);
+
+		return true;
+	}
+
+	return false;
+}
+
+bool k_isPointInTitleBar(qword windowId, int x, int y) {
+	Window* window;
+
+	window = k_getWindow(windowId);
+	if ((window == null) || ((window->flags & WINDOW_FLAGS_DRAWTITLEBAR) != WINDOW_FLAGS_DRAWTITLEBAR)) {
+		return false;
+	}
+
+	if ((window->area.x1 <= x) && (x <= window->area.x2) && (window->area.y1 <= y) && (y <= window->area.y1 + WINDOW_TITLEBAR_HEIGHT)) {
+		return true;
+	}
+
+	return false;
+}
+
+bool k_isPointInCloseButton(qword windowId, int x, int y) {
+	Window* window;
+
+	window = k_getWindow(windowId);
+	if ((window == null) || ((window->flags & WINDOW_FLAGS_DRAWTITLEBAR) != WINDOW_FLAGS_DRAWTITLEBAR)) {
+		return false;
+	}
+
+	if ((window->area.x2 - 1 - WINDOW_CLOSEBUTTON_SIZE <= x) && (x <= window->area.x2 - 1) && (window->area.y1 + 1 <= y) && (y <= window->area.y1 + 1 + WINDOW_CLOSEBUTTON_SIZE)) {
+		return true;
+	}
+
+	return false;
+}
+
+bool k_moveWindow(qword windowId, int x, int y) {
+	Window* window;
+	Rect prevArea;
+	int width;
+	int height;
+
+	window = k_getWindowWithLock(windowId);
+	if (window == null) {
+		return false;
+	}
+
+	/* change window area */
+	k_memcpy(&prevArea, &window->area, sizeof(Rect));
+	width = k_getRectWidth(&prevArea);
+	height = k_getRectHeight(&prevArea);
+	k_setRect(&window->area, x, y, x + width - 1, y + height - 1);
+
+	k_unlock(&window->mutex);
+
+	/* update screen and send window event */
+	k_updateScreenByScreenArea(&prevArea);
+	k_updateScreenById(windowId);
+	k_sendWindowEventToWindow(windowId, EVENT_MOUSE_MOVE);
+
+	return true;
+}
+
+static bool k_updateWindowTitleBar(qword windowId, bool selected) {
+	Window* window;
+	Rect titleBarArea;
+
+	window = k_getWindow(windowId);
+	if ((window != null) && (window->flags & WINDOW_FLAGS_DRAWTITLEBAR)) {
+		k_drawWindowTitleBar(window->link.id, window->title, selected);
+		k_setRect(&titleBarArea, 0, 0, k_getRectWidth(&window->area) - 1, WINDOW_TITLEBAR_HEIGHT);
+		k_updateScreenByWindowArea(windowId, &titleBarArea);
+		return true;
+	}
+
+	return false;
+}
+
+bool k_getWindowArea(qword windowId, Rect* area) {
+	Window* window;
+
+	window = k_getWindowWithLock(windowId);
+	if (window == null) {
+		return false;
+	}
+
+	k_memcpy(area, &window->area, sizeof(Rect));
+
+	k_unlock(&window->mutex);
+
+	return true;
+}
+
+bool k_convertPointScreenToWindow(qword windowId, const Point* screenPoint, Point* windowPoint) {
+	Rect area;
+
+	if (k_getWindowArea(windowId, &area) == false) {
+		return false;
+	}
+
+	windowPoint->x = screenPoint->x - area.x1;
+	windowPoint->y = screenPoint->y - area.y1;
+
+	return true;
+}
+
+bool k_convertPointWindowToScreen(qword windowId, const Point* windowPoint, Point* screenPoint) {
+	Rect area;
+
+	if (k_getWindowArea(windowId, &area) == false) {
+		return false;
+	}
+
+	screenPoint->x = windowPoint->x + area.x1;
+	screenPoint->y = windowPoint->y + area.y1;
+
+	return true;
+}
+
+bool k_convertRectScreenToWindow(qword windowId, const Rect* screenRect, Rect* windowRect) {
+	Rect area;
+
+	if (k_getWindowArea(windowId, &area) == false) {
+		return false;
+	}
+
+	windowRect->x1 = screenRect->x1 - area.x1;
+	windowRect->y1 = screenRect->y1 - area.y1;
+	windowRect->x2 = screenRect->x2 - area.x2;
+	windowRect->y2 = screenRect->y2 - area.y2;
+
+	return true;
+}
+
+bool k_convertRectWindowToScreen(qword windowId, const Rect* windowRect, Rect* screenRect) {
+	Rect area;
+
+	if (k_getWindowArea(windowId, &area) == false) {
+		return false;
+	}
+
+	screenRect->x1 = windowRect->x1 + area.x1;
+	screenRect->y1 = windowRect->y1 + area.y1;
+	screenRect->x2 = windowRect->x2 + area.x2;
+	screenRect->y2 = windowRect->y2 + area.y2;
+
+	return true;	
+}
+
+bool k_setMouseEvent(Event* event, qword windowId, qword eventType, int mouseX, int mouseY, byte buttonStatus) {
+	Point screenMousePoint;
+	Point windowMousePoint;
+
+	switch (eventType) {
+	case EVENT_MOUSE_MOVE:
+	case EVENT_MOUSE_LBUTTONDOWN:
+	case EVENT_MOUSE_LBUTTONUP:
+	case EVENT_MOUSE_RBUTTONDOWN:
+	case EVENT_MOUSE_RBUTTONUP:
+	case EVENT_MOUSE_MBUTTONDOWN:
+	case EVENT_MOUSE_MBUTTONUP:
+		screenMousePoint.x = mouseX;
+		screenMousePoint.y = mouseY;
+
+		if (k_convertPointScreenToWindow(windowId, &screenMousePoint, &windowMousePoint) == false) {
+			return false;
+		}
+
+		/* set mouse event */
+		event->type = eventType;
+		event->mouseEvent.windowId = windowId;
+		k_memcpy(&event->mouseEvent.point, &windowMousePoint, sizeof(Point));
+		event->mouseEvent.buttonStatus = buttonStatus;
+
+		break;
+
+	default:
+		return false;
+	}
+
+	return true;
+}
+
+bool k_setWindowEvent(Event* event, qword windowId, qword eventType) {
+	Rect area;
+
+	switch (eventType) {
+	case  EVENT_WINDOW_SELECT:
+	case  EVENT_WINDOW_DESELECT:
+	case  EVENT_WINDOW_MOVE:
+	case  EVENT_WINDOW_RESIZE:
+	case  EVENT_WINDOW_CLOSE:
+		if (k_getWindowArea(windowId, &area) == false) {
+			return false;
+		}
+
+		/* set window event */
+		event->type = eventType;
+		event->windowEvent.windowId = windowId;
+		k_memcpy(&event->windowEvent.area, &area, sizeof(Rect));
+
+		break;
+
+	default:
+		return false;
+	}
+
+	return true;
+}
+
+void k_setKeyEvent(Event* event, qword windowId, const Key* key) {
+	if (key->flags & KEY_FLAGS_DOWN) {
+		event->type = EVENT_KEY_DOWN;
+
+	} else {
+		event->type = EVENT_KEY_UP;
+	}
+
+	event->keyEvent.windowId = windowId;
+	event->keyEvent.scanCode = key->scanCode;
+	event->keyEvent.asciiCode = key->asciiCode;
+	event->keyEvent.flags = key->flags;
+}
+
+bool k_sendEventToWindow(const Event* event, qword windowId) {
+	Window* window;
+	bool result;
+
+	window = k_getWindowWithLock(windowId);
+	if (window == null) {
+		return false;
+	}
+
+	result = k_putQueue(&window->eventQueue, event);
+
+	k_unlock(&window->mutex);
+
+	return result;
+}
+
+bool k_recvEventFromWindow(Event* event, qword windowId) {
+	Window* window;
+	bool result;
+
+	window = k_getWindowWithLock(windowId);
+	if (window == null) {
+		return false;
+	}
+
+	result = k_getQueue(&window->eventQueue, event);
+
+	k_unlock(&window->mutex);
+
+	return result;
+}
+
+bool k_sendEventToWindowManager(const Event* event) {
+	bool result;
+
+	if (k_isQueueFull(&g_windowManager.eventQueue) == true) {
+		return false;
+	}
+
+	k_lock(&g_windowManager.mutex);
+
+	result = k_putQueue(&g_windowManager.eventQueue, event);
+
+	k_unlock(&g_windowManager.mutex);
+
+	return result;
+}
+
+bool k_recvEventFromWindowManager(Event* event) {
+	bool result;
+
+	if (k_isQueueEmpty(&g_windowManager.eventQueue) == true) {
+		return false;
+	}
+
+	k_lock(&g_windowManager.mutex);
+
+	result = k_getQueue(&g_windowManager.eventQueue, event);
+
+	k_unlock(&g_windowManager.mutex);
+
+	return result;	
+}
+
+inline bool k_sendMouseEventToWindow(qword windowId, qword eventType, int mouseX, int mouseY, byte buttonStatus) {
+	Event event;
+
+	if (k_setMouseEvent(&event, windowId, eventType, mouseX, mouseY, buttonStatus) == false) {
+		return false;
+	}
+
+	return k_sendEventToWindow(&event, windowId);
+}
+
+inline bool k_sendWindowEventToWindow(qword windowId, qword eventType) {
+	Event event;
+
+	if (k_setWindowEvent(&event, windowId, eventType) == false) {
+		return false;
+	}
+
+	return k_sendEventToWindow(&event, windowId);	
+}
+
+inline bool k_sendKeyEventToWindow(qword windowId, const Key* key) {
+	Event event;
+
+	k_setKeyEvent(&event, windowId, key);
+
+	return k_sendEventToWindow(&event, windowId);
+}
+
+bool k_updateScreenById(qword windowId) {
+	Event event;
+	Window* window;
+
+	window = k_getWindow(windowId);
+	if ((window == null) || ((window->flags & WINDOW_FLAGS_SHOW) != WINDOW_FLAGS_SHOW)) {
+		return false;
+	}
+
+	/* set screen update event */
+	event.type = EVENT_SCREENUPDATE_BYID;
+	event.screenUpdateEvent.windowId = windowId;
+
+	/* send screen update event */
+	return k_sendEventToWindowManager(&event);
+}
+
+bool k_updateScreenByWindowArea(qword windowId, const Rect* area) {
+	Event event;
+	Window* window;
+
+	window = k_getWindow(windowId);
+	if ((window == null) || ((window->flags & WINDOW_FLAGS_SHOW) != WINDOW_FLAGS_SHOW)) {
+		return false;
+	}
+
+	/* set screen update event */
+	event.type = EVENT_SCREENUPDATE_BYWINDOWAREA;
+	event.screenUpdateEvent.windowId = windowId;
+	k_memcpy(&event.screenUpdateEvent.area, area, sizeof(Rect));
+
+	/* send screen update event */
+	return k_sendEventToWindowManager(&event);
+}
+
+bool k_updateScreenByScreenArea(const Rect* area) {
+	Event event;
+
+	/* set screen update event */
+	event.type = EVENT_SCREENUPDATE_BYSCREENAREA;
+	event.screenUpdateEvent.windowId = WINDOW_INVALIDID;
+	k_memcpy(&event.screenUpdateEvent.area, area, sizeof(Rect));
+
+	/* send screen update event */
+	return k_sendEventToWindowManager(&event);
+}
+
 bool k_drawWindowFrame(qword windowId) {
 	Window* window;
 	int width;
@@ -466,7 +1011,7 @@ bool k_drawWindowBackground(qword windowId) {
 	k_unlock(&window->mutex);
 }
 
-bool k_drawWindowTitleBar(qword windowId, const char* title) {
+bool k_drawWindowTitleBar(qword windowId, const char* title, bool selected) {
 	Window* window;
 	int width;
 	int height;
@@ -485,12 +1030,21 @@ bool k_drawWindowTitleBar(qword windowId, const char* title) {
 
 	/* draw a title bar */
 
-	// draw a title bar background.
-	__k_drawRect(window->buffer, &area, 0, 3, width - 1, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARBACKGROUND, true);
-	
-	// draw a title.
-	__k_drawText(window->buffer, &area, 6, 3, WINDOW_COLOR_TITLEBARTEXT, WINDOW_COLOR_TITLEBARBACKGROUND, title);
-	
+	if (selected == true) {
+		// draw a title bar background.
+		__k_drawRect(window->buffer, &area, 0, 3, width - 1, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE, true);
+		
+		// draw a title.
+		__k_drawText(window->buffer, &area, 6, 3, WINDOW_COLOR_TITLEBARTEXT, WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE, title);
+
+	} else {
+		// draw a title bar background.
+		__k_drawRect(window->buffer, &area, 0, 3, width - 1, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE, true);
+		
+		// draw a title.
+		__k_drawText(window->buffer, &area, 6, 3, WINDOW_COLOR_TITLEBARTEXT, WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE, title);
+	}
+
 	// draw top lines (2 pixels-thick) of the title bar with bright color in order to make it 3-dimensional.
 	__k_drawLine(window->buffer, &area, 1, 1, width - 1, 1, WINDOW_COLOR_TITLEBARBRIGHT1);
 	__k_drawLine(window->buffer, &area, 1, 2, width - 1, 2, WINDOW_COLOR_TITLEBARBRIGHT2);
@@ -500,8 +1054,8 @@ bool k_drawWindowTitleBar(qword windowId, const char* title) {
 	__k_drawLine(window->buffer, &area, 2, 2, 2, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARBRIGHT2);
 	
 	// draw bottom lines (2 pixels-thick) of the title bar with dark color in order to make it 3-dimensional.
-	__k_drawLine(window->buffer, &area, 2, WINDOW_TITLEBAR_HEIGHT - 2, width - 2, WINDOW_TITLEBAR_HEIGHT - 2, WINDOW_COLOR_TITLEBARUNDERLINE);
-	__k_drawLine(window->buffer, &area, 2, WINDOW_TITLEBAR_HEIGHT - 1, width - 2, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARUNDERLINE);
+	__k_drawLine(window->buffer, &area, 2, WINDOW_TITLEBAR_HEIGHT - 2, width - 2, WINDOW_TITLEBAR_HEIGHT - 2, WINDOW_COLOR_TITLEBARDARK);
+	__k_drawLine(window->buffer, &area, 2, WINDOW_TITLEBAR_HEIGHT - 1, width - 2, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARDARK);
 	
 	k_unlock(&window->mutex);
 
@@ -745,6 +1299,7 @@ static void k_drawMouseCursor(int x, int y) {
 void k_moveMouseCursor(int x, int y) {
 	Rect prevArea;
 
+	// keep mouse position always inside screen.
 	if (x < g_windowManager.screenArea.x1) {
 		x = g_windowManager.screenArea.x1;
 

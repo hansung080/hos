@@ -178,7 +178,7 @@ void k_rebootSystem(void) {
 
 static KeyboardManager g_keyboardManager = {0, };
 static Queue g_keyQueue;
-static Key g_keyQueueBuffer[KEY_MAXQUEUECOUNT];
+static Key g_keyBuffer[KEY_MAXQUEUECOUNT];
 
 // table to convert from scan code to ASCII code
 static KeyMappingEntry g_keyMappingTable[KEY_MAPPINGTABLEMAXCOUNT] = {
@@ -434,7 +434,7 @@ bool k_convertScanCodeToAsciiCode(byte scanCode, byte* asciiCode, byte* flags) {
 
 bool k_initKeyboard(void) {
 	// initialize key queue.
-	k_initQueue(&g_keyQueue, g_keyQueueBuffer, KEY_MAXQUEUECOUNT, sizeof(Key));
+	k_initQueue(&g_keyQueue, g_keyBuffer, KEY_MAXQUEUECOUNT, sizeof(Key));
 	
 	// initialize spinlock.
 	k_initSpinlock(&(g_keyboardManager.spinlock));

@@ -6,12 +6,12 @@
 
 static MouseManager g_mouseManager = {0, };
 static Queue g_mouseQueue;
-static MouseData g_mouseQueueBuffer[MOUSE_MAXQUEUECOUNT];
+static MouseData g_mouseBuffer[MOUSE_MAXQUEUECOUNT];
 
 bool k_initMouse(void) {
 	// initialize mouse queue.
 	// This function must be called before activating mouse.
-	k_initQueue(&g_mouseQueue, g_mouseQueueBuffer, MOUSE_MAXQUEUECOUNT, sizeof(MouseData));
+	k_initQueue(&g_mouseQueue, g_mouseBuffer, MOUSE_MAXQUEUECOUNT, sizeof(MouseData));
 
 	// initialize spinlock
 	k_initSpinlock(&g_mouseManager.spinlock);

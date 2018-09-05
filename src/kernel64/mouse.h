@@ -4,13 +4,18 @@
 #include "types.h"
 #include "sync.h"
 
-// mouse queue-related macros
+// mouse queue-related macro
 #define MOUSE_MAXQUEUECOUNT 100
 
 // button status
-#define MOUSE_LBUTTONDOWN 0x01 // left button down
-#define MOUSE_RBUTTONDOWN 0x02 // right button down
-#define MOUSE_MBUTTONDOWN 0x04 // middle button down
+#define MOUSE_BUTTONSTATUS_LBUTTONDOWN 0x01 // left button down
+#define MOUSE_BUTTONSTATUS_RBUTTONDOWN 0x02 // right button down
+#define MOUSE_BUTTONSTATUS_MBUTTONDOWN 0x04 // middle button down
+
+// button status (renamed)
+#define MOUSE_LBUTTONDOWN MOUSE_BUTTONSTATUS_LBUTTONDOWN
+#define MOUSE_RBUTTONDOWN MOUSE_BUTTONSTATUS_RBUTTONDOWN
+#define MOUSE_MBUTTONDOWN MOUSE_BUTTONSTATUS_MBUTTONDOWN
 
 #pragma pack(push, 1)
 
@@ -36,9 +41,9 @@
     - y movement: y movement form last packet, y sign and y movement represents 2^9 (-256 ~ +255).
 */
 typedef struct k_MouseData {
-	byte flagsAndButtonStatus;
-	byte xMovement;
-	byte yMovement;
+	byte flagsAndButtonStatus; // mouse flags and button status
+	byte xMovement;            // x movement
+	byte yMovement;            // y movement
 } MouseData;
 
 typedef struct k_MouseManager {

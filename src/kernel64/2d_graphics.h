@@ -30,7 +30,7 @@ typedef struct k_Rect {
 
 #pragma pack(pop)
 
-/* Rectangle-related Functions */
+/* Rectangle Functions */
 void k_setRect(Rect* rect, int x1, int y1, int x2, int y2);
 int k_getRectWidth(const Rect* rect);
 int k_getRectHeight(const Rect* rect);
