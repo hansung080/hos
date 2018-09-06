@@ -3,6 +3,8 @@
 #include "util.h"
 #include "mouse.h"
 #include "keyboard.h"
+#include "task.h" // [Temp] temporary code
+#include "gui_tasks.h" // [Temp] temporary code
 
 void k_startWindowManager(void) {
 	int mouseX, mouseY;
@@ -17,7 +19,7 @@ void k_startWindowManager(void) {
 	k_getMouseCursorPos(&mouseX, &mouseY);
 	k_moveMouseCursor(mouseX, mouseY);
 
-	// window manager task loop
+	/* window manager task loop */
 	while (true) {
 		// process mouse data.
 		mouseResult = k_processMouseData();
@@ -47,9 +49,6 @@ bool k_processMouseData(void) {
 	byte changedButtonStatus;
 	Rect windowArea;
 	WindowManager* windowManager;
-	char windowTitle[WINDOW_MAXTITLELENGTH + 1]; // [Temp] temporary code
-	static int windowCount = 0; // [Temp] temporary code
-	qword windowId; // [Temp] temporary code
 
 	if (k_getMouseDataFromMouseQueue(&buttonStatus, &relativeX, &relativeY) == false) {
 		return false;
@@ -86,9 +85,6 @@ bool k_processMouseData(void) {
 				if (k_isPointInCloseButton(underMouseWindowId, mouseX, mouseY) == true) {
 					k_sendWindowEventToWindow(underMouseWindowId, EVENT_WINDOW_CLOSE);
 
-					// [Temp] This code is for test.
-					k_deleteWindow(underMouseWindowId);
-
 				} else {
 					windowManager->windowMoving = true;
 					windowManager->movingWindowId = underMouseWindowId;
@@ -115,12 +111,8 @@ bool k_processMouseData(void) {
 		if (buttonStatus & MOUSE_RBUTTONDOWN) {
 			k_sendMouseEventToWindow(underMouseWindowId, EVENT_MOUSE_RBUTTONDOWN, mouseX, mouseY, buttonStatus);
 
-			/* [Temp] These codes below are for test */
-			k_sprintf(windowTitle, "Window %d", ++windowCount);
-			windowId = k_createWindow(mouseX - 10, mouseY - WINDOW_TITLEBAR_HEIGHT / 2, 400, 200, WINDOW_FLAGS_DRAWFRAME | WINDOW_FLAGS_DRAWTITLEBAR, windowTitle);
-			k_drawText(windowId, 10, WINDOW_TITLEBAR_HEIGHT + 10, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, "This is a real window.");
-			k_drawText(windowId, 10, WINDOW_TITLEBAR_HEIGHT + 30, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, "Now, you can select and move a window.");
-			k_showWindow(windowId, true);
+			// [Temp] This code is for test.
+			k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_helloWorldGuiTask, TASK_AFFINITY_LOADBALANCING);
 
 		/* right button up */
 		} else {
@@ -180,11 +172,11 @@ bool k_processWindowManagerEvent(void) {
 	if (k_recvEventFromWindowManager(&event) == false) {
 		return false;
 	}
-
-	screenUpdateEvent = &event.screenUpdateEvent;
 	
 	switch (event.type) {
 	case EVENT_SCREENUPDATE_BYID:
+		screenUpdateEvent = &event.screenUpdateEvent;
+
 		if (k_getWindowArea(screenUpdateEvent->windowId, &area) == true) {
 			k_redrawWindowByArea(&area);
 		}
@@ -192,6 +184,8 @@ bool k_processWindowManagerEvent(void) {
 		break;
 
 	case EVENT_SCREENUPDATE_BYWINDOWAREA:
+		screenUpdateEvent = &event.screenUpdateEvent;
+
 		if (k_convertRectWindowToScreen(screenUpdateEvent->windowId, &screenUpdateEvent->area, &area) == true) {
 			k_redrawWindowByArea(&area);
 		}
@@ -199,6 +193,8 @@ bool k_processWindowManagerEvent(void) {
 		break;
 
 	case EVENT_SCREENUPDATE_BYSCREENAREA:
+		screenUpdateEvent = &event.screenUpdateEvent;
+
 		k_redrawWindowByArea(&screenUpdateEvent->area);
 		break;
 

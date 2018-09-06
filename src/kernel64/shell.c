@@ -590,7 +590,7 @@ static void k_createTestTask(const char* paramBuffer) {
 	switch (type) {
 	case 1: // test-task-1: border character
 		for (i = 0; i < count; i++) {
-			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_testTask1, TASK_AFFINITY_LOADBALANCING) == null) {
+			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask1, TASK_AFFINITY_LOADBALANCING) == null) {
 				break;
 			}
 			
@@ -602,7 +602,7 @@ static void k_createTestTask(const char* paramBuffer) {
 		
 	case 2: // test-task-2: rotating pinwheel
 		for (i = 0; i < count; i++) {
-			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_testTask2, TASK_AFFINITY_LOADBALANCING) == null) {
+			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask2, TASK_AFFINITY_LOADBALANCING) == null) {
 				break;
 			}
 			
@@ -614,7 +614,7 @@ static void k_createTestTask(const char* paramBuffer) {
 		
 	case 3: // test-task-3: core checker
 		for (i = 0; i < count; i++) {
-			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_testTask3, TASK_AFFINITY_LOADBALANCING) == null) {
+			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask3, TASK_AFFINITY_LOADBALANCING) == null) {
 				break;
 			}
 			
@@ -932,7 +932,7 @@ static void k_testMutex(const char* paramBuffer) {
 	
 	// create 3 tasks for mutex test.
 	for (i = 0; i < 3; i++) {
-		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_printNumberTask, k_getApicId());
+		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_printNumberTask, k_getApicId());
 	}
 	
 	k_printf("wait for the mutex test until %d tasks end.\n", i);
@@ -943,7 +943,7 @@ static void k_createThreadTask(void) {
 	int i;
 	
 	for (i = 0; i < 3; i++) {
-		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_testTask2, TASK_AFFINITY_LOADBALANCING);
+		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask2, TASK_AFFINITY_LOADBALANCING);
 	}
 	
 	while (true) {
@@ -1003,7 +1003,7 @@ static void k_matrixProcess(void) {
 	int i;
 	
 	for (i = 0; i < 300; i++) {
-		if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_dropCharThread, TASK_AFFINITY_LOADBALANCING) == null) {
+		if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_dropCharThread, TASK_AFFINITY_LOADBALANCING) == null) {
 			break;
 		}
 		
@@ -1092,7 +1092,7 @@ static void k_testPi(const char* paramBuffer) {
 	
 	// create 100 tasks for calculating float numbers (rotating pinwheels).
 	for (i = 0; i < 100; i++) {
-		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)k_fpuTestTask, TASK_AFFINITY_LOADBALANCING);
+		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_fpuTestTask, TASK_AFFINITY_LOADBALANCING);
 	}
 }
 
@@ -1263,7 +1263,7 @@ static void k_testRandomAlloc(void) {
 	k_printf("*** Dynamic Memory Random Allocation Test ***\n");
 	
 	for (i = 0; i < 1000; i++) {
-		k_createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD, 0, 0, (qword)k_randomAllocTask, TASK_AFFINITY_LOADBALANCING);
+		k_createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD, null, 0, (qword)k_randomAllocTask, TASK_AFFINITY_LOADBALANCING);
 	}
 }
 

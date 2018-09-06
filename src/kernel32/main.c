@@ -3,9 +3,9 @@
 #include "mode_switch.h"
 
 // BSP flag
-#define BSPFLAG     *(byte*)0x7C09 // BSP flag (1:BSP, 0:AP)
-#define BSPFLAG_BSP 0x01           // BSP
+#define BSPFLAG     *(byte*)0x7C09 // BSP flag (0: AP, 1: BSP): BSP_FLAG is defined in boot_loader.asm.
 #define BSPFLAG_AP  0x00           // AP
+#define BSPFLAG_BSP 0x01           // BSP
 
 void k_printStr(int x, int y, const char* str);
 bool k_isMemEnough(void);
@@ -17,9 +17,9 @@ void k_main(void) {
 	dword eax, ebx, ecx, edx;
 	char vendor[13] = {0, };
 	
-	// compare BSP flag
+	// compare BSP flag.
 	if (BSPFLAG == BSPFLAG_AP) {
-		// switch to kernel64
+		// switch to kernel64.
 		k_switchToKernel64();
 		
 		while (true);

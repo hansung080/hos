@@ -5,4 +5,3 @@ static VbeModeInfoBlock* g_vbeModeInfoBlock = (VbeModeInfoBlock*)VBE_MODEINFOBLO
 inline VbeModeInfoBlock* k_getVbeModeInfoBlock(void) {
 	return g_vbeModeInfoBlock;
 }
-

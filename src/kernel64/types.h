@@ -7,9 +7,10 @@
 #define qword unsigned long
 #define bool  unsigned char
 
-#define true  1
 #define false 0
-#define null  0
+#define true  1
+
+#define null 0
 
 // Original offsetof macro function is defined in stddef.h.
 // But, the same macro function is defined here in order to avoid type duplication.

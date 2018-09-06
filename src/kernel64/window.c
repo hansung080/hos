@@ -648,7 +648,7 @@ bool k_moveWindow(qword windowId, int x, int y) {
 	/* update screen and send window event */
 	k_updateScreenByScreenArea(&prevArea);
 	k_updateScreenById(windowId);
-	k_sendWindowEventToWindow(windowId, EVENT_MOUSE_MOVE);
+	k_sendWindowEventToWindow(windowId, EVENT_WINDOW_MOVE);
 
 	return true;
 }

@@ -49,8 +49,16 @@
 // maximum processor time for task to use at once (5 milliseconds)
 #define TASK_PROCESSORTIME 5
 
-// ready list count
+// max ready list count: same as task priority count.
 #define TASK_MAXREADYLISTCOUNT 5
+
+// task priority (low 8 bits of task flags)
+#define TASK_FLAGS_HIGHEST 0x00 // highest
+#define TASK_FLAGS_HIGH    0x01 // high
+#define TASK_FLAGS_MEDIUM  0x02 // medium
+#define TASK_FLAGS_LOW     0x03 // low
+#define TASK_FLAGS_LOWEST  0x04 // lowest
+#define TASK_FLAGS_END     0xFF // end task priority
 
 // task flags
 #define TASK_FLAGS_ENDTASK 0x8000000000000000 // end task flag
@@ -58,14 +66,6 @@
 #define TASK_FLAGS_PROCESS 0x2000000000000000 // processor flag
 #define TASK_FLAGS_THREAD  0x1000000000000000 // thread flag
 #define TASK_FLAGS_IDLE    0x0800000000000000 // idle task flag
-
-// task priority (low 8 bits of task flags (64 bits))
-#define TASK_FLAGS_HIGHEST 0    // highest
-#define TASK_FLAGS_HIGH    1    // high
-#define TASK_FLAGS_MEDIUM  2    // medium
-#define TASK_FLAGS_LOW     3    // low
-#define TASK_FLAGS_LOWEST  4    // lowest
-#define TASK_FLAGS_END     0xFF // end task priority
 
 // affinity
 #define TASK_AFFINITY_LOADBALANCING 0xFF // no affinity
@@ -89,12 +89,12 @@ typedef struct k_Task {
 	ListLink link;           // scheduler link: It consists of next task address (link.next) and task ID (link.id).
 	                         //                 task ID consists of allocated task count (high 32 bits) and task offset (low 32 bits).
 	                         //                 [Note] ListLink must be the first field.
-	qword flags;             // task flags: bit 63 is end task flag.
-	                         //             bit 62 is system task flag.
-	                         //             bit 61 is processor flag.
-	                         //             bit 60 is thread flag.
-	                         //             bit 59 is idle task flag.
-	                         //             bit 7~0 is task priority.
+	qword flags;             // task flags: bit 0~7 : task priority
+							 //             bit 63  : end task flag
+	                         //             bit 62  : system task flag
+	                         //             bit 61  : processor flag
+	                         //             bit 60  : thread flag
+	                         //             bit 59  : idle task flag
 	void* memAddr;           // start address of process memory area (code, data area)
 	qword memSize;           // size of process memory area (code, data area)
 	

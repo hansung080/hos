@@ -7,9 +7,10 @@
 #define qword unsigned long
 #define bool  unsigned char
 
-#define true  1
 #define false 0
-#define null  0
+#define true  1
+
+#define null 0
 
 #pragma pack(push, 1)
 

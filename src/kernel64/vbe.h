@@ -6,6 +6,11 @@
 #define VBE_MODEINFOBLOCKADDRESS   0x7E00 // VBE mode info block address: It's right after boot-loader address <0x7C00>.
 #define VBE_GRAPHICMODEFLAGADDRESS 0x7C0A // GRAPHIC_MODE_FLAG is defined in boot_loader.asm.
 
+// graphic mode flag
+#define VBE_GRAPHICMODEFLAG             *(byte*)VBE_GRAPHICMODEFLAGADDRESS // graphic mode flag (0: text mode, 1: graphic mode)
+#define VBE_GRAPHICMODEFLAG_TEXTMODE    0x00 // text mode
+#define VBE_GRAPHICMODEFLAG_GRAPHICMODE 0x01 // graphic mode
+
 #pragma pack(push, 1)
 
 // VBE mode info block size must be 256 bytes. (It's the fixed size.)

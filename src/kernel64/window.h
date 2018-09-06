@@ -38,9 +38,9 @@
 #define WINDOW_INVALIDID      0xFFFFFFFFFFFFFFFF
 
 // window flags
-#define WINDOW_FLAGS_SHOW         0x00000001
-#define WINDOW_FLAGS_DRAWFRAME    0x00000002
-#define WINDOW_FLAGS_DRAWTITLEBAR 0x00000004
+#define WINDOW_FLAGS_SHOW         0x00000001 // show flag
+#define WINDOW_FLAGS_DRAWFRAME    0x00000002 // draw frame flag
+#define WINDOW_FLAGS_DRAWTITLEBAR 0x00000004 // draw title bar flag
 #define WINDOW_FLAGS_DEFAULT      (WINDOW_FLAGS_SHOW | WINDOW_FLAGS_DRAWFRAME | WINDOW_FLAGS_DRAWTITLEBAR)
 
 // title bar-related macros
@@ -83,6 +83,7 @@
   - mouse event
   - window event
   - key event
+  - user event
 
   *** window manager event ***
   - screen update event
@@ -175,10 +176,10 @@ typedef struct k_Window {
 	Rect area;          // window area (screen coordinates)
 	Color* buffer;      // window buffer (window coordinates) address
 	qword taskId;       // window-creating task ID
-	dword flags;        // window flags: bit 0 is show flag.
-	                    //               bit 1 is draw frame flag.
-	                    //               bit 2 is draw title bar flag.
-	Queue eventQueue;   // event queue for mouse, window, key event
+	dword flags;        // window flags: bit 0 : show flag
+	                    //               bit 1 : draw frame flag
+	                    //               bit 2 : draw title bar flag
+	Queue eventQueue;   // event queue for mouse, window, key, user event
 	Event* eventBuffer; // event buffer
 	char title[WINDOW_MAXTITLELENGTH + 1]; // window title: include last null character
 } Window; // Window is ListItem.

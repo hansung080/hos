@@ -4,9 +4,9 @@
 #include "types.h"
 
 // BSP flag
-#define BSPFLAG     *(byte*)0x7C09 // BSP flag (1:BSP, 0:AP)
-#define BSPFLAG_BSP 0x01           // BSP
+#define BSPFLAG     *(byte*)0x7C09 // BSP flag (0: AP, 1: BSP): BSP_FLAG is defined in boot_loader.asm.
 #define BSPFLAG_AP  0x00           // AP
+#define BSPFLAG_BSP 0x01           // BSP
 
 // max processor count
 #define MAXPROCESSORCOUNT 16

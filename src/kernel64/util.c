@@ -1,5 +1,6 @@
 #include "util.h"
 #include "asm_util.h"
+#include "vbe.h"
 
 // interrupt-occurring count by Timer(IRQ 0, PIT Controller)
 volatile qword g_tickCount = 0;
@@ -510,4 +511,12 @@ void k_sleep(qword millisecond) {
 	while ((g_tickCount - lastTickCount) <= millisecond) {
 		k_schedule();
 	}
+}
+
+bool k_isGraphicMode(void) {
+	if (VBE_GRAPHICMODEFLAG == VBE_GRAPHICMODEFLAG_TEXTMODE) {
+		return false;
+	}
+
+	return true;
 }

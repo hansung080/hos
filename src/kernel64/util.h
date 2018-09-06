@@ -29,6 +29,7 @@ int k_sprintf(char* buffer, const char* format, ...);
 int k_vsprintf(char* buffer, const char* format, va_list ap);
 qword k_getTickCount(void);
 void k_sleep(qword millisecond);
+bool k_isGraphicMode(void);
 
 extern volatile qword g_tickCount;
 
