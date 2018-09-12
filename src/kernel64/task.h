@@ -70,7 +70,7 @@
 // affinity
 #define TASK_AFFINITY_LOADBALANCING 0xFF // no affinity
 
-// macro functions
+/* macro functions */
 #define GETTASKOFFSET(taskId)            ((taskId) & 0xFFFFFFFF)                                 // get low 32 bits of task.link.id (64 bits)
 #define GETTASKPRIORITY(flags)           ((flags) & 0xFF)                                        // get low 8 bits of task.flags(64 bits)
 #define SETTASKPRIORITY(flags, priority) ((flags) = ((flags) & 0xFFFFFFFFFFFFFF00) | (priority)) // set low 8 bits of task.flags(64 bits)

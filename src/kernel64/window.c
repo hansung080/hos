@@ -123,7 +123,7 @@ void k_initGui(void) {
 
 	k_initList(&g_windowManager.windowList);
 
-	// allocate event buffer
+	// allocate event buffer.
 	g_windowManager.eventBuffer = (Event*)k_allocMem(sizeof(Event) * EVENTQUEUE_WINDOWMANAGER_MAXCOUNT);
 	if (g_windowManager.eventBuffer == null) {
 		k_printf("window error: window manager event buffer allocation error\n");
@@ -133,6 +133,12 @@ void k_initGui(void) {
 	}
 
 	k_initQueue(&g_windowManager.eventQueue, g_windowManager.eventBuffer, EVENTQUEUE_WINDOWMANAGER_MAXCOUNT, sizeof(Event));
+
+	// allocate screen bitmap.
+	g_windowManager.screenBitmap = (byte*)k_allocMem((vbeMode->xResolution * vbeMode->yResolution + 7) / 8);
+	if (g_windowManager.screenBitmap == null) {
+		k_printf("window error: window manager screen bitmap allocation error\n");
+	}
 
 	g_windowManager.prevButtonStatus = 0;
 	g_windowManager.windowMoving = false;
@@ -221,8 +227,8 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 	topWindowId = k_getTopWindowId();
 
 	// add window to the top of screen.
-	// Getting closer to the tail in window list means getting closer to the top in screen.
-	k_addListToTail(&g_windowManager.windowList, window);
+	// window list: head -> tail == the top window -> the bottom window
+	k_addListToHead(&g_windowManager.windowList, window);
 
 	k_unlock(&g_windowManager.mutex);
 
@@ -305,6 +311,7 @@ bool k_deleteAllWindowsByTask(qword taskId) {
 
 	window = k_getHeadFromList(&g_windowManager.windowList);
 	while (window != null) {
+		// Getting the next window must be before deleting the current window.
 		nextWindow = k_getNextFromList(&g_windowManager.windowList, window);
 
 		if ((window->link.id != g_windowManager.backgroundWindowId) && (window->taskId == taskId)) {
@@ -390,80 +397,384 @@ bool k_showWindow(qword windowId, bool show) {
 	return true;
 }
 
-bool k_redrawWindowByArea(const Rect* area) {
+// param: area: requested update area
+bool k_redrawWindowByArea(qword windowId, const Rect* area) {
+	ScreenBitmap bitmap;
 	Window* window;
-	Rect overArea;
+	Rect copyArea;
+	int copyAreaSize;
+	Rect copiedAreas[WINDOW_MAXCOPIEDAREAARRAYCOUNT];
+	int copiedAreaSizes[WINDOW_MAXCOPIEDAREAARRAYCOUNT];
+	int minAreaSize;
+	int minAreaIndex;
+	int i;
 	Rect cursorArea;
 
-	if (k_getOverlappedRect(&g_windowManager.screenArea, area, &overArea) == false) {
+	/**
+	  < Copied Area Array >
+	  Copied area array has the largest 20 area which has been already updated.
+	  This array-related logic is added in order to reduce the number of k_copyWindowBufferToVideoMem-calls
+	  by skipping calling it if copy area is included in copied area which has been already updated, 
+	  because k_copyWindowBufferToVideoMem takes a long time.
+	*/
+	k_memset(copiedAreas, 0, sizeof(copiedAreas));
+	k_memset(copiedAreaSizes, 0, sizeof(copiedAreaSizes));
+
+	k_lock(&g_windowManager.mutex);
+
+	/* create screen bitmap */
+	if (k_createScreenBitmap(&bitmap, area) == false) {
+		k_unlock(&g_windowManager.mutex);		
 		return false;
 	}
 
 	/**
-	  draw windows overlapped with the parameter area,
-	  by looping from head (the bottom window) to tail (the top window) in window list.
+	  redraw windows' partial area (copy area) overlapped with update area,
+	  by looping from head (the top window) to tail (the bottom window) in window list.
 	*/
-	k_lock(&g_windowManager.mutex);
-
 	window = k_getHeadFromList(&g_windowManager.windowList);
 	while (window != null) {
-		if ((window->flags & WINDOW_FLAGS_SHOW) && (k_isRectOverlapped(&window->area, &overArea) == true)) {
+		if ((window->flags & WINDOW_FLAGS_SHOW) && (k_getOverlappedRect(&bitmap.area, &window->area, &copyArea) == true)) {
+			/* check copy area is included in copied area */
+			copyAreaSize = k_getRectWidth(&copyArea) * k_getRectHeight(&copyArea);
+
+			for (i = 0; i < WINDOW_MAXCOPIEDAREAARRAYCOUNT; i++) {
+				if ((copyAreaSize <= copiedAreaSizes[i]) && (k_isPointInRect(&copiedAreas[i], copyArea.x1, copyArea.y1) == true) && (k_isPointInRect(&copiedAreas[i], copyArea.x2, copyArea.y2) == true)) {
+					break;
+				}
+			}
+
+			// If copy area is included in copied area, go to the next window,
+			// because it means the current window's copy area is invisible.
+			if (i < WINDOW_MAXCOPIEDAREAARRAYCOUNT) {
+				window = k_getNextFromList(&g_windowManager.windowList, window);
+				continue;
+			}
+
+			/* insert copy area to copied area array */
+			minAreaSize = 0x7FFFFFFF; // 2147483647 > 786432 = 1024 * 768
+			minAreaIndex = 0;
+			for (i = 0; i < WINDOW_MAXCOPIEDAREAARRAYCOUNT; i++) {
+				if (copiedAreaSizes[i] < minAreaSize) {
+					minAreaSize = copiedAreaSizes[i];
+					minAreaIndex = i;
+				}
+			}
+
+			if (copyAreaSize > minAreaSize) {
+				k_memcpy(&copiedAreas[minAreaIndex], &copyArea, sizeof(Rect));
+				copiedAreaSizes[minAreaIndex] = copyAreaSize;
+			}
+
+			/* copy or fill copy area */
 			k_lock(&window->mutex);
-			k_copyWindowBufferToVideoMem(window, &overArea);
+
+			if ((windowId != WINDOW_INVALIDID) && (windowId != window->link.id)) {
+				k_fillScreenBitmap(&bitmap, &window->area, false);
+
+			} else {
+				k_copyWindowBufferToVideoMem(window, &bitmap);
+			}
+						
 			k_unlock(&window->mutex);
+		}
+
+		// If all pixels of update area have been updated, break the loop,
+		// because it means remaining windows' copy area is invisible.
+		if (k_isScreenBitmapAllOff(&bitmap) == true) {
+			break;
 		}
 
 		window = k_getNextFromList(&g_windowManager.windowList, window);
 	}
 
-	k_unlock(&g_windowManager.mutex);	
+	k_unlock(&g_windowManager.mutex);
 
 	/**
-	  draw mouse cursor overlapped with the parameter area.
+	  redraw mouse cursor if it's overlapped with update area.
 	*/
 	k_setRect(&cursorArea, g_windowManager.mouseX, g_windowManager.mouseY, g_windowManager.mouseX + MOUSE_CURSOR_WIDTH, g_windowManager.mouseY + MOUSE_CURSOR_HEIGHT);
 	
-	if (k_isRectOverlapped(&cursorArea, &overArea) == true) {
+	if (k_isRectOverlapped(&bitmap.area, &cursorArea) == true) {
 		k_drawMouseCursor(g_windowManager.mouseX, g_windowManager.mouseY);
 	}
+	
+	return true;
 }
 
-static void k_copyWindowBufferToVideoMem(const Window* window, const Rect* copyArea) {
-	Rect tempArea;
-	Rect overArea;
+static void k_copyWindowBufferToVideoMem(const Window* window, ScreenBitmap* bitmap) {
 	int screenWidth;
 	int windowWidth;
-	int overWidth;
-	int overHeight;
-	int i;
 	Color* currentVideoMem;
 	Color* currentWindowBuffer;
+	Rect copyArea;     // copy area
+	int copyWidth;     // copy area width
+	int copyHeight;    // copy area height
+	int copyX;         // x of copy area coordinates
+	int copyY;         // y of copy area coordinates
+	int byteOffset;    // byte offset in bitmap
+	int bitOffset;     // bit offset in byte
+	int lastBitOffset; // last bit offset in byte
+	int byteCount;     // byte count
+	byte data;         // data to set bitmap
+	int i;
 
-	if (k_getOverlappedRect(&g_windowManager.screenArea, copyArea, &tempArea) == false) {
-		return;
-	}
-
-	if (k_getOverlappedRect(&window->area, &tempArea, &overArea) == false) {
+	if (k_getOverlappedRect(&bitmap->area, &window->area, &copyArea) == false) {
 		return;
 	}
 
 	screenWidth = k_getRectWidth(&g_windowManager.screenArea);
 	windowWidth = k_getRectWidth(&window->area);
-	overWidth = k_getRectWidth(&overArea);
-	overHeight = k_getRectHeight(&overArea);
+	copyWidth = k_getRectWidth(&copyArea);
+	copyHeight = k_getRectHeight(&copyArea);
 
-	/**
-	  calculate current video memory and current window buffer.
-	  Window buffer uses window coordinates. Thus, (x1, y1) of overlapped area has been recalculated on window coordinates.
-	*/
-	currentVideoMem = g_windowManager.videoMem + overArea.y1 * screenWidth + overArea.x1;
-	currentWindowBuffer = window->buffer + (overArea.y1 - window->area.y1) * windowWidth + (overArea.x1 - window->area.x1);
+	/* copy area loop */
+	for (copyY = 0; copyY < copyHeight; copyY++) {
+		if (k_getStartOffsetInScreenBitmap(bitmap, copyArea.x1, copyArea.y1 + copyY, &byteOffset, &bitOffset) == false) {
+			break;
+		}
 
-	for (i = 0; i < overHeight; i++) {
-		k_memcpy(currentVideoMem, currentWindowBuffer, sizeof(Color) * overWidth);
-		currentVideoMem += screenWidth;
-		currentWindowBuffer += windowWidth;
+		// for current video memory, convert (0, copy y) from copy area coordinates to screen coordinates.
+		// for current window buffer, convert (0, copy y) from copy area coordinates to window coordinates.
+		currentVideoMem = g_windowManager.videoMem + (copyArea.y1 + copyY) * screenWidth + copyArea.x1;
+		currentWindowBuffer = window->buffer + (copyArea.y1 - window->area.y1 + copyY) * windowWidth + (copyArea.x1 - window->area.x1);
+
+		for (copyX = 0; copyX < copyWidth; ) {
+			/* copy memory and set bitmap by byte unit */
+			if ((bitmap->bitmap[byteOffset] == 0xFF) && (bitOffset == 0) && ((copyWidth - copyX) >= 8)) {
+				// [Ref] remaining bit count in a line of copy area: copy width - copy x
+				for (byteCount = 0; byteCount < ((copyWidth - copyX) >> 3); byteCount++) {
+					if (bitmap->bitmap[byteOffset + byteCount] != 0xFF) {
+						break;
+					}
+				}
+
+				k_memcpy(currentVideoMem, currentWindowBuffer, (sizeof(Color) * byteCount) << 3);
+				currentVideoMem += byteCount << 3;
+				currentWindowBuffer += byteCount << 3;
+
+				k_memset(bitmap->bitmap + byteOffset, 0x00, byteCount);
+				copyX += byteCount << 3;
+				byteOffset += byteCount;
+				bitOffset = 0;
+
+			/* skip memory and bitmap by byte unit */
+			} else if ((bitmap->bitmap[byteOffset] == 0x00) && (bitOffset == 0) && ((copyWidth - copyX) >= 8)) {
+				for (byteCount = 0; byteCount < ((copyWidth - copyX) >> 3); byteCount++) {
+					if (bitmap->bitmap[byteOffset + byteCount] != 0x00) {
+						break;
+					}
+				}
+
+				currentVideoMem += byteCount << 3;
+				currentWindowBuffer += byteCount << 3;
+
+				copyX += byteCount << 3;
+				byteOffset += byteCount;
+				bitOffset = 0;
+
+			/* copy memory and set bitmap by bit unit */	
+			} else {
+				data = bitmap->bitmap[byteOffset];
+
+				lastBitOffset = MIN(8, bitOffset + copyWidth - copyX);
+				for (i = bitOffset; i < lastBitOffset; i++) {
+					if (data & (0x01 << i)) {
+						*currentVideoMem = *currentWindowBuffer;
+						data &= 0x01 << i;
+					}
+
+					currentVideoMem++;
+					currentWindowBuffer++;
+				}
+
+				bitmap->bitmap[byteOffset] = data;
+
+				copyX += lastBitOffset - bitOffset;
+				byteOffset++;
+				bitOffset = 0;
+			}
+		}
 	}
+}
+
+/**
+  < Screen Bitmap Management >
+                       
+         screen             bitmap (1024 * 768 bits)   
+    (1024 * 768 pixels)        bit offset
+                                    <--
+     -->                       76543210
+    -----------------         ----------
+  | |               |         |11001001| 0 | byte offset
+  v |  update area  |         |       1| 1 v
+    |    -------    |         |        | 2
+    |    |O|X|X|    |         |        | 3
+    |    -------    |         |        | 4
+    |    |O|X|X|    |         |        | ...
+    |    -------    |         |        |
+    |    |O|O|O|    |         ----------
+    |    -------    |
+    |               |
+    -----------------
+	
+    - update area: 9 pixels
+    - fill area == copy area: 4 pixels (fill area or copy area is the overlapped area between update area and window area.)
+    - O (1): on (to update)
+    - X (0): off (updated)
+	- memory increasement direction: >, <, v, ^
+    - k_createScreenBitmap fills bitmap corresponding to updaing area from the start of bitmap.
+*/
+
+// param: area: requested update area
+bool k_createScreenBitmap(ScreenBitmap* bitmap, const Rect* area) {
+	if (k_getOverlappedRect(&g_windowManager.screenArea, area, &bitmap->area) == false) {
+		return false;
+	}
+
+	// Do not allocate bitmap memory whenever k_createScreenBitmap is called,
+	// because it has two problems written below.
+	// - problem 1: k_allocMem takes too long.
+	// - problem 2: If free memory is not enough and memory allocation fails, screen can not be updated.
+	// Thus, bitmap memory has already been allocated as much as screen-sized and shared.
+	bitmap->bitmap = g_windowManager.screenBitmap;
+
+	return k_fillScreenBitmap(bitmap, &bitmap->area, true);
+}
+
+// param: area: requested fill area
+static bool k_fillScreenBitmap(const ScreenBitmap* bitmap, const Rect* area, bool on) {
+	Rect fillArea;     // fill area
+	int fillWidth;     // fill area width
+	int fillHeight;    // fill area height
+	int fillX;         // x of fill area coordinates
+	int fillY;         // y of fill area coordinates
+	int byteOffset;    // byte offset in bitmap
+	int bitOffset;     // bit offset in byte
+	int lastBitOffset; // last bit offset in byte
+	int byteCount;     // byte count
+	byte data;         // data to set bitmap
+	int i;
+
+	if (k_getOverlappedRect(&bitmap->area, area, &fillArea) == false) {
+		return false;
+	}
+
+	fillWidth = k_getRectWidth(&fillArea);
+	fillHeight = k_getRectHeight(&fillArea);
+
+	/* fill area loop */
+	for (fillY = 0; fillY < fillHeight; fillY++) {
+		if (k_getStartOffsetInScreenBitmap(bitmap, fillArea.x1, fillArea.y1 + fillY, &byteOffset, &bitOffset) == false) {
+			break;
+		}
+
+		for (fillX = 0; fillX < fillWidth; ) {
+			/* set bitmap by byte unit */
+			if ((bitOffset == 0) && ((fillWidth - fillX) >= 8)) {
+				// [Ref] remaining bit count in a line of fill area: fill width - fill x
+				byteCount = (fillWidth - fillX) >> 3; // byte count = (fill width - fill x) / 8
+
+				if (on == true) {
+					k_memset(bitmap->bitmap + byteOffset, 0xFF, byteCount);
+
+				} else {
+					k_memset(bitmap->bitmap + byteOffset, 0x00, byteCount);
+				}
+
+				fillX += byteCount << 3; // fill x += byte count * 8
+				byteOffset += byteCount;
+				bitOffset = 0;
+
+			/* set bitmap by bit unit */
+			} else {
+				lastBitOffset = MIN(8, bitOffset + fillWidth - fillX);
+
+				data = 0;
+				for (i = bitOffset; i < lastBitOffset; i++) {
+					data |= 0x01 << i;
+				}
+
+				if (on == true) {
+					bitmap->bitmap[byteOffset] |= data;
+
+				} else {
+					bitmap->bitmap[byteOffset] &= ~data;
+				}
+
+				fillX += lastBitOffset - bitOffset;
+				byteOffset++;
+				bitOffset = 0;
+			}
+		}
+	}
+
+	return true;
+}
+
+inline bool k_getStartOffsetInScreenBitmap(const ScreenBitmap* bitmap, int x, int y, int* byteOffset, int* bitOffset) {
+	int updateX;     // x of update area coordinates
+	int updateY;     // y of update area coordinates
+	int updateWidth; // update area width 
+
+	if (k_isPointInRect(&bitmap->area, x, y) == false) {
+		return false;
+	}
+
+	// convert (x, y) from screen coordinates to update area coordinates.
+	updateX = x - bitmap->area.x1;
+	updateY = y - bitmap->area.y1;
+
+	// get update area width.
+	updateWidth = k_getRectWidth(&bitmap->area);
+
+	// byte offset in bitmap = bit offset in bitmap / 8
+	*byteOffset = (updateY * updateWidth + updateX) >> 3;
+
+	// bit offset in byte = bit offset in bitmap % 8
+	*bitOffset = (updateY * updateWidth + updateX) & 0x7;
+
+	return true;
+}
+
+inline bool k_isScreenBitmapAllOff(const ScreenBitmap* bitmap) {
+	int totalBitCount;  // total bit count of update area
+	int totalByteCount; // total byte count of update area
+	int remainBitCount;	// remain bit count of update area
+	byte* data;         // data from bitmap
+	int i;
+
+	totalBitCount = k_getRectWidth(&bitmap->area) * k_getRectHeight(&bitmap->area);
+	totalByteCount = totalBitCount >> 3; // total byte count = total bit count / 8
+
+	/* compare bitmap by 8 bytes */
+	data = bitmap->bitmap;
+	for (i = 0; i < (totalByteCount >> 3); i++) { // loop while i < (total byte count / 8)
+		if (*(qword*)data != 0) {
+			return false;
+		}
+
+		data += 8;
+	}
+
+	/* compare remaining bitmap by 1 byte */
+	for (i = 0; i < (totalByteCount & 0x7); i++) { // loop while i < (total byte count % 8)
+		if (*data != 0) {
+			return false;
+		}
+
+		data++;
+	}
+
+	/* compare remaining bitmap by 1 bit */
+	remainBitCount = totalBitCount & 0x7; // remain bit count = total bit count % 8
+	for (i = 0; i < remainBitCount; i++) {
+		if (*data & (0x01 << i)) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 qword k_findWindowByPoint(int x, int y) {
@@ -471,24 +782,25 @@ qword k_findWindowByPoint(int x, int y) {
 	Window* window;
 
 	// set background window ID to default window ID,
-	// because mouse point is always inside background window.
+	// because mouse point is always inside the background window.
 	windowId = g_windowManager.backgroundWindowId;
 
 	/**
-	  loop from the second window (the next window of background window),
+	  loop from the first window (the top window),
 	  and find the top window among windows which include mouse point.
 	*/
 	k_lock(&g_windowManager.mutex);
 
 	window = k_getHeadFromList(&g_windowManager.windowList);
 
-	do {
-		window = k_getNextFromList(&g_windowManager.windowList, window);
-		if ((window != null) && (window->flags & WINDOW_FLAGS_SHOW) && (k_isPointInRect(&window->area, x, y) == true)) {
+	while (window != null) {
+		if ((window->flags & WINDOW_FLAGS_SHOW) && (k_isPointInRect(&window->area, x, y) == true)) {
 			windowId = window->link.id;
+			break;
 		}
 
-	} while (window != null);
+		window = k_getNextFromList(&g_windowManager.windowList, window);
+	};
 
 	k_unlock(&g_windowManager.mutex);
 
@@ -505,7 +817,7 @@ qword k_findWindowByTitle(const char* title) {
 	titleLen = k_strlen(title);
 
 	/**
-	  loop from the first window (background window),
+	  loop from the first window (the top window),
 	  and find the window matching title.
 	*/
 	k_lock(&g_windowManager.mutex);
@@ -539,7 +851,7 @@ qword k_getTopWindowId(void) {
 
 	k_lock(&g_windowManager.mutex);
 
-	topWindow = k_getTailFromList(&g_windowManager.windowList);
+	topWindow = k_getHeadFromList(&g_windowManager.windowList);
 	if (topWindow != null) {
 		topWindowId = topWindow->link.id;
 
@@ -568,7 +880,7 @@ bool k_moveWindowToTop(qword windowId) {
 
 	window = k_removeList(&g_windowManager.windowList, windowId);
 	if (window != null) {
-		k_addListToTail(&g_windowManager.windowList, window);
+		k_addListToHead(&g_windowManager.windowList, window);
 		k_convertRectScreenToWindow(windowId, &window->area, &area);
 		flags = window->flags;
 	}
@@ -1326,7 +1638,7 @@ void k_moveMouseCursor(int x, int y) {
 	k_unlock(&g_windowManager.mutex);
 
 	// redraw window by previous mouse area.
-	k_redrawWindowByArea(&prevArea);
+	k_redrawWindowByArea(WINDOW_INVALIDID, &prevArea);
 
 	// draw mouse cursor at current mouse position.
 	k_drawMouseCursor(x, y);

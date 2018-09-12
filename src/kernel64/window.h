@@ -10,7 +10,7 @@
 
 /**
   < GUI System Structure >
-                              window manager                                           process1
+                              window manager                                           GUI task1
              ----------------------------------------------------          ------------------------------------
              |                window list                       | mouse    |  window1              task1      |
              |          (connected by z-order)                  | ,window  | ----------        -------------- |
@@ -26,7 +26,7 @@
              | ------------------------------- event            |          |  ...                             |
              ----------------------------------------------------          ------------------------------------
                               |      |
-                            -----  -----                         ------->              process2
+                            -----  -----                         ------->              GUI task2
                             |   |  |   |                         <-------
                             -----  -----                                               ...
                          keyboard  mouse
@@ -63,6 +63,9 @@
 
 // background window title
 #define WINDOW_BACKGROUNDWINDOWTITLE "SYS_BACKGROUND"
+
+// max copied area array count
+#define WINDOW_MAXCOPIEDAREAARRAYCOUNT 20
 
 // mouse cursor width and height
 #define MOUSE_CURSOR_WIDTH  20
@@ -114,11 +117,11 @@
 #define EVENT_KEY_UP   14
 
 // screen update event
-#define EVENT_SCREENUPDATE_BYID         15 // screen coordinates
-#define EVENT_SCREENUPDATE_BYWINDOWAREA 16 // window coordinates
-#define EVENT_SCREENUPDATE_BYSCREENAREA 17 // screen coordinates
+#define EVENT_SCREENUPDATE_BYID         15 // Window.area (screen coordinates)
+#define EVENT_SCREENUPDATE_BYWINDOWAREA 16 // ScreenUpdateEvent.area (window coordinates)
+#define EVENT_SCREENUPDATE_BYSCREENAREA 17 // ScreenUpdateEvent.area (screen coordinates)
 
-// macro function
+/* macro function */
 #define GETWINDOWOFFSET(windowId) ((windowId) & 0xFFFFFFFF) // get low 32 bits of window.link.id (64 bits)
 
 #pragma pack(push, 1)
@@ -138,7 +141,10 @@ typedef struct k_WindowEvent {
 	qword windowId; // window ID to send event
 	                //     : window ID is not necessarily required for window event.
 	                //       But, window ID is necessarily required for screen update event.
-	Rect area;      // window area (screen coordinates)
+	Rect area;      // window area: - window event (screen coordinates)
+	                //              - screen update by ID event (not use this area, but use Window.area)
+	                //              - screen update by window area event (window coordinates)
+	                //              - screen update by screen area event (screen coordinates)
 } WindowEvent, ScreenUpdateEvent;
 
 // key event: window manager -> window
@@ -168,6 +174,14 @@ typedef struct k_Event {
 	};
 } Event;
 
+// screen bitmap (screen update bitmap)
+typedef struct k_ScreenBitmap {
+	Rect area;    // update area (screen coordinates)
+	byte* bitmap; // bitmap: A bit in bitmap represents a pixel in update area.
+	              //         - 1: on (to update)
+	              //         - 0: off (updated)
+} ScreenBitmap;
+
 typedef struct k_Window {
 	ListLink link;      // window link: It consists of next window address (link.next) and window ID (link.id).
 	                    //              window ID consists of allocated window count (high 32 bits) and window offset (low 32 bits).
@@ -195,8 +209,7 @@ typedef struct k_WindowPoolManager {
 typedef struct k_WindowManager {
 	Mutex mutex;              // mutex
 	List windowList;          // window list: connected by z-order. 
-	                          //              Getting closer to the tail in window list means getting closer to the top in screen.
-	                          //              (head -> tail == the bottom window -> the top window)
+	                          //              head -> tail == the top window -> the bottom window
 	int mouseX;               // mouse x (screen coordinates): always inside screen
 	int mouseY;               // mouse y (screen coordinates): always inside screen
 	Rect screenArea;          // screen area (screen coordinates)
@@ -207,6 +220,7 @@ typedef struct k_WindowManager {
 	byte prevButtonStatus;    // previous mouse button status
 	bool windowMoving;        // window moving flag
 	qword movingWindowId;     // moving window ID
+	byte* screenBitmap;       // screen bitmap
 } WindowManager;
 
 #pragma pack(pop)
@@ -227,8 +241,12 @@ bool k_deleteAllWindowsByTask(qword taskId);
 Window* k_getWindow(qword windowId);
 Window* k_getWindowWithLock(qword windowId);
 bool k_showWindow(qword windowId, bool show);
-bool k_redrawWindowByArea(const Rect* area); // screen coordinates
-static void k_copyWindowBufferToVideoMem(const Window* window, const Rect* copyArea);
+bool k_redrawWindowByArea(qword windowId, const Rect* area); // screen coordinates
+static void k_copyWindowBufferToVideoMem(const Window* window, ScreenBitmap* bitmap);
+bool k_createScreenBitmap(ScreenBitmap* bitmap, const Rect* area);
+static bool k_fillScreenBitmap(const ScreenBitmap* bitmap, const Rect* area, bool on);
+bool k_getStartOffsetInScreenBitmap(const ScreenBitmap* bitmap, int x, int y, int* byteOffset, int* bitOffset);
+bool k_isScreenBitmapAllOff(const ScreenBitmap* bitmap);
 qword k_findWindowByPoint(int x, int y);
 qword k_findWindowByTitle(const char* title);
 bool k_existWindow(qword windowId);

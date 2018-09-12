@@ -13,15 +13,17 @@
 // smallest block size (1KB)
 #define DMEM_MIN_SIZE (1 * 1024)
 
-// bit map flag
+// bitmap flag
 #define DMEM_EXIST 0x01 // block EXIST: block can be allocated.
 #define DMEM_EMPTY 0x00 // block EMPTY: block can't be allocated, because it's already allocated or combined.
 
 #pragma pack(push, 1)
 
 typedef struct k_Bitmap {
-	byte* bitmap;        // address of real bit map
-	qword existBitCount; // exist bit count: bit 1 count in bit map
+	byte* bitmap;        // address of real bitmap: A bit in bitmap represents a block in block list.
+	                     //                         - 1: exist
+	                     //                         - 0: not exist
+	qword existBitCount; // exist bit count: bit 1 count in bitmap
 } Bitmap;
 
 typedef struct k_DynamicMemManager {
@@ -32,7 +34,7 @@ typedef struct k_DynamicMemManager {
 	qword startAddr;               // block pool start address
 	qword endAddr;                 // block pool end address
 	byte* allocatedBlockListIndex; // address of index area (address of area saving allocated block list index)
-	Bitmap* bitmapOfLevel;         // address of bit map structure
+	Bitmap* bitmapOfLevel;         // address of bitmap structure
 } DynamicMemManager;
 
 #pragma pack(pop)

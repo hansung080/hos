@@ -77,7 +77,7 @@ int k_memcpy(void* dest, const void* src, int size) {
 		((qword*)dest)[i] = ((qword*)src)[i];
 	}
 	
-	// copy remaining memory by 1 bytes.
+	// copy remaining memory by 1 byte.
 	remainBytesOffset = i * 8;
 	for (i = 0; i < (size % 8); i++) {
 		((char*)dest)[remainBytesOffset] = ((char*)src)[remainBytesOffset];

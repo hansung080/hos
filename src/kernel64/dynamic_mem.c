@@ -31,13 +31,13 @@ void k_initDynamicMem(void) {
 		g_dynamicMemManager.allocatedBlockListIndex[i] = 0xFF;
 	}
 	
-	// set the address of bit map structure.
+	// set the address of bitmap structure.
 	g_dynamicMemManager.bitmapOfLevel = (Bitmap*)(DMEM_START_ADDRESS + (sizeof(byte) * g_dynamicMemManager.smallestBlockCount));
 	
-	// set the address of real bit map.
+	// set the address of real bitmap.
 	currentBitmapPos = ((byte*)g_dynamicMemManager.bitmapOfLevel) + (sizeof(Bitmap) * g_dynamicMemManager.maxLevelCount);
 	
-	// initialize bit map looping by block list.
+	// initialize bitmap looping by block list.
 	// set EXIST to the biggest block and the leftover blocks, and set EMPTY to the other blocks.
 	for (j = 0; j < g_dynamicMemManager.maxLevelCount; j++) {
 		
@@ -110,10 +110,10 @@ static int k_calcMetaBlockCount(qword dynamicRamSize) {
 	
 	bitmapSize = 0;
 	for (i = 0; (smallestBlockCount >> i) > 0; i++) {
-		// calculate the size of bit map structure area.
+		// calculate the size of bitmap structure area.
 		bitmapSize += sizeof(Bitmap);
 		
-		// calculate the size of real bit map area (aligned with byte unit, rounding up)
+		// calculate the size of real bitmap area (aligned with byte unit, rounding up)
 		bitmapSize += ((smallestBlockCount >> i) + 7) / 8;
 	}
 	
@@ -124,7 +124,7 @@ static int k_calcMetaBlockCount(qword dynamicRamSize) {
 void* k_allocMem(qword size) {
 	qword alignedSize;   // aligned with buddy block size
 	qword relativeAddr;  // relative address from block pool start address
-	long offset;         // bit map offset of allocated block
+	long offset;         // bitmap offset of allocated block
 	int sizeArrayOffset; // byte unit offset of allocated block
 	int blockListIndex;  // block list index matching block size
 	
@@ -141,7 +141,7 @@ void* k_allocMem(qword size) {
 		return null;
 	}
 	
-	// allocate buddy block, and return bit map offset of block list of the allocated block.
+	// allocate buddy block, and return bitmap offset of block list of the allocated block.
 	offset = k_allocBuddyBlock(alignedSize);
 	if (offset == -1) {
 		k_printf("dynamic memory error: buddy block allocation error\n");
@@ -179,7 +179,7 @@ static qword k_getBuddyBlockSize(qword size) {
 
 static int k_allocBuddyBlock(qword alignedSize) {
 	int blockListIndex; // block list index matching block size
-	int freeOffset;     // bit map offset of existing block
+	int freeOffset;     // bitmap offset of existing block
 	int i;
 	
 	// search block list index matching block size.
@@ -193,7 +193,7 @@ static int k_allocBuddyBlock(qword alignedSize) {
 	// search EXIST block going up from matching block list to the highest block list.
 	for (i = blockListIndex; i < g_dynamicMemManager.maxLevelCount; i++) {
 		
-		// search EXIST block checking bit map of block list.
+		// search EXIST block checking bitmap of block list.
 		freeOffset = k_findFreeBlockInBitmap(i);
 		if (freeOffset != -1) {
 			break;
@@ -248,12 +248,12 @@ static int k_findFreeBlockInBitmap(int blockListIndex) {
 	byte* bitmap;
 	qword* bitmap_;
 	
-	// fail if bit 1 count in bit map == 0
+	// fail if bit 1 count in bitmap == 0
 	if (g_dynamicMemManager.bitmapOfLevel[blockListIndex].existBitCount == 0) {
 		return -1;
 	}
 	
-	// get block count of block list, and search bit map as many as block count.
+	// get block count of block list, and search bitmap as many as block count.
 	maxCount = g_dynamicMemManager.smallestBlockCount >> blockListIndex;
 	bitmap = g_dynamicMemManager.bitmapOfLevel[blockListIndex].bitmap;
 	
@@ -271,7 +271,7 @@ static int k_findFreeBlockInBitmap(int blockListIndex) {
 			}
 		}
 		
-		// If offset bit in bit map == 1, return the offset (return bit map offset of EXIST block.)
+		// If offset bit in bitmap == 1, return the offset (return bitmap offset of EXIST block.)
 		if ((bitmap[i/8] & (DMEM_EXIST << (i % 8))) != 0) {
 			return i;
 		}
@@ -289,22 +289,22 @@ static void k_setFlagInBitmap(int blockListIndex, int offset, byte flag) {
 	
 	// set EXIST to block
 	if (flag == DMEM_EXIST) {
-		// If offset bit in bit map changes from 0 (EMPTY) to 1 (EXIST), increase EXIST bit count.
+		// If offset bit in bitmap changes from 0 (EMPTY) to 1 (EXIST), increase EXIST bit count.
 		if ((bitmap[offset/8] & (0x01 << (offset % 8))) == 0) {
 			g_dynamicMemManager.bitmapOfLevel[blockListIndex].existBitCount++;
 		}
 		
-		// set offset bit in bit map to 1 (EXIST).
+		// set offset bit in bitmap to 1 (EXIST).
 		bitmap[offset/8] |= (0x01 << (offset % 8));
 		
 	// set EMPTY to block
 	} else {
-		// If offset bit in bit map changes from 1 (EXIST) to 0 (EMPTY), decrease EXIST bit count.
+		// If offset bit in bitmap changes from 1 (EXIST) to 0 (EMPTY), decrease EXIST bit count.
 		if ((bitmap[offset/8] & (0x01 << (offset % 8))) != 0) {
 			g_dynamicMemManager.bitmapOfLevel[blockListIndex].existBitCount--;
 		}
 		
-		// set offset bit in bit map to 0 (EMPTY).
+		// set offset bit in bitmap to 0 (EMPTY).
 		bitmap[offset/8] &= ~(0x01 << (offset % 8));
 	}
 }
@@ -314,7 +314,7 @@ bool k_freeMem(void* addr) {
 	int sizeArrayOffset; // byte unit offset of free block
 	qword blockSize;     // size of free block
 	int blockListIndex;  // block list index of free block
-	int bitmapOffset;    // bit map offset of free block
+	int bitmapOffset;    // bitmap offset of free block
 	
 	if (addr == null) {
 		k_printf("dynamic memory error: address is null\n");
@@ -338,7 +338,7 @@ bool k_freeMem(void* addr) {
 	// calculate the size of free block.
 	blockSize = DMEM_MIN_SIZE << blockListIndex;
 	
-	// free buddy block using block list index and bit map offset.
+	// free buddy block using block list index and bitmap offset.
 	bitmapOffset = relativeAddr / blockSize;
 	if (k_freeBuddyBlock(blockListIndex, bitmapOffset) == true) {
 		
@@ -400,12 +400,12 @@ static byte k_getFlagInBitmap(int blockListIndex, int offset) {
 	
 	bitmap = g_dynamicMemManager.bitmapOfLevel[blockListIndex].bitmap;
 	
-	// If offset bit in bit map == 1, return EXIST.
+	// If offset bit in bitmap == 1, return EXIST.
 	if ((bitmap[offset/8] & (0x01 << (offset % 8))) != 0) {
 		return DMEM_EXIST;
 	}
 	
-	// If offset bit in bit map == 0, return EMPTY.
+	// If offset bit in bitmap == 0, return EMPTY.
 	return DMEM_EMPTY;
 }
 

@@ -3,6 +3,9 @@
 
 #include "types.h"
 
+// data integration count: It's recommended to be the same number as WINDOW_MAXCOPIEDAREAARRAYCOUNT.
+#define WINDOWMANAGER_DATAINTEGRATIONCOUNT 20
+
 void k_startWindowManager(void);
 bool k_processMouseData(void);
 bool k_processKey(void);

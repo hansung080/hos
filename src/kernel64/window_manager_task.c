@@ -49,29 +49,48 @@ bool k_processMouseData(void) {
 	byte changedButtonStatus;
 	Rect windowArea;
 	WindowManager* windowManager;
-
-	if (k_getMouseDataFromMouseQueue(&buttonStatus, &relativeX, &relativeY) == false) {
-		return false;
-	}
+	int i;
 
 	windowManager = k_getWindowManager();
 
-	k_getMouseCursorPos(&mouseX, &mouseY);
+	/* integrate mouse data: integrate only mouse movement data */
+	for (i = 0; i < WINDOWMANAGER_DATAINTEGRATIONCOUNT; i++) {
+		if (k_getMouseDataFromMouseQueue(&buttonStatus, &relativeX, &relativeY) == false) {
+			if (i == 0) {
+				return false;
 
-	prevMouseX = mouseX;
-	prevMouseY = mouseY;
+			} else {
+				break;	
+			}
+		}
 
-	mouseX += relativeX;
-	mouseY += relativeY;
+		k_getMouseCursorPos(&mouseX, &mouseY);
 
-	// move mouse cursor and call k_getMouseCursorPos to get mouse position always inside screen,
-	// because k_moveMouseCursor adjusts mouse position when it's outside screen. 
-	k_moveMouseCursor(mouseX, mouseY);
-	k_getMouseCursorPos(&mouseX, &mouseY);
+		if (i == 0) {
+			prevMouseX = mouseX;
+			prevMouseY = mouseY;
+		}		
+
+		mouseX += relativeX;
+		mouseY += relativeY;
+
+		// move mouse cursor and call k_getMouseCursorPos to get mouse position always inside screen,
+		// because k_moveMouseCursor adjusts mouse position when it's outside screen. 
+		k_moveMouseCursor(mouseX, mouseY);
+		k_getMouseCursorPos(&mouseX, &mouseY);
+
+		changedButtonStatus = windowManager->prevButtonStatus ^ buttonStatus;
+
+		// If mouse button changed, process mouse data immediately,
+		// because mouse button data can not be integrated.
+		if (changedButtonStatus != 0) {
+			break;
+		}
+	}
+
+	/* process mouse data */
 
 	underMouseWindowId = k_findWindowByPoint(mouseX, mouseY);
-
-	changedButtonStatus = windowManager->prevButtonStatus ^ buttonStatus;
 
 	/* left button changed */
 	if (changedButtonStatus & MOUSE_LBUTTONDOWN) {
@@ -164,42 +183,106 @@ bool k_processKey(void) {
 }
 
 bool k_processWindowManagerEvent(void) {
-	Event event;
+	Event events[WINDOWMANAGER_DATAINTEGRATIONCOUNT];
+	int eventCount;
 	ScreenUpdateEvent* screenUpdateEvent;
-	qword windowId;
+	ScreenUpdateEvent* nextScreenUpdateEvent;
 	Rect area;
+	int i, j;
 
-	if (k_recvEventFromWindowManager(&event) == false) {
-		return false;
+	/* accumulate window manager event */
+	for (i = 0; i < WINDOWMANAGER_DATAINTEGRATIONCOUNT; i++) {
+		if (k_recvEventFromWindowManager(&events[i]) == false) {
+			if (i == 0) {
+				return false;
+
+			} else {
+				break;
+			}
+		}
+
+		// save area of screen update by ID event,
+		// by converting area from screen coordinates to window coordinates.
+		if (events[i].type == EVENT_SCREENUPDATE_BYID) {
+			screenUpdateEvent = &events[i].screenUpdateEvent;
+
+			if (k_getWindowArea(screenUpdateEvent->windowId, &area) == false) {
+				k_setRect(&screenUpdateEvent->area, 0, 0, 0, 0);
+
+			} else {
+				k_setRect(&screenUpdateEvent->area, 0, 0, k_getRectWidth(&area) - 1, k_getRectHeight(&area) - 1);
+			}
+		}
 	}
 	
-	switch (event.type) {
-	case EVENT_SCREENUPDATE_BYID:
-		screenUpdateEvent = &event.screenUpdateEvent;
-
-		if (k_getWindowArea(screenUpdateEvent->windowId, &area) == true) {
-			k_redrawWindowByArea(&area);
+	/* integrate window manager event: integrate screen update event with same window ID and included area. */
+	eventCount = i;
+	for (i = 0; i < eventCount; i++) {
+		if ((events[i].type != EVENT_SCREENUPDATE_BYID) && (events[i].type != EVENT_SCREENUPDATE_BYWINDOWAREA) && (events[i].type != EVENT_SCREENUPDATE_BYSCREENAREA)) {
+			continue;
 		}
 
-		break;
+		screenUpdateEvent = &events[i].screenUpdateEvent;
 
-	case EVENT_SCREENUPDATE_BYWINDOWAREA:
-		screenUpdateEvent = &event.screenUpdateEvent;
+		for (j == i + 1; j < eventCount; j++) {
+			if ((events[j].type != EVENT_SCREENUPDATE_BYID) && (events[j].type != EVENT_SCREENUPDATE_BYWINDOWAREA) && (events[j].type != EVENT_SCREENUPDATE_BYSCREENAREA)) {
+				continue;
+			}
 
-		if (k_convertRectWindowToScreen(screenUpdateEvent->windowId, &screenUpdateEvent->area, &area) == true) {
-			k_redrawWindowByArea(&area);
+			nextScreenUpdateEvent = &events[j].screenUpdateEvent;
+
+			// - valid window ID: screen update by ID event (window coordinates)
+			//                   ,screen update by window area event (window coordinates)
+			// - invalid window ID: screen update by screen area event (screen coordinates)
+			// Area of valid and same window ID event can be integrated,
+			// and area of invalid window ID event can be integrated.
+			// It means that area of window coordinates with same window ID can be integrated,
+			// and area of screen coordinates can be integrated.
+			if (screenUpdateEvent->windowId != nextScreenUpdateEvent->windowId) {
+				continue;
+			}
+
+			if (k_getOverlappedRect(&screenUpdateEvent->area, &nextScreenUpdateEvent->area, &area) == false) {
+				continue;
+			}
+
+			// If current event area is included in next event area,
+			// select next event area which is larger one to integrate those two areas.
+			if (k_memcmp(&screenUpdateEvent->area, &area, sizeof(Rect)) == 0) {
+				k_memcpy(&screenUpdateEvent->area, &nextScreenUpdateEvent->area, sizeof(Rect));
+				events[j].type = EVENT_UNKNOWN;
+
+			// If next event area is included in current event area,
+			// select current event area which is larger one to integrate those two areas.
+			} else if (k_memcmp(&nextScreenUpdateEvent->area, &area, sizeof(Rect)) == 0) {
+				events[j].type = EVENT_UNKNOWN;
+			}
 		}
+	}
 
-		break;
+	/* process window manager event */
+	for (i = 0; i <WINDOWMANAGER_DATAINTEGRATIONCOUNT; i++) {
+		switch (events[i].type) {
+		case EVENT_SCREENUPDATE_BYID:         // window coordinates
+		case EVENT_SCREENUPDATE_BYWINDOWAREA: // window coordinates
+			screenUpdateEvent = &events[i].screenUpdateEvent;
 
-	case EVENT_SCREENUPDATE_BYSCREENAREA:
-		screenUpdateEvent = &event.screenUpdateEvent;
+			if (k_convertRectWindowToScreen(screenUpdateEvent->windowId, &screenUpdateEvent->area, &area) == true) {
+				k_redrawWindowByArea(screenUpdateEvent->windowId, &area);
+			}
 
-		k_redrawWindowByArea(&screenUpdateEvent->area);
-		break;
+			break;
 
-	default:
-		break;
+		case EVENT_SCREENUPDATE_BYSCREENAREA: // screen coordinates
+			screenUpdateEvent = &events[i].screenUpdateEvent;
+
+			k_redrawWindowByArea(WINDOW_INVALIDID, &screenUpdateEvent->area);
+
+			break;
+
+		default:
+			break;
+		}
 	}
 
 	return true;

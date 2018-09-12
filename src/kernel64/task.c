@@ -87,6 +87,26 @@ static void k_freeTask(qword taskId) {
 	k_unlockSpin(&(g_taskPoolManager.spinlock));
 }
 
+/**
+  < Task Management >
+  1. Create Task
+    -------------------
+    |        -------- |  -> Outer one is ready list.
+    |P1->P2->|T3=>T4| |  -> Inner one is child thread list.
+    |        -------- |
+    -------------------
+  
+  2. End P2 Process
+    ------------
+    |T3->T4->P2|  -> end list
+    ------------
+  
+  3. End T3 Thread
+    ----
+    |T3|  -> end list
+    ----
+*/
+
 Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr, byte affinity) {
 	Task* task;    // task to create (task means process or thread)
 	Task* process; // process with running task in it (It means process which has created the task, or it means parent process.)
@@ -110,27 +130,7 @@ Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAd
 		k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
 		return null;
 	}
-	
-	/**
-	  < Task Management >
-	  1. Create Task
-	    -------------------
-	    |        -------- |  -> Outer one is ready list.
-	    |P1->P2->|T3=>T4| |  -> Inner one is child thread list.
-	    |        -------- |
-	    -------------------
-	  
-	  2. End P2 Process
-	    ------------
-	    |T3->T4->P2|  -> end list
-	    ------------
-	  
-	  3. End T3 Thread
-	    ----
-	    |T3|  -> end list
-	    ----
-	*/
-	
+		
 	// If creating thread.
 	if (flags & TASK_FLAGS_THREAD) {
 		
