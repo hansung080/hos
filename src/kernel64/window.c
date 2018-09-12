@@ -581,7 +581,7 @@ static void k_copyWindowBufferToVideoMem(const Window* window, ScreenBitmap* bit
 				for (i = bitOffset; i < lastBitOffset; i++) {
 					if (data & (0x01 << i)) {
 						*currentVideoMem = *currentWindowBuffer;
-						data &= 0x01 << i;
+						data &= ~(0x01 << i);
 					}
 
 					currentVideoMem++;
@@ -1637,7 +1637,7 @@ void k_moveMouseCursor(int x, int y) {
 
 	k_unlock(&g_windowManager.mutex);
 
-	// redraw window by previous mouse area.
+	// redraw window by previous mouse area (clear previous mouse cursor).
 	k_redrawWindowByArea(WINDOW_INVALIDID, &prevArea);
 
 	// draw mouse cursor at current mouse position.
