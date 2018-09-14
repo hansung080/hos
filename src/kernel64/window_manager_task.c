@@ -5,34 +5,75 @@
 #include "keyboard.h"
 #include "task.h" // [Temp] temporary code
 #include "gui_tasks.h" // [Temp] temporary code
+#include "fonts.h" // Screen Update Performance Test
 
 void k_startWindowManager(void) {
 	int mouseX, mouseY;
 	bool mouseResult;
 	bool keyResult;
 	bool windowManagerResult;
-
+	//====================================================================================================
+	/* Screen Update Performance Test */
+	qword lastTickCount;
+	qword loopCount;
+	qword prevLoopCount;
+	qword minLoopCount;
+	qword backgroundWindowId;
+	char loopCountBuffer[40];
+	Rect loopCountArea;
+	//====================================================================================================
+	
 	// initialize GUI.
 	k_initGui();
-
+	
 	// draw mouse cursor at current mouse position (center in screen).
 	k_getMouseCursorPos(&mouseX, &mouseY);
 	k_moveMouseCursor(mouseX, mouseY);
-
+	
+	//====================================================================================================
+	/* Screen Update Performance Test */
+	lastTickCount = k_getTickCount();
+	loopCount = 0;
+	prevLoopCount = 0;
+	minLoopCount = 0xFFFFFFFFFFFFFFFF;
+	backgroundWindowId = k_getBackgroundWindowId();
+	//====================================================================================================
+	
 	/* window manager task loop */
 	while (true) {
+		//====================================================================================================
+		/* Screen Update Performance Test */
+		// print minimum loop count among loop counts during 1 second.
+		if (k_getTickCount() - lastTickCount > 1000) {
+			lastTickCount = k_getTickCount();
+			
+			if (loopCount - prevLoopCount < minLoopCount) {
+				minLoopCount = loopCount - prevLoopCount;
+			}
+			
+			prevLoopCount = loopCount;
+			
+			k_sprintf(loopCountBuffer, "MIN Loop Count: %d", minLoopCount);
+			k_drawText(backgroundWindowId, 0, 0, RGB(0, 0, 0), WINDOW_COLOR_SYSTEMBACKGROUND, loopCountBuffer);
+			k_setRect(&loopCountArea, 0, 0, FONT_VERAMONO_ENG_WIDTH * k_strlen(loopCountBuffer) - 1, FONT_VERAMONO_ENG_HEIGHT - 1);
+			k_redrawWindowByArea(backgroundWindowId, &loopCountArea);
+		}
+		
+		loopCount++;
+		//====================================================================================================
+		
 		// process mouse data.
 		mouseResult = k_processMouseData();
-
+		
 		// process key.
 		keyResult = k_processKey();
-
+		
 		// process window manager event.
 		windowManagerResult = false;
 		while (k_processWindowManagerEvent() == true) {
 			windowManagerResult = true;
 		}
-
+		
 		// If no data/events have been processed, switch task.
 		if ((mouseResult == false) && (keyResult == false) && (windowManagerResult == false)) {
 			k_sleep(0);

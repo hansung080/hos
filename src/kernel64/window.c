@@ -1030,8 +1030,8 @@ bool k_convertRectScreenToWindow(qword windowId, const Rect* screenRect, Rect* w
 
 	windowRect->x1 = screenRect->x1 - area.x1;
 	windowRect->y1 = screenRect->y1 - area.y1;
-	windowRect->x2 = screenRect->x2 - area.x2;
-	windowRect->y2 = screenRect->y2 - area.y2;
+	windowRect->x2 = screenRect->x2 - area.x1;
+	windowRect->y2 = screenRect->y2 - area.y1;
 
 	return true;
 }
@@ -1045,8 +1045,8 @@ bool k_convertRectWindowToScreen(qword windowId, const Rect* windowRect, Rect* s
 
 	screenRect->x1 = windowRect->x1 + area.x1;
 	screenRect->y1 = windowRect->y1 + area.y1;
-	screenRect->x2 = windowRect->x2 + area.x2;
-	screenRect->y2 = windowRect->y2 + area.y2;
+	screenRect->x2 = windowRect->x2 + area.x1;
+	screenRect->y2 = windowRect->y2 + area.y1;
 
 	return true;	
 }
