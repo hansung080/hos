@@ -265,7 +265,7 @@ bool k_processWindowManagerEvent(void) {
 
 		screenUpdateEvent = &events[i].screenUpdateEvent;
 
-		for (j == i + 1; j < eventCount; j++) {
+		for (j = i + 1; j < eventCount; j++) {
 			if ((events[j].type != EVENT_SCREENUPDATE_BYID) && (events[j].type != EVENT_SCREENUPDATE_BYWINDOWAREA) && (events[j].type != EVENT_SCREENUPDATE_BYSCREENAREA)) {
 				continue;
 			}
