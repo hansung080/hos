@@ -341,7 +341,7 @@ Window* k_getWindow(qword windowId) {
 }
 
 /**
-  [Note]
+  [NOTE]
   Window manager mutex has higher priority than window mutex.
   Thus, In the case that window manager mutex and window mutex are getting a lock at the same time,
   make sure that window manager mutex gets a lock before window mutex gets a lock.
@@ -542,7 +542,7 @@ static void k_copyWindowBufferToVideoMem(const Window* window, ScreenBitmap* bit
 		for (copyX = 0; copyX < copyWidth; ) {
 			/* copy memory and set bitmap by byte unit */
 			if ((bitmap->bitmap[byteOffset] == 0xFF) && (bitOffset == 0) && ((copyWidth - copyX) >= 8)) {
-				// [Ref] remaining bit count in a line of copy area: copy width - copy x
+				// [REF] remaining bit count in a line of copy area: copy width - copy x
 				for (byteCount = 0; byteCount < ((copyWidth - copyX) >> 3); byteCount++) {
 					if (bitmap->bitmap[byteOffset + byteCount] != 0xFF) {
 						break;
@@ -672,7 +672,7 @@ static bool k_fillScreenBitmap(const ScreenBitmap* bitmap, const Rect* area, boo
 		for (fillX = 0; fillX < fillWidth; ) {
 			/* set bitmap by byte unit */
 			if ((bitOffset == 0) && ((fillWidth - fillX) >= 8)) {
-				// [Ref] remaining bit count in a line of fill area: fill width - fill x
+				// [REF] remaining bit count in a line of fill area: fill width - fill x
 				byteCount = (fillWidth - fillX) >> 3; // byte count = (fill width - fill x) / 8
 
 				if (on == true) {

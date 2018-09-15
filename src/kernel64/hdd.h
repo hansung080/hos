@@ -106,8 +106,8 @@ int k_writeHddSector(bool primary, bool master, dword lba, int sectorCount, char
 void k_setHddInterruptFlag(bool primary, bool flag);
 static void k_swapByteInWord(word* data, int wordCount);
 static byte k_readHddStatus(bool primary);
-static bool k_isHddBusy(bool primary);  // [Note] implemented by hs.kwon.
-static bool k_isHddReady(bool primary); // [Note] implemented by hs.kwon.
+static bool k_isHddBusy(bool primary);  // [NOTE] implemented by hs.kwon.
+static bool k_isHddReady(bool primary); // [NOTE] implemented by hs.kwon.
 static bool k_waitHddNoBusy(bool primary);
 static bool k_waitHddReady(bool primary);
 static bool k_waitHddInterrupt(bool primary);

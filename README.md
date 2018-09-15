@@ -127,7 +127,7 @@ on your computer or QEMU.
 - over: overlapped
 
 < Comment >
-- [Note]: important comment
-- [Ref]: reference comment
-- [Todo]: to do
-- [Temp]: temporary code
+- [NOTE]: important comment
+- [REF]: reference comment
+- [TODO]: to do
+- [TEMP]: temporary code

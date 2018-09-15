@@ -444,7 +444,7 @@ bool k_changeTaskPriority(qword taskId, byte priority) {
 
 /**
   < Context Switching >
-  [Ref] - interrupt switching: context switching between task and interrupt handler.
+  [REF] - interrupt switching: context switching between task and interrupt handler.
         - task switching: context switching between task and task.
   
   1. interrupt switching: It occurs when interrupts occur.
@@ -997,7 +997,7 @@ void k_idleTask(void) {
 				                 wait until child threads in end list are completely ended, and finally completely end process itself.
 				                 (End means to move tasks from ready list to end list.)
 				                 (Totally end means to free memory of tasks in end list.)
-				  [Ref] free memory of process: free code/data area, task, stack.
+				  [REF] free memory of process: free code/data area, task, stack.
 				        free memory of thread: free task, stack.
 				 */
 				if (task->flags & TASK_FLAGS_PROCESS) {
@@ -1038,7 +1038,7 @@ void k_idleTask(void) {
 						
 					// If all child threads are completely ended, end process itself completely.
 					} else {
-						// [Todo] free code/data area of end process.
+						// [TODO] free code/data area of end process.
 					}
 					
 				/**

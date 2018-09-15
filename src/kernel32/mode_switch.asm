@@ -62,7 +62,7 @@ k_switchToKernel64:
 	
 	; CR0 control register: PG(bit 31)=1, CD(bit 30)=0, NW(bit 29)=0, TS(bit 3)=1, EM(bit 2)=0, MP(bit 1)=1
 	; -> enable paging, cache, FPU
-	; -> NW(bit 29)=0: [Note] NW must be set to 1 to use the write back policy.
+	; -> NW(bit 29)=0: [NOTE] NW must be set to 1 to use the write back policy.
 	mov eax, cr0
 	or eax, 0xE000000E
 	xor eax, 0x60000004

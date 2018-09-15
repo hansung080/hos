@@ -88,7 +88,7 @@ typedef struct k_Task {
 	//--------------------------------------------------
 	ListLink link;           // scheduler link: It consists of next task address (link.next) and task ID (link.id).
 	                         //                 task ID consists of allocated task count (high 32 bits) and task offset (low 32 bits).
-	                         //                 [Note] ListLink must be the first field.
+	                         //                 [NOTE] ListLink must be the first field.
 	qword flags;             // task flags: bit 0~7 : task priority
 							 //             bit 63  : end task flag
 	                         //             bit 62  : system task flag
@@ -104,7 +104,7 @@ typedef struct k_Task {
 	ListLink threadLink;     // child thread link: It consists of next child thread address (threadLink.next) and thread ID (threadLink.id).
 	qword parentProcessId;   // parent process ID
 	qword fpuContext[512/8]; // FPU context (512 bytes-fixed)
-	                         //     : [Note] The start address of FPU context must be the multiple of 16 bytes.
+	                         //     : [NOTE] The start address of FPU context must be the multiple of 16 bytes.
 	                         //       To guarantee it, the conditions below must be satisfied.
 	                         //       - Condition 1: The start address of task pool must be the multiple of 16 bytes. (currently, It's 0x800000 (8 MBytes).)
 	                         //       - Condition 2: The size of each task must be the multiple of 16 bytes. (currently, It's 816 bytes.)

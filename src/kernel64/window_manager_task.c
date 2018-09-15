@@ -3,9 +3,27 @@
 #include "util.h"
 #include "mouse.h"
 #include "keyboard.h"
-#include "task.h" // [Temp] temporary code
-#include "gui_tasks.h" // [Temp] temporary code
+#include "task.h" // [TEMP] temporary code
+#include "gui_tasks.h" // [TEMP] temporary code
 #include "fonts.h" // Screen Update Performance Test
+
+/**
+  < Screen Update Performance Test >
+  - LPS: Loop Per Second
+  - Target loop is window manager task loop which has something to do with the screen update performance.
+  - This test checks minimum loop count among loop counts during 1 second.
+  - The greater loop count means the better performance.
+  
+  < Test Result >
+    This test used Hello World Window.
+    Window Count : MIN Loop Count
+           - 0   : 315
+           - 1   : 270
+           - 20  : 200
+           - 40  : 110
+           - 90  : 35
+           - 170 : 35
+*/
 
 void k_startWindowManager(void) {
 	int mouseX, mouseY;
@@ -171,7 +189,7 @@ bool k_processMouseData(void) {
 		if (buttonStatus & MOUSE_RBUTTONDOWN) {
 			k_sendMouseEventToWindow(underMouseWindowId, EVENT_MOUSE_RBUTTONDOWN, mouseX, mouseY, buttonStatus);
 
-			// [Temp] This code is for test.
+			// [TEMP] This code is for test.
 			k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_helloWorldGuiTask, TASK_AFFINITY_LOADBALANCING);
 
 		/* right button up */

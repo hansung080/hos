@@ -185,7 +185,7 @@ typedef struct k_ScreenBitmap {
 typedef struct k_Window {
 	ListLink link;      // window link: It consists of next window address (link.next) and window ID (link.id).
 	                    //              window ID consists of allocated window count (high 32 bits) and window offset (low 32 bits).
-	                    //              [Note] ListLink must be the first field.
+	                    //              [NOTE] ListLink must be the first field.
 	Mutex mutex;        // mutex
 	Rect area;          // window area (screen coordinates)
 	Color* buffer;      // window buffer (window coordinates) address

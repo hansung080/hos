@@ -146,7 +146,7 @@ typedef struct k_MpConfigManager {
 	MpFloatingPointer* mpFloatingPointer;     // MP floating pointer address
 	MpConfigTableHeader* mpConfigTableHeader; // MP configuration table header address
 	qword baseEntryStartAddr;                 // base MP configuration table entry start address
-	int processorCount;                       // processor count: [Ref] processor means processor of multiprocessor or processor's core of multi-core processor.
+	int processorCount;                       // processor count: [REF] processor means processor of multiprocessor or processor's core of multi-core processor.
 	bool picMode;                             // PIC mode flag
 	byte isaBusId;                            // ISA bus ID
 } MpConfigManager;

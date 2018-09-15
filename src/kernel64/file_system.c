@@ -481,7 +481,7 @@ static bool k_setClusterLinkData(dword clusterIndex, dword data) {
 	
 	sectorOffset = clusterIndex / 128;
 	
-	// [Note] it's added by hs.kwon
+	// [NOTE] it's added by hs.kwon
 	if ((sectorOffset < 0) || (sectorOffset >= g_fileSystemManager.clusterLinkAreaSize)) {
 		return false;
 	}

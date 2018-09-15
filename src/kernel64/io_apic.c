@@ -38,7 +38,7 @@ void k_readIoRedirectionTable(int intin, IoRedirectionTable* table) {
 	data = (qword*)table;
 	
 	/* read high 32 bits of IO Redirection Table Register */
-	// [Ref] IO Redirection Table is low-high register pairs, so its index is intin * 2.
+	// [REF] IO Redirection Table is low-high register pairs, so its index is intin * 2.
 	// write High IO Redirection Table Register index to IO Register Selector Register,
 	// and read High IO Redirection Table Register data from IO Window Register.
 	*(dword*)(ioApicBaseAddr + IOAPIC_REGISTER_IOREGISTERSELECTOR) = IOAPIC_REGISTERINDEX_HIGHIOREDIRECTIONTABLE + (intin * 2);

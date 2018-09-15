@@ -13,7 +13,7 @@ typedef struct k_ListLink {
 /**
   < List Item Definition Example >
       typedef struct k_ListItem {
-          ListLink link; // [Note] ListLink must be the first field.
+          ListLink link; // [NOTE] ListLink must be the first field.
           char data1;
           int data2;
       } ListItem; // ListItem is a node of list.

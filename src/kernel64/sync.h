@@ -47,8 +47,8 @@ typedef struct k_Spinlock {
 #pragma pack(pop)
 
 #if 0
-bool k_lockSystem(void); // [Note] Systemlock is not safe in multi-core processor.
-void k_unlockSystem(bool interruptFlag); // [Note] Systemlock is not safe in multi-core processor.
+bool k_lockSystem(void); // [NOTE] Systemlock is not safe in multi-core processor.
+void k_unlockSystem(bool interruptFlag); // [NOTE] Systemlock is not safe in multi-core processor.
 #endif
 
 void k_initMutex(Mutex* mutex);

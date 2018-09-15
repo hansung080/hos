@@ -814,7 +814,7 @@ static void k_killTask(const char* paramBuffer) {
 			taskId = k_atoi(taskId_, 10);
 		}
 		
-		// [Note] To exit the task, it requires only the offset (low 32 bits) of parameter TaskID,
+		// [NOTE] To exit the task, it requires only the offset (low 32 bits) of parameter TaskID,
 		//        because parameter TaskID has been overrided with real TaskID from task pool.
 		task = k_getTaskFromPool(GETTASKOFFSET(taskId));
 		taskId = task->link.id;

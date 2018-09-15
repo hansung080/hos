@@ -18,7 +18,7 @@
     - Output Buffer    : port 0x60, read only, save data from keyboard/mouse/output port to processor.
                          k_inPortByte(0x60) : data
 
-      [Ref] Output port is inside Keyboard Controller.
+      [REF] Output port is inside Keyboard Controller.
             To read/write data from/to output port, It requires to send the command to Control Register before.
  */
 
