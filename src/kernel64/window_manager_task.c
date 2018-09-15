@@ -302,7 +302,7 @@ bool k_processWindowManagerEvent(void) {
 	}
 
 	/* process window manager event */
-	for (i = 0; i <WINDOWMANAGER_DATAINTEGRATIONCOUNT; i++) {
+	for (i = 0; i < eventCount; i++) {
 		switch (events[i].type) {
 		case EVENT_SCREENUPDATE_BYID:         // window coordinates
 		case EVENT_SCREENUPDATE_BYWINDOWAREA: // window coordinates
