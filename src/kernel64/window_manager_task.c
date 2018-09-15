@@ -53,7 +53,7 @@ void k_startWindowManager(void) {
 			
 			prevLoopCount = loopCount;
 			
-			k_sprintf(loopCountBuffer, "MIN Loop Count: %d", minLoopCount);
+			k_sprintf(loopCountBuffer, "MIN Loop Count: %d   ", minLoopCount);
 			k_drawText(backgroundWindowId, 0, 0, RGB(0, 0, 0), WINDOW_COLOR_SYSTEMBACKGROUND, loopCountBuffer);
 			k_setRect(&loopCountArea, 0, 0, FONT_VERAMONO_ENG_WIDTH * k_strlen(loopCountBuffer) - 1, FONT_VERAMONO_ENG_HEIGHT - 1);
 			k_redrawWindowByArea(backgroundWindowId, &loopCountArea);
