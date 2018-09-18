@@ -20,7 +20,7 @@
 #include "mouse.h"
 #include "interrupt_handlers.h"
 #include "io_apic.h"
-#include "window_manager_task.h"
+#include "window_manager.h"
 
 void k_mainForAp(void);
 bool k_switchToMultiprocessorMode(void);

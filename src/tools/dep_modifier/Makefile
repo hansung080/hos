@@ -1,13 +1,13 @@
-# network-transfer Makefile
+# dep-modifier Makefile
 
 SRC_DIR=.
-OUT_DIR=../../../build/output/utils/network_transfer
+OUT_DIR=../../../build/output/tools/dep_modifier
 
-SRC=$(SRC_DIR)/network_transfer.c
-OBJ=$(OUT_DIR)/network_transfer.o
+SRC=$(SRC_DIR)/dep_modifier.c
+OBJ=$(OUT_DIR)/dep_modifier.o
 
-TARGET=$(OUT_DIR)/network-transfer
-TARGET_COPY=$(SRC_DIR)/network-transfer
+TARGET=$(OUT_DIR)/dep-modifier
+TARGET_COPY=$(SRC_DIR)/dep-modifier
 DEPENDENCY=$(OUT_DIR)/dependency.dep
 
 all: prepare dep $(TARGET)
@@ -24,6 +24,7 @@ $(OBJ): $(SRC)
 $(TARGET): $(OBJ)
 	gcc -o $@ $^
 	@echo $(TARGET) has been created successfully.
+	../../../build/output/tools/dep_modifier/dep-modifier $(DEPENDENCY) $(OUT_DIR)/
 
 install:
 	cp -f $(TARGET) $(TARGET_COPY)
@@ -31,7 +32,7 @@ install:
 clean:
 	rm -rf $(OUT_DIR)
 	rm -f $(TARGET_COPY)
-	
+
 ifeq ($(DEPENDENCY), $(wildcard $(DEPENDENCY)))
 include $(DEPENDENCY)
 endif

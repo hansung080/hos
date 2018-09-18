@@ -1,13 +1,13 @@
-# image-maker Makefile
+# network-transfer Makefile
 
 SRC_DIR=.
-OUT_DIR=../../../build/output/utils/image_maker
+OUT_DIR=../../../build/output/tools/network_transfer
 
-SRC=$(SRC_DIR)/image_maker.c
-OBJ=$(OUT_DIR)/image_maker.o
+SRC=$(SRC_DIR)/network_transfer.c
+OBJ=$(OUT_DIR)/network_transfer.o
 
-TARGET=$(OUT_DIR)/image-maker
-TARGET_COPY=$(SRC_DIR)/image-maker
+TARGET=$(OUT_DIR)/network-transfer
+TARGET_COPY=$(SRC_DIR)/network-transfer
 DEPENDENCY=$(OUT_DIR)/dependency.dep
 
 all: prepare dep $(TARGET)
@@ -17,6 +17,7 @@ prepare:
 
 dep:
 	gcc -MM $(SRC) > $(DEPENDENCY)
+	../../../build/output/tools/dep_modifier/dep-modifier $(DEPENDENCY) $(OUT_DIR)/
 
 $(OBJ): $(SRC)
 	gcc -o $@ -c $^
@@ -31,7 +32,7 @@ install:
 clean:
 	rm -rf $(OUT_DIR)
 	rm -f $(TARGET_COPY)
-
+	
 ifeq ($(DEPENDENCY), $(wildcard $(DEPENDENCY)))
 include $(DEPENDENCY)
 endif

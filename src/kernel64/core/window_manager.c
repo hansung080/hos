@@ -1,11 +1,11 @@
-#include "window_manager_task.h"
+#include "window_manager.h"
 #include "window.h"
 #include "util.h"
 #include "mouse.h"
 #include "keyboard.h"
 #include "task.h" // [TEMP] temporary code
-#include "gui_tasks.h" // [TEMP] temporary code
-#include "fonts.h" // Screen Update Performance Test
+#include "../gui_tasks/event_monitor.h" // [TEMP] temporary code
+#include "../fonts/fonts.h" // Screen Update Performance Test
 
 /**
   < Screen Update Performance Test >
@@ -16,13 +16,13 @@
   
   < Test Result >
     This test used Hello World Window.
-    Window Count : MIN Loop Count
-           - 0   : 315
-           - 1   : 270
-           - 20  : 200
-           - 40  : 110
-           - 90  : 35
-           - 170 : 35
+    Window Count : MIN Loop Count (Windows QEMU) : MIN Loop Count (Mac QEMU)
+    - 0   : 315 : 330
+    - 1   : 270 : 330
+    - 20  : 200 : 290
+    - 40  : 110 : 260
+    - 90  : 35  : 230
+    - 170 : 35  : 200
 */
 
 void k_startWindowManager(void) {
@@ -190,7 +190,7 @@ bool k_processMouseData(void) {
 			k_sendMouseEventToWindow(underMouseWindowId, EVENT_MOUSE_RBUTTONDOWN, mouseX, mouseY, buttonStatus);
 
 			// [TEMP] This code is for test.
-			k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_helloWorldGuiTask, TASK_AFFINITY_LOADBALANCING);
+			k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_eventMonitorTask, TASK_AFFINITY_LOADBALANCING);
 
 		/* right button up */
 		} else {

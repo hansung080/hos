@@ -1,6 +1,6 @@
 #include "2d_graphics.h"
 #include "vbe.h"
-#include "fonts.h"
+#include "../fonts/fonts.h"
 #include "util.h"
 
 inline void k_setRect(Rect* rect, int x1, int y1, int x2, int y2) {

@@ -2,7 +2,7 @@
 #include "vbe.h"
 #include "task.h"
 #include "multiprocessor.h"
-#include "fonts.h"
+#include "../fonts/fonts.h"
 #include "dynamic_mem.h"
 #include "util.h"
 #include "console.h"

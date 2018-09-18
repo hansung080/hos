@@ -1,5 +1,5 @@
-#ifndef __WINDOW_MANAGER_TASK_H__
-#define __WINDOW_MANAGER_TASK_H__
+#ifndef __WINDOW_MANAGER_H__
+#define __WINDOW_MANAGER_H__
 
 #include "types.h"
 
@@ -11,4 +11,4 @@ bool k_processMouseData(void);
 bool k_processKey(void);
 bool k_processWindowManagerEvent(void);
 
-#endif // __WINDOW_MANAGER_TASK_H__
+#endif // __WINDOW_MANAGER_H__

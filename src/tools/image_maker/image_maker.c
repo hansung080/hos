@@ -11,20 +11,27 @@
 #include <errno.h>
 #include <unistd.h>
 
+// argument
+#define ARG_TARGET argv[1]
+#define ARG_SRC1   argv[2]
+#define ARG_SRC2   argv[3]
+#define ARG_SRC3   argv[4]
+
 // Unix-based OS such as linux, macOS has no difference between binary file and text file.
 // Thus, O_BINARY option can be ignored on those OS.
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
+
 #define BYTES_OF_SECTOR 512
 
 int copyFile(int srcfd, int targetfd);
-int adjustInSectorSize(int fd, int srcSize);
+int adjustBySectorSize(int fd, int srcSize);
 void writeKernelInfo(int targetfd, int totalSectorCount, int kernel32SectorCount);
 
 int main(int argc, const char** argv) {
-	int srcfd;
 	int targetfd;
+	int srcfd;
 	int bootLoaderSectorCount;
 	int kernel32SectorCount;
 	int kernel64SectorCount;
@@ -32,62 +39,57 @@ int main(int argc, const char** argv) {
 	
 	// check parameter count.
 	if (argc != 5) {
-		fprintf(stderr, "[error] Usage) image_maker <target> <src1> <src2> <src3>\n");
+		fprintf(stderr, "[error] Usage) image-maker <target> <src1> <src2> <src3>\n");
 		exit(8);
 	}
-	
-	const char* targetFile = argv[1];
-	const char* srcFile1 = argv[2];
-	const char* srcFile2 = argv[3];
-	const char* srcFile3 = argv[4];
-	
+		
 	// open target file.
-	if ((targetfd = open(targetFile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | S_IREAD | S_IWRITE)) == -1) {
-		fprintf(stderr, "[error] %s opening failure\n", targetFile);
+	if ((targetfd = open(ARG_TARGET, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | S_IREAD | S_IWRITE)) == -1) {
+		fprintf(stderr, "[error] %s opening failure\n", ARG_TARGET);
 		exit(8);
 	}
 	
 	// open source file 1, copy it, and adjust size.
-	printf("[info] copy %s to %s\n", srcFile1, targetFile);
-	if ((srcfd = open(srcFile1, O_RDONLY | O_BINARY)) == -1) {
-		fprintf(stderr, "[error] %s opening failure\n", srcFile1);
+	printf("[info] copy %s to %s\n", ARG_SRC1, ARG_TARGET);
+	if ((srcfd = open(ARG_SRC1, O_RDONLY | O_BINARY)) == -1) {
+		fprintf(stderr, "[error] %s opening failure\n", ARG_SRC1);
 		exit(8);
 	}
 	
 	srcSize = copyFile(srcfd, targetfd);
 	close(srcfd);
 	
-	bootLoaderSectorCount = adjustInSectorSize(targetfd, srcSize);
-	printf("[info] %s info: file size: %d, sector count: %d\n", srcFile1, srcSize, bootLoaderSectorCount);
+	bootLoaderSectorCount = adjustBySectorSize(targetfd, srcSize);
+	printf("[info] %s info: file size: %d, sector count: %d\n", ARG_SRC1, srcSize, bootLoaderSectorCount);
 	
 	// open source file 2, copy it, and adjust size.
-	printf("[info] copy %s to %s\n", srcFile2, targetFile);
-	if ((srcfd = open(srcFile2, O_RDONLY | O_BINARY)) == -1) {
-		fprintf(stderr, "[error] %s opening failure\n", srcFile2);
+	printf("[info] copy %s to %s\n", ARG_SRC2, ARG_TARGET);
+	if ((srcfd = open(ARG_SRC2, O_RDONLY | O_BINARY)) == -1) {
+		fprintf(stderr, "[error] %s opening failure\n", ARG_SRC2);
 		exit(8);
 	}
 	
 	srcSize = copyFile(srcfd, targetfd);
 	close(srcfd);
 	
-	kernel32SectorCount = adjustInSectorSize(targetfd, srcSize);
-	printf("[info] %s info: file size: %d, sector count: %d\n", srcFile2, srcSize, kernel32SectorCount);
+	kernel32SectorCount = adjustBySectorSize(targetfd, srcSize);
+	printf("[info] %s info: file size: %d, sector count: %d\n", ARG_SRC2, srcSize, kernel32SectorCount);
 	
 	// open source file 3, copy it, and adjust size.
-	printf("[info] copy %s to %s\n", srcFile3, targetFile);
-	if ((srcfd = open(srcFile3, O_RDONLY | O_BINARY)) == -1) {
-		fprintf(stderr, "[error] %s opening failure\n", srcFile3);
+	printf("[info] copy %s to %s\n", ARG_SRC3, ARG_TARGET);
+	if ((srcfd = open(ARG_SRC3, O_RDONLY | O_BINARY)) == -1) {
+		fprintf(stderr, "[error] %s opening failure\n", ARG_SRC3);
 		exit(8);
 	}
 	
 	srcSize = copyFile(srcfd, targetfd);
 	close(srcfd);
 	
-	kernel64SectorCount = adjustInSectorSize(targetfd, srcSize);
-	printf("[info] %s info: file size: %d, sector count: %d\n", srcFile3, srcSize, kernel64SectorCount);
+	kernel64SectorCount = adjustBySectorSize(targetfd, srcSize);
+	printf("[info] %s info: file size: %d, sector count: %d\n", ARG_SRC3, srcSize, kernel64SectorCount);
 	
 	// write sector counts to target file.
-	printf("[info] write sector counts to %s\n", targetFile);
+	printf("[info] write sector counts to %s\n", ARG_TARGET);
 	writeKernelInfo(targetfd, kernel32SectorCount + kernel64SectorCount, kernel32SectorCount);
 	printf("[info] image-maker complete\n");
 	
@@ -121,7 +123,7 @@ int copyFile(int srcfd, int targetfd) {
 	return srcSize;
 }
 
-int adjustInSectorSize(int fd, int srcSize) {
+int adjustBySectorSize(int fd, int srcSize) {
 	int i;
 	int ajustSize;
 	char zero;
@@ -132,14 +134,14 @@ int adjustInSectorSize(int fd, int srcSize) {
 	
 	if (ajustSize != 0) {
 		ajustSize = BYTES_OF_SECTOR - ajustSize;
-		printf("[info] align file size: file size: %d, fill size: %u\n", srcSize, ajustSize);
+		printf("[info] adjust file size: file size: %d, fill size: %u\n", srcSize, ajustSize);
 		
 		for (i = 0; i < ajustSize; i++) {
 			write(fd, &zero, 1);
 		}
 		
 	} else {
-		printf("[info] already aligned: file size (%d) has been already aligned with sector size.\n", srcSize);
+		printf("[info] not adjust file size: file size (%d) has been already aligned with sector size.\n", srcSize);
 	}
 	
 	sectorCount = (srcSize + ajustSize) / BYTES_OF_SECTOR;

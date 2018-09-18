@@ -6,7 +6,7 @@ SRC_DIR_FROM_OUT=../../../src/kernel64
 NASM64=nasm -f elf64
 GCC64=x86_64-pc-linux-gcc -m64 -ffreestanding
 LD64=x86_64-pc-linux-ld -melf_x86_64 -T $(SRC_DIR_FROM_OUT)/linker_scripts/elf_x86_64.x -nostdlib -e k_main -Ttext 0x200000
-OBJCOPY64=x86_64-pc-linux-objcopy -j .text -j .data -j .rodata -j .bss -S -O binary
+OBJCOPY=x86_64-pc-linux-objcopy -j .text -j .data -j .rodata -j .bss -S -O binary
 
 TARGET=$(OUT_DIR)/kernel64.bin
 
@@ -15,6 +15,9 @@ all: prepare $(TARGET)
 
 prepare:
 	mkdir -p $(OUT_DIR)
+	mkdir -p $(OUT_DIR)/core
+	mkdir -p $(OUT_DIR)/fonts
+	mkdir -p $(OUT_DIR)/gui_tasks
 
 dep:
 	make -C $(OUT_DIR) -f $(SRC_DIR_FROM_OUT)/Makefile internal-dep
@@ -23,36 +26,52 @@ internal-build: dep
 	make -C $(OUT_DIR) -f $(SRC_DIR_FROM_OUT)/Makefile kernel64.elf
 
 $(TARGET): internal-build
-	$(OBJCOPY64) $(OUT_DIR)/kernel64.elf $@
+	$(OBJCOPY) $(OUT_DIR)/kernel64.elf $@
 
 install:
 
 clean:
 	rm -rf $(OUT_DIR)
 
-# This part below is called by the make command above and processed in OUT_DIR.
-EP_SRC=$(SRC_DIR_FROM_OUT)/entry_point.s
-EP_OBJ=entry_point.o
-C_SRCS=$(wildcard $(SRC_DIR_FROM_OUT)/*.c)
-ASM_SRCS=$(wildcard $(SRC_DIR_FROM_OUT)/*.asm)
-C_OBJS=$(notdir $(patsubst %.c, %.o, $(C_SRCS)))
-ASM_OBJS=$(notdir $(patsubst %.asm, %.o, $(ASM_SRCS)))
+# This part below is called by 'make' command above and processed in OUT_DIR.
+EP_SRC=$(SRC_DIR_FROM_OUT)/core/entry_point.s
+EP_OBJ=core/entry_point.o
+CORE_C_SRCS=$(wildcard $(SRC_DIR_FROM_OUT)/core/*.c)
+CORE_C_OBJS=$(patsubst %.c, core/%.o, $(notdir $(CORE_C_SRCS)))
+CORE_ASM_SRCS=$(wildcard $(SRC_DIR_FROM_OUT)/core/*.asm)
+CORE_ASM_OBJS=$(patsubst %.asm, core/%.o, $(notdir $(CORE_ASM_SRCS)))
+FONTS_C_SRCS=$(wildcard $(SRC_DIR_FROM_OUT)/fonts/*.c)
+FONTS_C_OBJS=$(patsubst %.c, fonts/%.o, $(notdir $(FONTS_C_SRCS)))
+GUITASKS_C_SRCS=$(wildcard $(SRC_DIR_FROM_OUT)/gui_tasks/*.c)
+GUITASKS_C_OBJS=$(patsubst %.c, gui_tasks/%.o, $(notdir $(GUITASKS_C_SRCS)))
+
+internal-dep:
+	$(GCC64) -MM $(CORE_C_SRCS) > core.dep
+	../tools/dep_modifier/dep-modifier core.dep core/
+	$(GCC64) -MM $(FONTS_C_SRCS) > fonts.dep
+	../tools/dep_modifier/dep-modifier fonts.dep fonts/
+	$(GCC64) -MM $(GUITASKS_C_SRCS) > gui_tasks.dep
+	../tools/dep_modifier/dep-modifier gui_tasks.dep gui_tasks/
+	cat core.dep fonts.dep gui_tasks.dep > dependency.dep
 
 $(EP_OBJ): $(EP_SRC)
 	$(NASM64) -o $@ $<
 
-%.o: $(SRC_DIR_FROM_OUT)/%.c
-	$(GCC64) -c $<
+core/%.o: $(SRC_DIR_FROM_OUT)/core/%.c
+	$(GCC64) -o $@ -c $<
 
-%.o: $(SRC_DIR_FROM_OUT)/%.asm
+core/%.o: $(SRC_DIR_FROM_OUT)/core/%.asm
 	$(NASM64) -o $@ $<
 
-internal-dep:
-	$(GCC64) -MM $(C_SRCS) > dependency.dep
-	
-kernel64.elf: $(EP_OBJ) $(C_OBJS) $(ASM_OBJS)
+fonts/%.o: $(SRC_DIR_FROM_OUT)/fonts/%.c
+	$(GCC64) -o $@ -c $<
+
+gui_tasks/%.o: $(SRC_DIR_FROM_OUT)/gui_tasks/%.c
+	$(GCC64) -o $@ -c $<
+
+kernel64.elf: $(EP_OBJ) $(CORE_C_OBJS) $(CORE_ASM_OBJS) $(FONTS_C_OBJS) $(GUITASKS_C_OBJS)
 	$(LD64) -o $@ $^
- 
+
 ifeq (dependency.dep, $(wildcard dependency.dep))
 include dependency.dep
 endif

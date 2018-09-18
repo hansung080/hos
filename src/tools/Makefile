@@ -1,11 +1,19 @@
-# utils Makefile
+# tools Makefile
 
-OUT_DIR=../../build/output/utils
+OUT_DIR=../../build/output/tools
 
-all: prepare image-maker network-transfer
+all: prepare dep-modifier image-maker network-transfer
 
 prepare:
 	mkdir -p $(OUT_DIR)
+
+dep-modifier:
+	@echo
+	@echo dep-modifier build start.
+	
+	make -C dep_modifier
+	
+	@echo dep-modifier build end.
 
 image-maker:
 	@echo
@@ -26,9 +34,11 @@ network-transfer:
 
 install:
 	make -C image_maker install
+	make -C dep_modifier install
 	make -C network_transfer install
 
 clean:
 	make -C image_maker clean
+	make -C dep_modifier clean
 	make -C network_transfer clean
 	rm -rf $(OUT_DIR)

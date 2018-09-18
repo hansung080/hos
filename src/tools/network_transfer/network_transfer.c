@@ -18,11 +18,13 @@
 #define byte  unsigned char
 #define dword unsigned int
 
-#define MIN(x, y)          (((x) < (y)) ? (x) : (y))
 #define SERIAL_FIFOMAXSIZE 16 // FIFO max size (16 bytes)
 
 #define SERVER_IP   "127.0.0.1"
 #define SERVER_PORT 7984
+
+/* macro function */
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 int main(int argc, const char** argv) {
 	char fileName[256];
