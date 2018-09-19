@@ -125,6 +125,7 @@ on your computer or QEMU.
 - han: hangul
 - eng: english
 - over: overlapped
+- app: application
 
 < Comment >
 - [NOTE]: important comment

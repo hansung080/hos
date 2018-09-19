@@ -3,9 +3,11 @@
 #include "util.h"
 #include "mouse.h"
 #include "keyboard.h"
-#include "task.h" // [TEMP] temporary code
-#include "../gui_tasks/event_monitor.h" // [TEMP] temporary code
+#include "task.h"
+#include "../gui_tasks/app_panel.h"
+#if 0
 #include "../fonts/fonts.h" // Screen Update Performance Test
+#endif
 
 /**
   < Screen Update Performance Test >
@@ -30,7 +32,7 @@ void k_startWindowManager(void) {
 	bool mouseResult;
 	bool keyResult;
 	bool windowManagerResult;
-	//====================================================================================================
+	#if 0
 	/* Screen Update Performance Test */
 	qword lastTickCount;
 	qword loopCount;
@@ -39,7 +41,7 @@ void k_startWindowManager(void) {
 	qword backgroundWindowId;
 	char loopCountBuffer[40];
 	Rect loopCountArea;
-	//====================================================================================================
+	#endif
 	
 	// initialize GUI.
 	k_initGui();
@@ -47,19 +49,22 @@ void k_startWindowManager(void) {
 	// draw mouse cursor at current mouse position (center in screen).
 	k_getMouseCursorPos(&mouseX, &mouseY);
 	k_moveMouseCursor(mouseX, mouseY);
+
+	// create app panel task.
+	k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_appPanelTask, TASK_AFFINITY_LOADBALANCING);
 	
-	//====================================================================================================
+	#if 0
 	/* Screen Update Performance Test */
 	lastTickCount = k_getTickCount();
 	loopCount = 0;
 	prevLoopCount = 0;
 	minLoopCount = 0xFFFFFFFFFFFFFFFF;
 	backgroundWindowId = k_getBackgroundWindowId();
-	//====================================================================================================
+	#endif
 	
 	/* window manager task loop */
 	while (true) {
-		//====================================================================================================
+		#if 0
 		/* Screen Update Performance Test */
 		// print minimum loop count among loop counts during 1 second.
 		if (k_getTickCount() - lastTickCount > 1000) {
@@ -78,7 +83,7 @@ void k_startWindowManager(void) {
 		}
 		
 		loopCount++;
-		//====================================================================================================
+		#endif
 		
 		// process mouse data.
 		mouseResult = k_processMouseData();
@@ -188,9 +193,6 @@ bool k_processMouseData(void) {
 		/* right button down */
 		if (buttonStatus & MOUSE_RBUTTONDOWN) {
 			k_sendMouseEventToWindow(underMouseWindowId, EVENT_MOUSE_RBUTTONDOWN, mouseX, mouseY, buttonStatus);
-
-			// [TEMP] This code is for test.
-			k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_eventMonitorTask, TASK_AFFINITY_LOADBALANCING);
 
 		/* right button up */
 		} else {

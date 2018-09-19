@@ -51,14 +51,14 @@
 #define WINDOW_COLOR_FRAME                      RGB(109, 218, 22)
 #define WINDOW_COLOR_BACKGROUND                 RGB(255, 255, 255)
 #define WINDOW_COLOR_TITLEBARTEXT               RGB(255, 255, 255)
-#define WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE   RGB(79, 204, 11)   // bright color
-#define WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE RGB(55, 135, 11)   // dark color
+#define WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE   RGB(79, 204, 11)   // bright green
+#define WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE RGB(55, 135, 11)   // dark green
 #define WINDOW_COLOR_TITLEBARBRIGHT1            RGB(183, 249, 171) // bright color
 #define WINDOW_COLOR_TITLEBARBRIGHT2            RGB(150, 210, 140) // bright color
 #define WINDOW_COLOR_TITLEBARDARK               RGB(46, 59, 30)    // dark color
 #define WINDOW_COLOR_BUTTONBRIGHT               RGB(229, 229, 229) // bright color
 #define WINDOW_COLOR_BUTTONDARK                 RGB(86, 86, 86)    // dark color
-#define WINDOW_COLOR_SYSTEMBACKGROUND           RGB(232, 255, 232)
+#define WINDOW_COLOR_SYSTEMBACKGROUND           RGB(232, 255, 232) // brighter green
 #define WINDOW_COLOR_CLOSEBUTTONMARK            RGB(71, 199, 21)   // 'X' mark on close button
 
 // background window title
@@ -72,9 +72,9 @@
 #define MOUSE_CURSOR_HEIGHT 20
 
 // mouse cursor color
-#define MOUSE_CURSOR_COLOR_OUTERLINE RGB(0, 0, 0)       // black color, represent 1 in bitmap
-#define MOUSE_CURSOR_COLOR_OUTER     RGB(79, 204, 11)   // dark green color, represent 2 in bitmap
-#define MOUSE_CURSOR_COLOR_INNER     RGB(232, 255, 232) // bright color, represent 3 in bitmap
+#define MOUSE_CURSOR_COLOR_OUTERLINE RGB(0, 0, 0)       // black, represent 1 in bitmap
+#define MOUSE_CURSOR_COLOR_OUTER     RGB(79, 204, 11)   // bright green, represent 2 in bitmap
+#define MOUSE_CURSOR_COLOR_INNER     RGB(232, 255, 232) // brighter green, represent 3 in bitmap
 
 // event queue-related macros
 #define EVENTQUEUE_WINDOW_MAXCOUNT        100             // window event queue max count

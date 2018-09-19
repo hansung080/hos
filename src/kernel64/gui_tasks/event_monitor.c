@@ -96,7 +96,7 @@ void k_eventMonitorTask(void) {
 			if (event.type == EVENT_MOUSE_LBUTTONDOWN) {
 				if (k_isPointInRect(&buttonArea, mouseEvent->point.x, mouseEvent->point.y) == true) {
 					// draw button with bright green color in order to express button down.
-					k_drawButton(windowId, &buttonArea, RGB(79, 204, 11), "Send User Event", RGB(255, 255, 255));
+					k_drawButton(windowId, &buttonArea, EVENTMONITOR_COLOR_BUTTONACTIVE, "Send User Event", RGB(255, 255, 255));
 					k_updateScreenById(windowId);
 
 					// set user event
