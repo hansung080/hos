@@ -1,6 +1,7 @@
 #include "app_panel.h"
 #include "base.h"
 #include "event_monitor.h"
+#include "system_monitor.h"
 #include "../core/rtc.h"
 #include "../core/task.h"
 #include "../core/util.h"
@@ -8,7 +9,8 @@
 
 static AppEntry g_appTable[] = {
 	{"Base", k_baseTask},
-	{"Event Monitor", k_eventMonitorTask}
+	{"Event Monitor", k_eventMonitorTask},
+	{"System Monitor", k_systemMonitorTask}
 };
 
 static AppPanelManager g_appPanelManager;

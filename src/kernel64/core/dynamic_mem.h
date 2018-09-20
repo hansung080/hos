@@ -42,7 +42,7 @@ typedef struct k_DynamicMemManager {
 void k_initDynamicMem(void);
 void* k_allocMem(qword size);
 bool k_freeMem(void* addr);
-void k_getDynamicMemInfo(qword* dynamicMemStartAddr, qword* dynamicMemTotalSize, qword* metaDataSize, qword* usedMemSize);
+void k_getDynamicMemInfo(qword* startAddr, qword* totalSize, qword* metaSize, qword* usedSize);
 DynamicMemManager* k_getDynamicMemManager(void);
 static qword k_calcDynamicMemSize(void);
 static int k_calcMetaBlockCount(qword dynamicRamSize);

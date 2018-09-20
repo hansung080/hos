@@ -2,6 +2,7 @@
 #define __EVENT_MONITOR_H__
 
 #include "../core/types.h"
+#include "../core/2d_graphics.h"
 
 // event monitor color
 #define EVENTMONITOR_COLOR_BUTTONACTIVE RGB(79, 204, 11) // bright green

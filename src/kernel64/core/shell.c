@@ -28,14 +28,14 @@ static ShellCommandEntry g_commandTable[] = {
 		{"timer", "set timer, usage) timer <ms> <periodic>", k_setTimer},
 		{"wait", "wait, usage) wait <ms>", k_waitUsingPit},
 		{"tsc", "read time stamp counter", k_readTimeStampCounter},
-		{"cpus", "show CPU speed", k_measureProcessorSpeed},
+		{"cpus", "measure CPU speed", k_measureCpuSpeed},
 		{"date", "show current date and time", k_showDateAndTime},
 		{"testtask", "test task, usage) testtask <type> <count>", k_createTestTask},
 		{"chpr" ,"change task priority, usage) chpr <taskId> <priority>", k_changePriority},
-		{"ts", "show task status, usage) ts <option>", k_showTaskList},
-		{"ps", "show task status, usage) ps <option>", k_showTaskList},
+		{"ts", "show task status, usage) ts <option>", k_showTaskStatus},
+		{"ps", "show task status, usage) ps <option>", k_showTaskStatus},
 		{"kill", "kill task, usage) kill <taskId>", k_killTask},
-		{"cpul", "show CPU load", k_cpuLoad},
+		{"cpul", "show CPU load", k_showCpuLoad},
 		{"testmutex", "test mutex", k_testMutex},
 		{"testthread", "test thread", k_testThread},
 		{"matrix", "show Matrix", k_showMatrix},
@@ -414,7 +414,7 @@ static void k_readTimeStampCounter(const char* paramBuffer) {
 	k_printf("time stamp counter: %q\n", tsc);
 }
 
-static void k_measureProcessorSpeed(const char* paramBuffer) {
+static void k_measureCpuSpeed(const char* paramBuffer) {
 	int i;
 	qword lastTsc, totalTsc = 0;
 	
@@ -681,7 +681,7 @@ static void k_changePriority(const char* paramBuffer) {
 	}
 }
 
-static void k_showTaskList(const char* paramBuffer) {
+static void k_showTaskStatus(const char* paramBuffer) {
 	ParamList list;
 	char option[SHELL_MAXPARAMETERLENGTH] = {'\0', };
 	int optionLen;
@@ -859,7 +859,7 @@ static void k_killTask(const char* paramBuffer) {
 	}
 }
 
-static void k_cpuLoad(const char* paramBuffer) {
+static void k_showCpuLoad(const char* paramBuffer) {
 	int i;
 	char buffer[50];
 	int remainLen;

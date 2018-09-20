@@ -409,11 +409,27 @@ static byte k_getFlagInBitmap(int blockListIndex, int offset) {
 	return DMEM_EMPTY;
 }
 
-void k_getDynamicMemInfo(qword* dynamicMemStartAddr, qword* dynamicMemTotalSize, qword* metaDataSize, qword* usedMemSize) {
-	*dynamicMemStartAddr = DMEM_START_ADDRESS;
-	*dynamicMemTotalSize = k_calcDynamicMemSize();
-	*metaDataSize = k_calcMetaBlockCount(*dynamicMemTotalSize) * DMEM_MIN_SIZE;
-	*usedMemSize = g_dynamicMemManager.usedSize;
+void k_getDynamicMemInfo(qword* startAddr, qword* totalSize, qword* metaSize, qword* usedSize) {
+	if (startAddr != null) {
+		*startAddr = DMEM_START_ADDRESS;
+	}
+	
+	if (totalSize != null) {
+		*totalSize = k_calcDynamicMemSize();
+	}
+	
+	if (metaSize != null) {
+		if (totalSize != null) {
+			*metaSize = k_calcMetaBlockCount(*totalSize) * DMEM_MIN_SIZE;
+
+		} else {
+			*metaSize = k_calcMetaBlockCount(k_calcDynamicMemSize()) * DMEM_MIN_SIZE;
+		}
+	}
+		
+	if (usedSize != null) {
+		*usedSize = g_dynamicMemManager.usedSize;
+	}
 }
 
 DynamicMemManager* k_getDynamicMemManager(void) {
