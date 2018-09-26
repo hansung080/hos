@@ -1058,7 +1058,7 @@ void k_idleTask(void) {
 				// free task of end task (If task is freed, then also stack is freed automatically.)
 				taskId = task->link.id;
 				k_freeTask(taskId);
-				//k_printf("IDLE: Task (0x%q) has completely ended.\n", taskId);
+				k_printf("IDLE: Task (0x%q) has completely ended.\n", taskId);
 			}
 		}
 		
