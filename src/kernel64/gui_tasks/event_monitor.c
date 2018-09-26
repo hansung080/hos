@@ -57,7 +57,7 @@ void k_eventMonitorTask(void) {
 	y = WINDOW_TITLEBAR_HEIGHT + 10;
 	k_drawRect(windowId, 10, y + 8, windowWidth - 10, y + 70, RGB(0, 0, 0), false);
 	k_sprintf(tempBuffer, "GUI Event Info (window ID: 0x%q)", windowId);
-	k_drawText(windowId, 20, y, RGB(0, 0, 0), RGB(255, 255, 255), tempBuffer);
+	k_drawText(windowId, 20, y, RGB(0, 0, 0), RGB(255, 255, 255), tempBuffer, k_strlen(tempBuffer));
 
 	/* draw user event send button */
 	k_setRect(&buttonArea, 10, y + 80, windowWidth - 10, windowHeight - 10);
@@ -86,11 +86,11 @@ void k_eventMonitorTask(void) {
 
 			// print event type.
 			k_sprintf(tempBuffer, "- type: %s", eventStrs[event.type]);	
-			k_drawText(windowId, 20, y + 20, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer);
+			k_drawText(windowId, 20, y + 20, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer, k_strlen(tempBuffer));
 
 			// print mouse data.
 			k_sprintf(tempBuffer, "- data: point: (%d, %d), button status: 0x%x", mouseEvent->point.x, mouseEvent->point.y, mouseEvent->buttonStatus);
-			k_drawText(windowId, 20, y + 40, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer);
+			k_drawText(windowId, 20, y + 40, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer, k_strlen(tempBuffer));
 
 			/* process button event using mouse event */
 			if (event.type == EVENT_MOUSE_LBUTTONDOWN) {
@@ -131,11 +131,11 @@ void k_eventMonitorTask(void) {
 
 			// print event type.
 			k_sprintf(tempBuffer, "- type: %s", eventStrs[event.type]);	
-			k_drawText(windowId, 20, y + 20, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer);
+			k_drawText(windowId, 20, y + 20, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer, k_strlen(tempBuffer));
 
 			// print window data.
 			k_sprintf(tempBuffer, "- data: area: (%d, %d) (%d, %d)", windowEvent->area.x1, windowEvent->area.y1, windowEvent->area.x2, windowEvent->area.y2);
-			k_drawText(windowId, 20, y + 40, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer);
+			k_drawText(windowId, 20, y + 40, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer, k_strlen(tempBuffer));
 
 			// delete window.
 			if (event.type == EVENT_WINDOW_CLOSE) {
@@ -151,11 +151,11 @@ void k_eventMonitorTask(void) {
 
 			// print event type.
 			k_sprintf(tempBuffer, "- type: %s", eventStrs[event.type]);	
-			k_drawText(windowId, 20, y + 20, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer);
+			k_drawText(windowId, 20, y + 20, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer, k_strlen(tempBuffer));
 
 			// print key data.
 			k_sprintf(tempBuffer, "- data: scan: 0x%x, ASCII: 0x%x (%d, %c), flags: 0x%x", keyEvent->scanCode, keyEvent->asciiCode, keyEvent->asciiCode, keyEvent->asciiCode, keyEvent->flags);
-			k_drawText(windowId, 20, y + 40, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer);
+			k_drawText(windowId, 20, y + 40, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer, k_strlen(tempBuffer));
 
 			break;
 
@@ -164,11 +164,11 @@ void k_eventMonitorTask(void) {
 
 			// print event type.
 			k_sprintf(tempBuffer, "- type: USER_TESTMESSAGE");
-			k_drawText(windowId, 20, y + 20, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer);
+			k_drawText(windowId, 20, y + 20, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer, k_strlen(tempBuffer));
 
 			// print user data.
 			k_sprintf(tempBuffer, "- data: 0x%q, 0x%q, 0x%q", userEvent->data[0], userEvent->data[1], userEvent->data[2]);
-			k_drawText(windowId, 20, y + 40, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer);
+			k_drawText(windowId, 20, y + 40, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer, k_strlen(tempBuffer));
 
 			break;			
 

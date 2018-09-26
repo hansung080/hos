@@ -43,6 +43,6 @@ void __k_drawPixel(Color* outMem, const Rect* area, int x, int y, Color color);
 void __k_drawLine(Color* outMem, const Rect* area, int x1, int y1, int x2, int y2, Color color);
 void __k_drawRect(Color* outMem, const Rect* area, int x1, int y1, int x2, int y2, Color color, bool fill);
 void __k_drawCircle(Color* outMem, const Rect* area, int x, int y, int radius, Color color, bool fill);
-void __k_drawText(Color* outMem, const Rect* area, int x, int y, Color textColor, Color backgroundColor, const char* str);
+void __k_drawText(Color* outMem, const Rect* area, int x, int y, Color textColor, Color backgroundColor, const char* str, int len);
 
 #endif // __CORE_2DGRAPHICS_H__

@@ -114,7 +114,7 @@ static void k_drawDigitalClock(qword windowId) {
 	k_getWindowArea(windowId, &windowArea);
 	k_setRect(&updateArea, windowArea.x2 - APPPANEL_CLOCKWIDTH - 13, 5, windowArea.x2 - 5, 25);
 	k_drawRect(windowId, updateArea.x1, updateArea.y1, updateArea.x2, updateArea.y2, APPPANEL_COLOR_INNERLINE, false);
-	k_drawText(windowId, updateArea.x1 + 4, updateArea.y1 + 3, RGB(255, 255, 255), APPPANEL_COLOR_BACKGROUND, buffer);
+	k_drawText(windowId, updateArea.x1 + 4, updateArea.y1 + 3, RGB(255, 255, 255), APPPANEL_COLOR_BACKGROUND, buffer, k_strlen(buffer));
 	k_updateScreenByWindowArea(windowId, &updateArea);
 }
 
@@ -233,7 +233,7 @@ static void k_drawAppItem(int index, bool mouseOver) {
 	k_drawRect(g_appPanelManager.appListId, itemArea.x1 + 1, itemArea.y1 + 1, itemArea.x2 - 1, itemArea.y2 - 1, color, true);
 
 	// draw app name.
-	k_drawText(g_appPanelManager.appListId, itemArea.x1 + 10, itemArea.y1 + 2, RGB(255, 255, 255), color, g_appTable[index].name);
+	k_drawText(g_appPanelManager.appListId, itemArea.x1 + 10, itemArea.y1 + 2, RGB(255, 255, 255), color, g_appTable[index].name, k_strlen(g_appTable[index].name));
 
 	k_updateScreenByWindowArea(g_appPanelManager.appListId, &itemArea);
 }

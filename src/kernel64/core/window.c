@@ -1347,14 +1347,14 @@ bool k_drawWindowTitleBar(qword windowId, const char* title, bool selected) {
 		__k_drawRect(window->buffer, &area, 0, 3, width - 1, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE, true);
 		
 		// draw a title.
-		__k_drawText(window->buffer, &area, 6, 3, WINDOW_COLOR_TITLEBARTEXT, WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE, title);
+		__k_drawText(window->buffer, &area, 6, 3, WINDOW_COLOR_TITLEBARTEXT, WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE, title, k_strlen(title));
 
 	} else {
 		// draw a title bar background.
 		__k_drawRect(window->buffer, &area, 0, 3, width - 1, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE, true);
 		
 		// draw a title.
-		__k_drawText(window->buffer, &area, 6, 3, WINDOW_COLOR_TITLEBARTEXT, WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE, title);
+		__k_drawText(window->buffer, &area, 6, 3, WINDOW_COLOR_TITLEBARTEXT, WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE, title, k_strlen(title));
 	}
 
 	// draw top lines (2 pixels-thick) of the title bar with bright color in order to make it 3-dimensional.
@@ -1430,7 +1430,7 @@ bool k_drawButton(qword windowId, const Rect* buttonArea, Color backgroundColor,
 	// draw a text in the center.
 	textX = (buttonArea->x1 + buttonWidth / 2) - textWidth / 2;
 	textY = (buttonArea->y1 + buttonHeight / 2) - FONT_VERAMONO_ENG_HEIGHT / 2;
-	__k_drawText(window->buffer, &area, textX, textY, textColor, backgroundColor, text);
+	__k_drawText(window->buffer, &area, textX, textY, textColor, backgroundColor, text, textLen);
 		
 	// draw top lines (2 pixels-thick) of the button with bright color in order to make it 3-dimensional.
 	__k_drawLine(window->buffer, &area, buttonArea->x1, buttonArea->y1, buttonArea->x2, buttonArea->y1, WINDOW_COLOR_BUTTONBRIGHT);
@@ -1533,7 +1533,7 @@ bool k_drawCircle(qword windowId, int x, int y, int radius, Color color, bool fi
 	return true;
 }
 
-bool k_drawText(qword windowId, int x, int y, Color textColor, Color backgroundColor, const char* str) {
+bool k_drawText(qword windowId, int x, int y, Color textColor, Color backgroundColor, const char* str, int len) {
 	Window* window;
 	Rect area;
 
@@ -1546,11 +1546,11 @@ bool k_drawText(qword windowId, int x, int y, Color textColor, Color backgroundC
 	k_setRect(&area, 0, 0, window->area.x2 - window->area.x1, window->area.y2 - window->area.y1);
 
 	// draw a text.
-	__k_drawText(window->buffer, &area, x, y, textColor, backgroundColor, str);
+	__k_drawText(window->buffer, &area, x, y, textColor, backgroundColor, str, len);
 	
 	k_unlock(&window->mutex);
 
-	return true;	
+	return true;
 }
 
 // mouse cursor bitmap (20 * 20 = 400 bytes)

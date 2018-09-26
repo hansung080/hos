@@ -40,13 +40,13 @@ void k_systemMonitorTask(void) {
 	k_drawLine(windowId, 5, WINDOW_TITLEBAR_HEIGHT + 15, windowWidth - 5, WINDOW_TITLEBAR_HEIGHT + 15, RGB(0, 0, 0));
 	k_drawLine(windowId, 5, WINDOW_TITLEBAR_HEIGHT + 16, windowWidth - 5, WINDOW_TITLEBAR_HEIGHT + 16, RGB(0, 0, 0));
 	k_drawLine(windowId, 5, WINDOW_TITLEBAR_HEIGHT + 17, windowWidth - 5, WINDOW_TITLEBAR_HEIGHT + 17, RGB(0, 0, 0));
-	k_drawText(windowId, 15, WINDOW_TITLEBAR_HEIGHT + 8, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, "Processor Info");
+	k_drawText(windowId, 15, WINDOW_TITLEBAR_HEIGHT + 8, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, "Processor Info", 14);
 
 	// draw memory info lines (3 pixels-thick).
 	k_drawLine(windowId, 5, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 50, windowWidth - 5, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 50, RGB(0, 0, 0));
 	k_drawLine(windowId, 5, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 51, windowWidth - 5, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 51, RGB(0, 0, 0));
 	k_drawLine(windowId, 5, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 52, windowWidth - 5, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 52, RGB(0, 0, 0));
-	k_drawText(windowId, 15, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 43, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, "Memory Info");
+	k_drawText(windowId, 15, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 43, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, "Memory Info", 11);
 
 	k_showWindow(windowId, true);
 
@@ -114,9 +114,9 @@ static void k_drawProcessorInfo(qword windowId, int x, int y, byte apicId) {
 
 	/* print core ID and task count */
 	k_sprintf(buffer, "- core ID    : %d", apicId);
-	k_drawText(windowId, x, y, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer);
+	k_drawText(windowId, x, y, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer, k_strlen(buffer));
 	k_sprintf(buffer, "- task count : %d   ", k_getTaskCount(apicId));
-	k_drawText(windowId, x, y + 18, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer);
+	k_drawText(windowId, x, y + 18, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer, k_strlen(buffer));
 
 	/* draw processor load (usage) bar */
 	processorLoad = k_getProcessorLoad(apicId);
@@ -137,7 +137,7 @@ static void k_drawProcessorInfo(qword windowId, int x, int y, byte apicId) {
 	// print processor load in the center of bar.
 	k_sprintf(buffer, "usage: %d %%", processorLoad);
 	middleX = (SYSTEMMONITOR_PROCESSOR_WIDTH - (FONT_VERAMONO_ENG_WIDTH * k_strlen(buffer))) / 2;
-	k_drawText(windowId, x + middleX, y + 80, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer);
+	k_drawText(windowId, x + middleX, y + 80, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer, k_strlen(buffer));
 
 	// update screen.
 	k_setRect(&area, x, y, x + SYSTEMMONITOR_PROCESSOR_WIDTH - 1, y + SYSTEMMONITOR_PROCESSOR_HEIGHT - 1);
@@ -159,9 +159,9 @@ static void k_drawMemoryInfo(qword windowId, int y, int windowWidth) {
 
 	/* print total size and used size */
 	k_sprintf(buffer, "- total size : %d MB", totalRamSize);
-	k_drawText(windowId, SYSTEMMONITOR_PROCESSOR_MARGIN, y + 3, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer);
+	k_drawText(windowId, SYSTEMMONITOR_PROCESSOR_MARGIN, y + 3, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer, k_strlen(buffer));
 	k_sprintf(buffer, "- used size  : %d MB", (dynamicMemStartAddr + dynamicMemUsedSize) / 1024 / 1024);
-	k_drawText(windowId, SYSTEMMONITOR_PROCESSOR_MARGIN, y + 21, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer);
+	k_drawText(windowId, SYSTEMMONITOR_PROCESSOR_MARGIN, y + 21, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer, k_strlen(buffer));
 
 	/* draw memory usase bar */
 	// draw bar border.
@@ -183,7 +183,7 @@ static void k_drawMemoryInfo(qword windowId, int y, int windowWidth) {
 	// print memory usage in the center of bar.
 	k_sprintf(buffer, "usage: %d %%", memoryUsage);
 	middleX = (windowWidth - (FONT_VERAMONO_ENG_WIDTH * k_strlen(buffer))) / 2;
-	k_drawText(windowId, middleX, y + 45, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer);
+	k_drawText(windowId, middleX, y + 45, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer, k_strlen(buffer));
 
 	// update screen.
 	k_setRect(&area, 0, y, windowWidth, y + SYSTEMMONITOR_MEMORY_HEIGHT);

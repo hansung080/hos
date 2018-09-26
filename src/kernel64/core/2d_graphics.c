@@ -325,7 +325,7 @@ void __k_drawCircle(Color* outMem, const Rect* area, int x, int y, int radius, C
 	}
 }
 
-void __k_drawText(Color* outMem, const Rect* area, int x, int y, Color textColor, Color backgroundColor, const char* str) {
+void __k_drawText(Color* outMem, const Rect* area, int x, int y, Color textColor, Color backgroundColor, const char* str, int len) {
 	int currentX, currentY; // x, y to draw text.
 	int i, j, k;
 	byte bitmap;
@@ -338,15 +338,12 @@ void __k_drawText(Color* outMem, const Rect* area, int x, int y, Color textColor
 	int startYOffset;
 	int overWidth;
 	int overHeight;
-	int len;
-		
+	
 	// initialize current x.
 	currentX = x;
 
 	areaWidth = k_getRectWidth(area);
 
-	len = k_strlen(str);
-	
 	// draw text (string).
 	for (i = 0; i < len; i++) {
 		// initialize current y.
