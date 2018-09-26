@@ -12,7 +12,7 @@ static AppEntry g_appTable[] = {
 	{"Base", k_baseTask},
 	{"Event Monitor", k_eventMonitorTask},
 	{"System Monitor", k_systemMonitorTask},
-	{"Console Shell", k_guiShellTask}
+	{"Shell", k_guiShellTask}
 };
 
 static AppPanelManager g_appPanelManager;
