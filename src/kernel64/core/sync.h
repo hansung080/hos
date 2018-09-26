@@ -1,5 +1,5 @@
-#ifndef __SYNC_H__
-#define __SYNC_H__
+#ifndef __CORE_SYNC_H__
+#define __CORE_SYNC_H__
 
 #include "types.h"
 
@@ -58,4 +58,4 @@ void k_initSpinlock(Spinlock* spinlock);
 void k_lockSpin(Spinlock* spinlock);
 void k_unlockSpin(Spinlock* spinlock);
 
-#endif // __SYNC_H__
+#endif // __CORE_SYNC_H__

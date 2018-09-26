@@ -1,5 +1,5 @@
-#ifndef __DYNAMIC_MEM_H__
-#define __DYNAMIC_MEM_H__
+#ifndef __CORE_DYNAMICMEM_H__
+#define __CORE_DYNAMICMEM_H__
 
 #include "types.h"
 #include "task.h"
@@ -54,4 +54,4 @@ static void k_setFlagInBitmap(int blockListIndex, int offset, byte flag);
 static bool k_freeBuddyBlock(int blockListIndex, int blockOffset);
 static byte k_getFlagInBitmap(int blockListIndex, int offset);
 
-#endif // __DYNAMIC_MEM_H__
+#endif // __CORE_DYNAMICMEM_H__

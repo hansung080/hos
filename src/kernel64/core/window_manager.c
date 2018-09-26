@@ -27,7 +27,7 @@
     - 170 : 35  : 200
 */
 
-void k_startWindowManager(void) {
+void k_windowManagerTask(void) {
 	int mouseX, mouseY;
 	bool mouseResult;
 	bool keyResult;

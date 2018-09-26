@@ -1,5 +1,5 @@
-#ifndef __DESCRIPTORS_H__
-#define __DESCRIPTORS_H__
+#ifndef __CORE_DESCRIPTORS_H__
+#define __CORE_DESCRIPTORS_H__
 
 #include "types.h"
 #include "multiprocessor.h"
@@ -135,4 +135,4 @@ void k_initTss(Tss* tss);
 void k_initIdt(void);
 void k_setIdtEntry(IdtEntry* entry, void* handler, word selector, byte ist, byte flags, byte type);
 
-#endif // __DESCRIPTORS_H__
+#endif // __CORE_DESCRIPTORS_H__

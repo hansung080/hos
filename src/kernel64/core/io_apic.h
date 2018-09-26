@@ -1,5 +1,5 @@
-#ifndef __IO_APIC_H__
-#define __IO_APIC_H__
+#ifndef __CORE_IOAPIC_H__
+#define __CORE_IOAPIC_H__
 
 #include "types.h"
 
@@ -87,4 +87,4 @@ void k_initIoRedirectionTable(void);
 void k_printIrqToIntinMap(void);
 void k_routeIrqToApic(int irq, byte apicId);
 
-#endif // __IO_APIC_H__
+#endif // __CORE_IOAPIC_H__

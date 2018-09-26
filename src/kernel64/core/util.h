@@ -1,5 +1,5 @@
-#ifndef __UTIL_H__
-#define __UTIL_H__
+#ifndef __CORE_UTIL_H__
+#define __CORE_UTIL_H__
 
 #include <stdarg.h>
 #include "types.h"
@@ -33,4 +33,4 @@ bool k_isGraphicMode(void);
 
 extern volatile qword g_tickCount;
 
-#endif // __UTIL_H__
+#endif // __CORE_UTIL_H__

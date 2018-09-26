@@ -1,5 +1,5 @@
-#ifndef __PIC_H__
-#define __PIC_H__
+#ifndef __CORE_PIC_H__
+#define __CORE_PIC_H__
 
 #include "types.h"
 
@@ -54,4 +54,4 @@ void k_initPic(void);
 void k_maskPicInterrupt(word irqBitmask);
 void k_sendEoiToPic(int irqNumber);
 
-#endif // __PIC_H__
+#endif // __CORE_PIC_H__

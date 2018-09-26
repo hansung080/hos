@@ -1,5 +1,5 @@
-#ifndef __FONTS_H__
-#define __FONTS_H__
+#ifndef __FONTS_FONTS_H__
+#define __FONTS_FONTS_H__
 
 /* Bitstream Vera Sans Mono (English) */
 #define FONT_VERAMONO_ENG_WIDTH  8  // 8 pixels per a character
@@ -21,4 +21,4 @@
 */
 extern unsigned char g_fontVeraMonoEng[];
 
-#endif // __FONTS_H__
+#endif // __FONTS_FONTS_H__

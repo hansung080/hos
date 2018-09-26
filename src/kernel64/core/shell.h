@@ -1,5 +1,5 @@
-#ifndef __SHELL_H__
-#define __SHELL_H__
+#ifndef __CORE_SHELL_H__
+#define __CORE_SHELL_H__
 
 #include "types.h"
 
@@ -29,7 +29,7 @@ typedef struct k_ParamList {
 #pragma pack(pop)
 
 // Shell Functions
-void k_startShell(void);
+void k_shellTask(void);
 void k_executeCommand(const char* commandBuffer);
 void k_initParam(ParamList* list, const char* paramBuffer);
 int k_getNextParam(ParamList* list, char* param);
@@ -94,4 +94,4 @@ static void k_changeAffinity(const char* paramBuffer);
 static void k_startMultiprocessorMode(const char* paramBuffer);
 static void k_showVbeModeInfo(const char* paramBuffer);
 
-#endif // __SHELL_H__
+#endif // __CORE_SHELL_H__

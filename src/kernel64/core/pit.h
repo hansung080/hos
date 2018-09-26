@@ -1,5 +1,5 @@
-#ifndef __PIT_H__
-#define __PIT_H__
+#ifndef __CORE_PIT_H__
+#define __CORE_PIT_H__
 
 #include "types.h"
 
@@ -34,4 +34,4 @@ void k_initPit(word count, bool periodic);
 word k_readCounter0(void);
 void k_waitUsingDirectPit(word count);
 
-#endif // __PIT_H__
+#endif // __CORE_PIT_H__

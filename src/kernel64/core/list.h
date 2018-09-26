@@ -1,5 +1,5 @@
-#ifndef __LIST_H__
-#define __LIST_H__
+#ifndef __CORE_LIST_H__
+#define __CORE_LIST_H__
 
 #include "types.h"
 
@@ -40,4 +40,4 @@ void* k_getHeadFromList(const List* list);
 void* k_getTailFromList(const List* list);
 void* k_getNextFromList(const List* list, void* current);
 
-#endif // __LIST_H__
+#endif // __CORE_LIST_H__

@@ -1,5 +1,5 @@
-#ifndef __WINDOW_H__
-#define __WINDOW_H__
+#ifndef __CORE_WINDOW_H__
+#define __CORE_WINDOW_H__
 
 #include "types.h"
 #include "2d_graphics.h"
@@ -297,4 +297,4 @@ static void k_drawMouseCursor(int x, int y);
 void k_moveMouseCursor(int x, int y);
 void k_getMouseCursorPos(int* x, int* y);
 
-#endif // __WINDOW_H__
+#endif // __CORE_WINDOW_H__

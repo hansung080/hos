@@ -1,5 +1,5 @@
-#ifndef __2D_GRAPHICS_H__
-#define __2D_GRAPHICS_H__
+#ifndef __CORE_2DGRAPHICS_H__
+#define __CORE_2DGRAPHICS_H__
 
 #include "types.h"
 
@@ -45,4 +45,4 @@ void __k_drawRect(Color* outMem, const Rect* area, int x1, int y1, int x2, int y
 void __k_drawCircle(Color* outMem, const Rect* area, int x, int y, int radius, Color color, bool fill);
 void __k_drawText(Color* outMem, const Rect* area, int x, int y, Color textColor, Color backgroundColor, const char* str);
 
-#endif // __2D_GRAPHICS_H__
+#endif // __CORE_2DGRAPHICS_H__

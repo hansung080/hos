@@ -1,5 +1,5 @@
-#ifndef __MOUSE_H__
-#define __MOUSE_H__
+#ifndef __CORE_MOUSE_H__
+#define __CORE_MOUSE_H__
 
 #include "types.h"
 #include "sync.h"
@@ -61,4 +61,4 @@ bool k_accumulateMouseDataAndPutQueue(byte mouseData);
 bool k_getMouseDataFromMouseQueue(byte* buttonStatus, int* relativeX, int* relativeY);
 bool k_isMouseDataInOutputBuffer(void);
 
-#endif // __MOUSE_H__
+#endif // __CORE_MOUSE_H__

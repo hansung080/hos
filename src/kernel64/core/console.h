@@ -1,9 +1,45 @@
-#ifndef __CONSOLE_H__
-#define __CONSOLE_H__
+#ifndef __CORE_CONSOLE_H__
+#define __CORE_CONSOLE_H__
 
 #include "types.h"
+#include "sync.h"
+#include "queue.h"
+#include "keyboard.h"
 
 /**
+  < Console Output Process >
+                            text mode
+                            video memory (0xB8000)     monitor
+                            --------------- video      -----
+      shell task            |h#e#l#l#o#...| controller |   |
+  --------------------- --> |.............| ---------> |   |
+  | - k_printf()      |     ---------------            -----
+  | - k_printStr()    |   
+  | - k_printStrXy()  |     graphic mode               GUI shell            graphic mode        
+  | - k_clearScreen() |     console screen buffer      window buffer        video memory     monitor
+  |                   |     --------------- GUI shell  ----- window manager ----- video      -----
+  ---------------------     |h#e#l#l#o#...| task       |   | task           |   | controller |   |
+                        --> |.............| ---------> |   | -------------> |   | ---------> |   |
+                            ---------------            -----                -----            -----
+                            - h: char (1 byte)
+                            - #: attr (1 byte)
+                            - h#: Char (2 bytes)
+                            - screen: 80 * 25 Chars
+  
+  < Console Input Process >
+                      kernel                                                                shell task
+  keyboard            key queue   text mode                                               ---------------
+  ----- keyboard      -----  -----------------------------------------------------------> | - k_getch() | 
+  |   | device driver |   |                                                   console     |             |
+  |   | ------------> |   |  graphic mode             key event               key queue   |             |
+  -----               -----  --------> window manager --------> GUI shell --> -----  ---> |             |
+                                       task                     task          |   |       ---------------
+                                                                              |   |
+                                                                              -----
+*/
+
+/**
+ < About Color >
  - 3 Primary Colors of Light (RGB): red, green, blue. It's for screen.
  - 4 Primary Colors of Dye (CMYK): cyan, magenta, yellow, key. It's for print.
    cyan: bright blue
@@ -11,7 +47,7 @@
    key: black
 */
 
-// attributes of text mode screen
+// console attribute
 #define CONSOLE_BACKGROUND_BLACK         0x00
 #define CONSOLE_BACKGROUND_BLUE          0x10
 #define CONSOLE_BACKGROUND_GREEN         0x20
@@ -38,13 +74,20 @@
 #define CONSOLE_FOREGROUND_BRIGHTYELLOW  0x0E
 #define CONSOLE_FOREGROUND_BRIGHTWHITE   0x0F
 
-// default text color
-#define CONSOLE_DEFAULTTEXTCOLOR (CONSOLE_BACKGROUND_BLACK | CONSOLE_FOREGROUND_BRIGHTGREEN)
+// console text attribute
+#define CONSOLE_TEXT_ATTRIBUTE (CONSOLE_BACKGROUND_BLACK | CONSOLE_FOREGROUND_BRIGHTGREEN)
 
-// etc
+// etc macros
 #define CONSOLE_WIDTH              80
 #define CONSOLE_HEIGHT             25
-#define CONSOLE_VIDEOMEMORYADDRESS 0xB8000
+#define CONSOLE_VIDEOMEMORYADDRESS 0xB8000 // video memory address in text mode
+
+// console key queue-related macro
+#define CONSOLE_KEYQUEUE_MAXCOUNT 100
+
+// console cursor-related macros
+#define CONSOLE_CURSOR_CHARACTER '_'
+#define CONSOLE_CURSOR_ATTRIBUTE 0x00 // black
 
 // macros related with Video Controller
 #define VGA_PORT_INDEX        0x3D4 // CRTC Control Address Register
@@ -55,7 +98,11 @@
 #pragma pack(push, 1)
 
 typedef struct k_ConsoleManager {
-	int currentPrintOffset;
+	int currentPrintOffset; // current print offset
+	Char* screenBuffer;     // console screen buffer
+	Mutex mutex;            // mutex
+	Queue keyQueue;         // console key queue
+	volatile bool exit;     // shell exit flag
 } ConsoleManager;
 
 #pragma pack(pop)
@@ -63,10 +110,14 @@ typedef struct k_ConsoleManager {
 void k_initConsole(int x, int y);
 void k_setCursor(int x, int y);
 void k_getCursor(int* x, int* y);
-void k_printf(const char* format, ...);
-int k_consolePrintStr(const char* buffer);
+void k_printf(const char* format, ...); // print format at current cursor position.
+int k_printStr(const char* str); // print string at current cursor position.
+void k_printStrXy(int x, int y, const char* str); // print string at (x, y).
 void k_clearScreen(void);
 byte k_getch(void);
-void k_printStrXy(int x, int y, const char* str);
+ConsoleManager* k_getConsoleManager(void);
+bool k_putKeyToConsoleKeyQueue(const Key* key);
+bool k_getKeyFromConsoleKeyQueue(Key* key);
+void k_setShellExitFlag(bool exit);
 
-#endif // __CONSOLE_H__
+#endif // __CORE_CONSOLE_H__

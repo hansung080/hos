@@ -1,5 +1,5 @@
-#ifndef __ISR_H__
-#define __ISR_H__
+#ifndef __CORE_ISR_H__
+#define __CORE_ISR_H__
 
 /* Exception Handling ISR (21) */
 void k_isrDivideError(void);
@@ -43,4 +43,4 @@ void k_isrHdd1(void);
 void k_isrHdd2(void);
 void k_isrEtcInterrupt(void);
 
-#endif // __ISR_H__
+#endif // __CORE_ISR_H__

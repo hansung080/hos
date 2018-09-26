@@ -1,5 +1,5 @@
-#ifndef __TASK_H__
-#define __TASK_H__
+#ifndef __CORE_TASK_H__
+#define __CORE_TASK_H__
 
 #include "types.h"
 #include "list.h"
@@ -190,4 +190,4 @@ void k_haltProcessorByLoad(byte apicId);
 qword k_getLastFpuUsedTaskId(byte apicId);
 void k_setLastFpuUsedTaskId(byte apicId, qword taskId);
 
-#endif // __TASK_H__
+#endif // __CORE_TASK_H__

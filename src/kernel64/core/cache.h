@@ -1,5 +1,5 @@
-#ifndef __CACHE_H__
-#define __CACHE_H__
+#ifndef __CORE_CACHE_H__
+#define __CORE_CACHE_H__
 
 #include "types.h"
 
@@ -38,4 +38,4 @@ void k_discardAllCacheBuffer(int cacheTableIndex);
 bool k_getCacheBufferAndCount(int cacheTableIndex, CacheBuffer** cacheBuffer, int* maxCount);
 static void k_cutdownAccessTime(int cacheTableIndex);
 
-#endif // __CACHE_H__
+#endif // __CORE_CACHE_H__

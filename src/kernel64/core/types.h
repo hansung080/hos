@@ -1,5 +1,5 @@
-#ifndef __TYPES_H__
-#define __TYPES_H__
+#ifndef __CORE_TYPES_H__
+#define __CORE_TYPES_H__
 
 #define byte  unsigned char
 #define word  unsigned short
@@ -26,4 +26,4 @@ typedef struct k_Char {
 
 #pragma pack(pop)
 
-#endif // __TYPES_H__
+#endif // __CORE_TYPES_H__

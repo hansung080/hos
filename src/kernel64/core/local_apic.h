@@ -1,5 +1,5 @@
-#ifndef __LOCAL_APIC_H__
-#define __LOCAL_APIC_H__
+#ifndef __CORE_LOCALAPIC_H__
+#define __CORE_LOCALAPIC_H__
 
 #include "types.h"
 
@@ -75,4 +75,4 @@ void k_sendEoiToLocalApic(void);
 void k_setInterruptPriority(byte priority);
 void k_initLocalVectorTable(void);
 
-#endif // __LOCAL_APIC_H__
+#endif // __CORE_LOCALAPIC_H__

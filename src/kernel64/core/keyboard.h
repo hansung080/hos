@@ -1,5 +1,5 @@
-#ifndef __KEYBOARD_H__
-#define __KEYBOARD_H__
+#ifndef __CORE_KEYBOARD_H__
+#define __CORE_KEYBOARD_H__
 
 #include "types.h"
 #include "sync.h"
@@ -120,4 +120,4 @@ bool k_convertScanCodeAndPutQueue(byte scanCode); // convert scan code to ASCII 
 bool k_getKeyFromKeyQueue(Key* key); // get key from key queue.
 bool k_waitAckAndPutOtherScanCodes(void);
 
-#endif // __KEYBOARD_H__
+#endif // __CORE_KEYBOARD_H__

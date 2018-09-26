@@ -1,5 +1,5 @@
-#ifndef __ASM_UTIL_H__
-#define __ASM_UTIL_H__
+#ifndef __CORE_ASMUTIL_H__
+#define __CORE_ASMUTIL_H__
 
 #include "types.h"
 #include "task.h"
@@ -26,4 +26,4 @@ void k_setTs(void);
 void k_clearTs(void);
 void k_enableGlobalLocalApic(void);
 
-#endif // __ASM_UTIL_H__
+#endif // __CORE_ASMUTIL_H__

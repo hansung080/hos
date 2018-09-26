@@ -1,5 +1,5 @@
-#ifndef __EVENT_MONITOR_H__
-#define __EVENT_MONITOR_H__
+#ifndef __GUITASKS_EVENTMONITOR_H__
+#define __GUITASKS_EVENTMONITOR_H__
 
 #include "../core/types.h"
 #include "../core/2d_graphics.h"
@@ -12,4 +12,4 @@
 
 void k_eventMonitorTask(void);
 
-#endif // __EVENT_MONITOR_H__
+#endif // __GUITASKS_EVENTMONITOR_H__

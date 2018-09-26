@@ -2,6 +2,7 @@
 #include "base.h"
 #include "event_monitor.h"
 #include "system_monitor.h"
+#include "shell.h"
 #include "../core/rtc.h"
 #include "../core/task.h"
 #include "../core/util.h"
@@ -10,7 +11,8 @@
 static AppEntry g_appTable[] = {
 	{"Base", k_baseTask},
 	{"Event Monitor", k_eventMonitorTask},
-	{"System Monitor", k_systemMonitorTask}
+	{"System Monitor", k_systemMonitorTask},
+	{"Shell", k_guiShellTask}
 };
 
 static AppPanelManager g_appPanelManager;

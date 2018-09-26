@@ -7,7 +7,7 @@
 #define BSPFLAG_AP  0x00           // AP
 #define BSPFLAG_BSP 0x01           // BSP
 
-void k_printStr(int x, int y, const char* str);
+void k_printStrXy(int x, int y, const char* str);
 bool k_isMemEnough(void);
 bool k_initKernel64Area(void);
 void k_copyKernel64To2MB(void);
@@ -26,69 +26,69 @@ void k_main(void) {
 	}
 	
 	// print the first message of kernel32 at line 1.
-	k_printStr(0, y++, "*** HansOS Initialization ***");
+	k_printStrXy(0, y++, "*** HansOS Initialization ***");
 	
 	// [NOTE]
 	// print boot-loader messages here,
 	// and remove messages from boot-loader, because of the risk of duplication between messages and USB partition info in boot-loader.
-	k_printStr(0, y++, "- start boot-loader..........................pass");
-	k_printStr(0, y++, "- load HansOS image..........................pass");
+	k_printStrXy(0, y++, "- start boot-loader..........................pass");
+	k_printStrXy(0, y++, "- load HansOS image..........................pass");
 	
 	// already printed 'switch to protected mode' message at line 4 in entry_point.s.
 	y++;
 	
 	// print the start message of C kernel32.
-	k_printStr(0, y++, "- start protected mode C kernel..............pass");
+	k_printStrXy(0, y++, "- start protected mode C kernel..............pass");
 	
 	// check minimum memory size if over 64 MBytes.
-	k_printStr(0, y, "- check mininum memory size (64 MB)..........");
+	k_printStrXy(0, y, "- check mininum memory size (64 MB)..........");
 	if (k_isMemEnough() == true) {
-		k_printStr(45, y++, "pass");
+		k_printStrXy(45, y++, "pass");
 		
 	} else {
-		k_printStr(45, y++, "fail");
+		k_printStrXy(45, y++, "fail");
 		while (true);
 	}
 	
 	// initialize the memory area of kernel64.
-	k_printStr(0, y, "- initialize IA-32e mode kernel area.........");
+	k_printStrXy(0, y, "- initialize IA-32e mode kernel area.........");
 	if (k_initKernel64Area() == true) {
-		k_printStr(45, y++, "pass");
+		k_printStrXy(45, y++, "pass");
 		
 	} else {
-		k_printStr(45, y++, "fail");
+		k_printStrXy(45, y++, "fail");
 		while (true);
 	}
 	
 	// initialize the page tables of kernel64.
-	k_printStr(0, y, "- initialize IA-32e mode page tables.........");
+	k_printStrXy(0, y, "- initialize IA-32e mode page tables.........");
 	k_initPageTables();
-	k_printStr(45, y++, "pass");
+	k_printStrXy(45, y++, "pass");
 	
 	// read processor vendor name.
 	k_readCpuid(0x00000000, &eax, &ebx, &ecx, &edx);
 	*((dword*)vendor) = ebx;
 	*((dword*)vendor + 1) = edx;
 	*((dword*)vendor + 2) = ecx;
-	k_printStr(0, y, "- read processor vendor name.................");
-	k_printStr(45, y++, vendor);
+	k_printStrXy(0, y, "- read processor vendor name.................");
+	k_printStrXy(45, y++, vendor);
 	
 	// check if processor supports 64-bit mode.
 	k_readCpuid(0x80000001, &eax, &ebx, &ecx, &edx);
-	k_printStr(0, y, "- check 64-bit mode support..................");
+	k_printStrXy(0, y, "- check 64-bit mode support..................");
 	if (edx & (1 << 29)) {
-		k_printStr(45, y++, "pass");
+		k_printStrXy(45, y++, "pass");
 		
 	} else {
-		k_printStr(45, y++, "fail");
+		k_printStrXy(45, y++, "fail");
 		while (true);
 	}
 	
 	// print the last message of kernel32 at line 11.
 	// copy kernel64 to the address <0x200000 (2 MB)>.
-	k_printStr(0, y, "- copy IA-32e mode kernel to 2 MB address....");
+	k_printStrXy(0, y, "- copy IA-32e mode kernel to 2 MB address....");
 	k_copyKernel64To2MB();
-	k_printStr(45, y++, "pass");
+	k_printStrXy(45, y++, "pass");
 	
 	// switch to kernel64
 	k_switchToKernel64();
@@ -96,7 +96,7 @@ void k_main(void) {
 	while (true);
 }
 
-void k_printStr(int x, int y, const char* str) {
+void k_printStrXy(int x, int y, const char* str) {
 	Char* screen = (Char*)0xB8000;
 	int i;
 	

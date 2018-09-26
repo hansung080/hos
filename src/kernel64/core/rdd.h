@@ -1,5 +1,5 @@
-#ifndef __RDD_H__
-#define __RDD_H__
+#ifndef __CORE_RDD_H__
+#define __CORE_RDD_H__
 
 #include "types.h"
 #include "sync.h"
@@ -22,4 +22,4 @@ bool k_readRddInfo(bool primary, bool master, HddInfo* hddInfo);
 int k_readRddSector(bool primary, bool master, dword lba, int sectorCount, char* buffer);
 int k_writeRddSector(bool primary, bool master, dword lba, int sectorCount, char* buffer);
 
-#endif // __RDD_H__
+#endif // __CORE_RDD_H__

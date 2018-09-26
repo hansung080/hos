@@ -1,5 +1,5 @@
-#ifndef __SERIAL_PORT_H__
-#define __SERIAL_PORT_H__
+#ifndef __CORE_SERIALPORT_H__
+#define __CORE_SERIALPORT_H__
 
 #include "types.h"
 #include "sync.h"
@@ -94,4 +94,4 @@ void k_clearSerialFifo(void);
 static bool k_isSerialTransmitBufferEmpty(void);
 static bool k_isSerialReceiveBufferFull(void);
 
-#endif // __SERIAL_PORT_H__
+#endif // __CORE_SERIALPORT_H__

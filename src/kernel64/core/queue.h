@@ -1,5 +1,5 @@
-#ifndef __QUEUE_H__
-#define __QUEUE_H__
+#ifndef __CORE_QUEUE_H__
+#define __CORE_QUEUE_H__
 
 #include "types.h"
 
@@ -23,4 +23,4 @@ bool k_isQueueEmpty(const Queue* queue);
 bool k_putQueue(Queue* queue, const void* data);
 bool k_getQueue(Queue* queue, void* data);
 
-#endif // __QUEUE_H__
+#endif // __CORE_QUEUE_H__

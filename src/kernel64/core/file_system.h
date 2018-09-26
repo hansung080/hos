@@ -1,5 +1,5 @@
-#ifndef __FILE_SYSTEM_H__
-#define __FILE_SYSTEM_H__
+#ifndef __CORE_FILESYSTEM_H__
+#define __CORE_FILESYSTEM_H__
 
 #include "types.h"
 #include "sync.h"
@@ -204,4 +204,4 @@ static bool k_writeClusterWithCache(dword offset, byte* buffer);
 static CacheBuffer* k_allocCacheBufferWithFlush(int cacheTableIndex);
 bool k_flushFileSystemCache(void);
 
-#endif // __FILE_SYSTEM_H__
+#endif // __CORE_FILESYSTEM_H__

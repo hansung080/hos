@@ -139,12 +139,13 @@ void k_main(void) {
 		k_printf("fail\n");
 	}
 
-	// check graphic mode.
+	// If it's text mode, run shell task.
 	if (k_isGraphicMode() == false) {
-		k_startShell();
-		
+		k_shellTask();
+	
+	// If it's graphic mode, run window manager task.
 	} else {
-		k_startWindowManager();
+		k_windowManagerTask();
 	}
 }
 

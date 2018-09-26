@@ -1,5 +1,5 @@
-#ifndef __MP_CONFIG_TABLE_H__
-#define __MP_CONFIG_TABLE_H__
+#ifndef __CORE_MPCONFIGTABLE_H__
+#define __CORE_MPCONFIGTABLE_H__
 
 #include "types.h"
 
@@ -160,4 +160,4 @@ void k_printMpConfigTable(void);
 int k_getProcessorCount(void);
 IoApicEntry* k_findIoApicEntryForIsa(void);
 
-#endif // __MP_CONFIG_TABLE_H__
+#endif // __CORE_MPCONFIGTABLE_H__

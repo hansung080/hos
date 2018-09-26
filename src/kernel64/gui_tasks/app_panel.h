@@ -1,5 +1,5 @@
-#ifndef __APP_PANEL_H__
-#define __APP_PANEL_H__
+#ifndef __GUITASKS_APPPANEL_H__
+#define __GUITASKS_APPPANEL_H__
 
 #include "../core/types.h"
 #include "../core/window.h"
@@ -48,4 +48,4 @@ static void k_drawAppItem(int index, bool mouseOver);
 static bool k_processAppListEvent(void);
 static int k_getMouseOverItemIndex(int mouseY);
 
-#endif // __APP_PANEL_H__
+#endif // __GUITASKS_APPPANEL_H__

@@ -1,5 +1,5 @@
-#ifndef __VBE_H__
-#define __VBE_H__
+#ifndef __CORE_VBE_H__
+#define __CORE_VBE_H__
 
 #include "types.h"
 
@@ -87,4 +87,4 @@ typedef struct k_VbeModeInfoBlock {
 
 VbeModeInfoBlock* k_getVbeModeInfoBlock(void);
 
-#endif // __VBE_H__
+#endif // __CORE_VBE_H__

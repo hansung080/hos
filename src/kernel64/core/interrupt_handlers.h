@@ -1,5 +1,5 @@
-#ifndef __INTERRUPT_HANDLERS_H__
-#define __INTERRUPT_HANDLERS_H__
+#ifndef __CORE_INTERRUPTHANDLERS_H__
+#define __CORE_INTERRUPTHANDLERS_H__
 
 #include "types.h"
 #include "multiprocessor.h"
@@ -67,4 +67,4 @@ void k_keyboardHandler(int vector);
 void k_mouseHandler(int vector);
 void k_hddHandler(int vector);
 
-#endif // __INTERRUPT_HANDLERS_H__
+#endif // __CORE_INTERRUPTHANDLERS_H__

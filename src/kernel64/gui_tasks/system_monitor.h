@@ -1,5 +1,5 @@
-#ifndef __SYSTEM_MONITOR_H__
-#define __SYSTEM_MONITOR_H__
+#ifndef __GUITASKS_SYSTEMMONITOR_H__
+#define __GUITASKS_SYSTEMMONITOR_H__
 
 #include "../core/types.h"
 #include "../core/2d_graphics.h"
@@ -16,4 +16,4 @@ void k_systemMonitorTask(void);
 static void k_drawProcessorInfo(qword windowId, int x, int y, byte apicId);
 static void k_drawMemoryInfo(qword windowId, int y, int windowWidth);
 
-#endif // __SYSTEM_MONITOR_H__
+#endif // __GUITASKS_SYSTEMMONITOR_H__

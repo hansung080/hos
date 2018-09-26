@@ -1,5 +1,5 @@
-#ifndef __HDD_H__
-#define __HDD_H__
+#ifndef __CORE_HDD_H__
+#define __CORE_HDD_H__
 
 #include "types.h"
 #include "sync.h"
@@ -112,4 +112,4 @@ static bool k_waitHddNoBusy(bool primary);
 static bool k_waitHddReady(bool primary);
 static bool k_waitHddInterrupt(bool primary);
 
-#endif // __HDD_H__
+#endif // __CORE_HDD_H__

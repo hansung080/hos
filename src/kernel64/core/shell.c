@@ -59,29 +59,36 @@ static ShellCommandEntry g_commandTable[] = {
 		{"flush", "flush file system cache", k_flushCache},
 		{"download", "download file using serial port, usage) download <fname>", k_downloadFile},
 		{"mpconf", "show MP configuration table info", k_showMpConfigTable},
-		{"stap", "start application processor", k_startAp},
-		{"stsim", "start symmetric IO mode", k_startSymmetricIoMode},
+		//{"stap", "start application processor", k_startAp},
+		//{"stsim", "start symmetric IO mode", k_startSymmetricIoMode},
 		{"irqmap", "show IRQ to INTIN Map", k_showIrqToIntinMap},
-		{"stilb", "start interrupt load balancing", k_startInterruptLoadBalancing},
+		//{"stilb", "start interrupt load balancing", k_startInterruptLoadBalancing},
 		{"intcnt", "show interrupt count by core * IRQ, usage) intcnt <irq>", k_showInterruptCounts},
-		{"sttlb", "start task load balancing", k_startTaskLoadBalancing},
+		//{"sttlb", "start task load balancing", k_startTaskLoadBalancing},
 		{"chaf" ,"change task affinity, usage) chaf <taskId> <affinity>", k_changeAffinity},
-		{"stmp", "start multiprocessor or multi-core processor mode", k_startMultiprocessorMode},
+		//{"stmp", "start multiprocessor or multi-core processor mode", k_startMultiprocessorMode},
 		{"vbe", "show VBE mode info", k_showVbeModeInfo}
 };
 
-void k_startShell(void) {
+void k_shellTask(void) {
 	char commandBuffer[SHELL_MAXCOMMANDBUFFERCOUNT] = {'\0', };
 	int commandBufferIndex = 0;
 	byte key;
 	int x, y;
+	ConsoleManager* consoleManager;
+
+	consoleManager = k_getConsoleManager();
 	
 	k_printf(SHELL_PROMPTMESSAGE);
 	
-	// shell main loop
-	while (true) {
-		// wait until a key is received.
+	// shell task loop
+	while (consoleManager->exit == false) {
+		// wait until key will be received.
 		key = k_getch();
+
+		if (consoleManager->exit == true) {
+			break;
+		}
 		
 		// process Backspace key.
 		if (key == KEY_BACKSPACE) {
@@ -112,7 +119,7 @@ void k_startShell(void) {
 			;
 			
 		// process other keys.
-		} else {
+		} else if (key < 128) {
 			if (key == KEY_TAB) {
 				key = ' ';
 			}
@@ -991,7 +998,7 @@ static void k_dropCharThread(void) {
 			
 		} else {
 			for (i = 0; i < CONSOLE_HEIGHT - 1; i++) {
-				text[0] = i + k_random();
+				text[0] = (i + k_random()) % 128;
 				k_printStrXy(x, i, text);
 				k_sleep(50);
 			}

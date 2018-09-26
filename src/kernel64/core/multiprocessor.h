@@ -1,5 +1,5 @@
-#ifndef __MULTIPROCESSOR_H__
-#define __MULTIPROCESSOR_H__
+#ifndef __CORE_MULTIPROCESSOR_H__
+#define __CORE_MULTIPROCESSOR_H__
 
 #include "types.h"
 
@@ -20,4 +20,4 @@ bool k_startupAp(void);
 byte k_getApicId(void); // get Local APIC ID of current core. [REF] in HansOS, Local APIC ID == core index == scheduler index
 static bool k_wakeupAp(void);
 
-#endif // __MULTIPROCESSOR_H__
+#endif // __CORE_MULTIPROCESSOR_H__

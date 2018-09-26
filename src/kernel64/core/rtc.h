@@ -1,5 +1,5 @@
-#ifndef __RTC_H__
-#define __RTC_H__
+#ifndef __CORE_RTC_H__
+#define __CORE_RTC_H__
 
 #include "types.h"
 
@@ -23,4 +23,4 @@ void k_readRtcTime(byte* hour, byte* minute, byte* second);
 void k_readRtcDate(word* year, byte* month, byte* dayOfMonth, byte* dayOfWeek);
 char* k_convertDayOfWeekToStr(byte dayOfWeek);
 
-#endif // __RTC_H__
+#endif // __CORE_RTC_H__
