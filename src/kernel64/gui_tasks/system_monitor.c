@@ -1,6 +1,6 @@
 #include "system_monitor.h"
 #include "../core/window.h"
-#include "../core/util.h"
+#include "../utils/util.h"
 #include "../core/console.h"
 #include "../core/mp_config_table.h"
 #include "../core/task.h"
@@ -8,8 +8,10 @@
 #include "../fonts/fonts.h"
 
 void k_systemMonitorTask(void) {
-	WindowManager* windowManager;	
+	WindowManager* windowManager;
+	int processorsHeight;
 	int windowWidth;
+	int windowHeight;
 	qword windowId;
 	qword lastTickCount;
 	qword lastDynamicMemUsedSize;
@@ -29,9 +31,15 @@ void k_systemMonitorTask(void) {
 
 	/* create window */
 	windowManager = k_getWindowManager();
-	windowWidth = (SYSTEMMONITOR_PROCESSOR_WIDTH + SYSTEMMONITOR_PROCESSOR_MARGIN) * processorCount + SYSTEMMONITOR_PROCESSOR_MARGIN;
+	processorsHeight = (SYSTEMMONITOR_PROCESSOR_HEIGHT + SYSTEMMONITOR_PROCESSOR_BOTTOMMARGIN) * ((processorCount + 3) / 4);
+	windowWidth = (SYSTEMMONITOR_PROCESSOR_WIDTH + SYSTEMMONITOR_PROCESSOR_SIDEMARGIN) * ((processorCount > 4) ? 4 : processorCount) + SYSTEMMONITOR_PROCESSOR_SIDEMARGIN;
+	windowHeight = WINDOW_TITLEBAR_HEIGHT + processorsHeight + SYSTEMMONITOR_MEMORY_HEIGHT + 40;
 
-	windowId = k_createWindow((windowManager->screenArea.x2 - windowWidth) / 2, (windowManager->screenArea.y2 - SYSTEMMONITOR_WINDOW_HEIGHT) / 2, windowWidth, SYSTEMMONITOR_WINDOW_HEIGHT, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW, "System Monitor");
+	if (processorCount == 1) {
+		windowWidth += 40;
+	}
+
+	windowId = k_createWindow((windowManager->screenArea.x2 - windowWidth) / 2, (windowManager->screenArea.y2 - windowHeight) / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW, "System Monitor");
 	if (windowId == WINDOW_INVALIDID) {
 		return;
 	}
@@ -43,10 +51,10 @@ void k_systemMonitorTask(void) {
 	k_drawText(windowId, 15, WINDOW_TITLEBAR_HEIGHT + 8, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, "Processor Info", 14);
 
 	// draw memory info lines (3 pixels-thick).
-	k_drawLine(windowId, 5, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 50, windowWidth - 5, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 50, RGB(0, 0, 0));
-	k_drawLine(windowId, 5, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 51, windowWidth - 5, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 51, RGB(0, 0, 0));
-	k_drawLine(windowId, 5, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 52, windowWidth - 5, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 52, RGB(0, 0, 0));
-	k_drawText(windowId, 15, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 43, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, "Memory Info", 11);
+	k_drawLine(windowId, 5, WINDOW_TITLEBAR_HEIGHT + processorsHeight + 40, windowWidth - 5, WINDOW_TITLEBAR_HEIGHT + processorsHeight + 40, RGB(0, 0, 0));
+	k_drawLine(windowId, 5, WINDOW_TITLEBAR_HEIGHT + processorsHeight + 41, windowWidth - 5, WINDOW_TITLEBAR_HEIGHT + processorsHeight + 41, RGB(0, 0, 0));
+	k_drawLine(windowId, 5, WINDOW_TITLEBAR_HEIGHT + processorsHeight + 42, windowWidth - 5, WINDOW_TITLEBAR_HEIGHT + processorsHeight + 42, RGB(0, 0, 0));
+	k_drawText(windowId, 15, WINDOW_TITLEBAR_HEIGHT + processorsHeight + 33, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, "Memory Info", 11);
 
 	k_showWindow(windowId, true);
 
@@ -91,7 +99,10 @@ void k_systemMonitorTask(void) {
 			}
 
 			if (changed == true) {
-				k_drawProcessorInfo(windowId, SYSTEMMONITOR_PROCESSOR_WIDTH * i + SYSTEMMONITOR_PROCESSOR_MARGIN * (i + 1), WINDOW_TITLEBAR_HEIGHT + 28, i);
+				k_drawProcessorInfo(windowId
+					               ,SYSTEMMONITOR_PROCESSOR_WIDTH * (i % 4) + SYSTEMMONITOR_PROCESSOR_SIDEMARGIN * ((i % 4) + 1)
+					               ,WINDOW_TITLEBAR_HEIGHT + (SYSTEMMONITOR_PROCESSOR_HEIGHT + SYSTEMMONITOR_PROCESSOR_BOTTOMMARGIN) * (i / 4) + 28
+					               ,i);
 			}
 		}
 
@@ -100,7 +111,9 @@ void k_systemMonitorTask(void) {
 
 		if (dynamicMemUsedSize != lastDynamicMemUsedSize) {
 			lastDynamicMemUsedSize = dynamicMemUsedSize;
-			k_drawMemoryInfo(windowId, WINDOW_TITLEBAR_HEIGHT + SYSTEMMONITOR_PROCESSOR_HEIGHT + 60, windowWidth);
+			k_drawMemoryInfo(windowId
+							,WINDOW_TITLEBAR_HEIGHT + processorsHeight + 50
+							,windowWidth);
 		}
 	}
 }
@@ -110,12 +123,13 @@ static void k_drawProcessorInfo(qword windowId, int x, int y, byte apicId) {
 	qword processorLoad; // processor load (processor usage, %)
 	qword usageBarHeight;
 	int middleX;
+	int middleY;
 	Rect area;
 
 	/* print core ID and task count */
-	k_sprintf(buffer, "- core ID    : %d", apicId);
+	k_sprintf(buffer, "- core : %d", apicId);
 	k_drawText(windowId, x, y, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer, k_strlen(buffer));
-	k_sprintf(buffer, "- task count : %d   ", k_getTaskCount(apicId));
+	k_sprintf(buffer, "- task : %d   ", k_getTaskCount(apicId));
 	k_drawText(windowId, x, y + 18, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer, k_strlen(buffer));
 
 	/* draw processor load (usage) bar */
@@ -136,8 +150,9 @@ static void k_drawProcessorInfo(qword windowId, int x, int y, byte apicId) {
 
 	// print processor load in the center of bar.
 	k_sprintf(buffer, "usage: %d %%", processorLoad);
-	middleX = (SYSTEMMONITOR_PROCESSOR_WIDTH - (FONT_VERAMONO_ENG_WIDTH * k_strlen(buffer))) / 2;
-	k_drawText(windowId, x + middleX, y + 80, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer, k_strlen(buffer));
+	middleX = (SYSTEMMONITOR_PROCESSOR_WIDTH - (FONT_DEFAULT_WIDTH * k_strlen(buffer))) / 2;
+	middleY = 30 + ((SYSTEMMONITOR_PROCESSOR_HEIGHT - 40) / 2);
+	k_drawText(windowId, x + middleX, y + middleY, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer, k_strlen(buffer));
 
 	// update screen.
 	k_setRect(&area, x, y, x + SYSTEMMONITOR_PROCESSOR_WIDTH - 1, y + SYSTEMMONITOR_PROCESSOR_HEIGHT - 1);
@@ -158,14 +173,14 @@ static void k_drawMemoryInfo(qword windowId, int y, int windowWidth) {
 	k_getDynamicMemInfo(&dynamicMemStartAddr, null, null, &dynamicMemUsedSize);
 
 	/* print total size and used size */
-	k_sprintf(buffer, "- total size : %d MB", totalRamSize);
-	k_drawText(windowId, SYSTEMMONITOR_PROCESSOR_MARGIN, y + 3, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer, k_strlen(buffer));
-	k_sprintf(buffer, "- used size  : %d MB", (dynamicMemStartAddr + dynamicMemUsedSize) / 1024 / 1024);
-	k_drawText(windowId, SYSTEMMONITOR_PROCESSOR_MARGIN, y + 21, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer, k_strlen(buffer));
+	k_sprintf(buffer, "- total : %d MB", totalRamSize);
+	k_drawText(windowId, SYSTEMMONITOR_MEMORY_SIDEMARGIN, y + 3, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer, k_strlen(buffer));
+	k_sprintf(buffer, "- used  : %d MB", (dynamicMemStartAddr + dynamicMemUsedSize) / 1024 / 1024);
+	k_drawText(windowId, SYSTEMMONITOR_MEMORY_SIDEMARGIN, y + 21, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer, k_strlen(buffer));
 
 	/* draw memory usase bar */
 	// draw bar border.
-	k_drawRect(windowId, SYSTEMMONITOR_PROCESSOR_MARGIN, y + 40, windowWidth - SYSTEMMONITOR_PROCESSOR_MARGIN, y + SYSTEMMONITOR_MEMORY_HEIGHT - 32, RGB(0, 0, 0), false);
+	k_drawRect(windowId, SYSTEMMONITOR_MEMORY_SIDEMARGIN, y + 40, windowWidth - SYSTEMMONITOR_MEMORY_SIDEMARGIN, y + SYSTEMMONITOR_MEMORY_HEIGHT - 32, RGB(0, 0, 0), false);
 
 	// memory usage (%) = (kernel used size + dynamic memory used size) * 100 / total RAM size
 	memoryUsage = (dynamicMemStartAddr + dynamicMemUsedSize) * 100 / 1024 / 1024 / totalRamSize;
@@ -174,15 +189,15 @@ static void k_drawMemoryInfo(qword windowId, int y, int windowWidth) {
 	}
 
 	// usage bar width = total bar width * memory usage / 100
-	usageBarWidth = (windowWidth - SYSTEMMONITOR_PROCESSOR_MARGIN * 2) * memoryUsage / 100;
+	usageBarWidth = (windowWidth - SYSTEMMONITOR_MEMORY_SIDEMARGIN * 2) * memoryUsage / 100;
 
 	// draw bar (usage/free): put 1 pixel-thick space from border.
-	k_drawRect(windowId, SYSTEMMONITOR_PROCESSOR_MARGIN + 2, y + 42, SYSTEMMONITOR_PROCESSOR_MARGIN + 2 + usageBarWidth, y + SYSTEMMONITOR_MEMORY_HEIGHT - 34, SYSTEMMONITOR_COLOR_BAR, true);
-	k_drawRect(windowId, SYSTEMMONITOR_PROCESSOR_MARGIN + 2 + usageBarWidth, y + 42, windowWidth - SYSTEMMONITOR_PROCESSOR_MARGIN - 2, y + SYSTEMMONITOR_MEMORY_HEIGHT - 34, WINDOW_COLOR_BACKGROUND, true);
+	k_drawRect(windowId, SYSTEMMONITOR_MEMORY_SIDEMARGIN + 2, y + 42, SYSTEMMONITOR_MEMORY_SIDEMARGIN + 2 + usageBarWidth, y + SYSTEMMONITOR_MEMORY_HEIGHT - 34, SYSTEMMONITOR_COLOR_BAR, true);
+	k_drawRect(windowId, SYSTEMMONITOR_MEMORY_SIDEMARGIN + 2 + usageBarWidth, y + 42, windowWidth - SYSTEMMONITOR_MEMORY_SIDEMARGIN - 2, y + SYSTEMMONITOR_MEMORY_HEIGHT - 34, WINDOW_COLOR_BACKGROUND, true);
 
 	// print memory usage in the center of bar.
 	k_sprintf(buffer, "usage: %d %%", memoryUsage);
-	middleX = (windowWidth - (FONT_VERAMONO_ENG_WIDTH * k_strlen(buffer))) / 2;
+	middleX = (windowWidth - (FONT_DEFAULT_WIDTH * k_strlen(buffer))) / 2;
 	k_drawText(windowId, middleX, y + 45, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, buffer, k_strlen(buffer));
 
 	// update screen.

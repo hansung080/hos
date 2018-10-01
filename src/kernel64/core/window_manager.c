@@ -1,13 +1,10 @@
 #include "window_manager.h"
 #include "window.h"
-#include "util.h"
+#include "../utils/util.h"
 #include "mouse.h"
 #include "keyboard.h"
 #include "task.h"
 #include "../gui_tasks/app_panel.h"
-#if 0
-#include "../fonts/fonts.h" // Screen Update Performance Test
-#endif
 
 /**
   < Screen Update Performance Test >
@@ -27,21 +24,21 @@
     - 170 : 35  : 200
 */
 
+#if __DEBUG__
+volatile qword g_winMgrMinLoopCount = 0xFFFFFFFFFFFFFFFF;
+#endif // __DEBUG__
+
 void k_windowManagerTask(void) {
 	int mouseX, mouseY;
 	bool mouseResult;
 	bool keyResult;
 	bool windowManagerResult;
-	#if 0
+	#if __DEBUG__
 	/* Screen Update Performance Test */
 	qword lastTickCount;
 	qword loopCount;
 	qword prevLoopCount;
-	qword minLoopCount;
-	qword backgroundWindowId;
-	char loopCountBuffer[40];
-	Rect loopCountArea;
-	#endif
+	#endif // __DEBUG__
 	
 	// initialize GUI.
 	k_initGui();
@@ -51,39 +48,32 @@ void k_windowManagerTask(void) {
 	k_moveMouseCursor(mouseX, mouseY);
 
 	// create app panel task.
-	k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_appPanelTask, TASK_AFFINITY_LOADBALANCING);
+	k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD | TASK_FLAGS_GUI, null, 0, (qword)k_appPanelTask, TASK_AFFINITY_LOADBALANCING);
 	
-	#if 0
+	#if __DEBUG__
 	/* Screen Update Performance Test */
 	lastTickCount = k_getTickCount();
 	loopCount = 0;
 	prevLoopCount = 0;
-	minLoopCount = 0xFFFFFFFFFFFFFFFF;
-	backgroundWindowId = k_getBackgroundWindowId();
-	#endif
+	#endif // __DEBUG__
 	
 	/* window manager task loop */
 	while (true) {
-		#if 0
+		#if __DEBUG__
 		/* Screen Update Performance Test */
 		// print minimum loop count among loop counts during 1 second.
 		if (k_getTickCount() - lastTickCount > 1000) {
 			lastTickCount = k_getTickCount();
 			
-			if (loopCount - prevLoopCount < minLoopCount) {
-				minLoopCount = loopCount - prevLoopCount;
+			if (loopCount - prevLoopCount < g_winMgrMinLoopCount) {
+				g_winMgrMinLoopCount = loopCount - prevLoopCount;
 			}
 			
-			prevLoopCount = loopCount;
-			
-			k_sprintf(loopCountBuffer, "MIN Loop Count: %d   ", minLoopCount);
-			k_drawText(backgroundWindowId, 0, 0, RGB(0, 0, 0), WINDOW_COLOR_SYSTEMBACKGROUND, loopCountBuffer, k_strlen(loopCountBuffer));
-			k_setRect(&loopCountArea, 0, 0, FONT_VERAMONO_ENG_WIDTH * k_strlen(loopCountBuffer) - 1, FONT_VERAMONO_ENG_HEIGHT - 1);
-			k_redrawWindowByArea(backgroundWindowId, &loopCountArea);
+			prevLoopCount = loopCount;			
 		}
 		
 		loopCount++;
-		#endif
+		#endif // __DEBUG__
 		
 		// process mouse data.
 		mouseResult = k_processMouseData();

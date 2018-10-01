@@ -1,7 +1,7 @@
-#ifndef __CORE_LIST_H__
-#define __CORE_LIST_H__
+#ifndef __UTILS_LIST_H__
+#define __UTILS_LIST_H__
 
-#include "types.h"
+#include "../core/types.h"
 
 #pragma pack(push, 1)
 
@@ -17,7 +17,7 @@ typedef struct k_ListLink {
           char data1;
           int data2;
       } ListItem; // ListItem is a node of list.
- */
+*/
 
 // General Linked List
 typedef struct k_List {
@@ -30,14 +30,14 @@ typedef struct k_List {
 
 void k_initList(List* list);
 int k_getListCount(const List* list);
-void k_addListToTail(List* list, void* item);
 void k_addListToHead(List* list, void* item);
-void* k_removeList(List* list, qword id);
+void k_addListToTail(List* list, void* item);
+void* k_removeListById(List* list, qword id);
 void* k_removeListFromHead(List* list);
 void* k_removeListFromTail(List* list);
-void* k_findList(const List* list, qword id);
+void* k_findListById(const List* list, qword id);
 void* k_getHeadFromList(const List* list);
 void* k_getTailFromList(const List* list);
 void* k_getNextFromList(const List* list, void* current);
 
-#endif // __CORE_LIST_H__
+#endif // __UTILS_LIST_H__

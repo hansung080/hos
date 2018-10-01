@@ -3,7 +3,7 @@
 
 #include "types.h"
 #include "sync.h"
-#include "queue.h"
+#include "../utils/queue.h"
 #include "keyboard.h"
 
 /**

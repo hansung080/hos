@@ -1,7 +1,7 @@
 #include "io_apic.h"
 #include "mp_config_table.h"
 #include "pic.h"
-#include "util.h"
+#include "../utils/util.h"
 #include "console.h"
 #include "multiprocessor.h"
 

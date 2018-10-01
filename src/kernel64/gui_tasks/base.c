@@ -1,8 +1,9 @@
 #include "base.h"
 #include "../core/window.h"
-#include "../core/util.h"
+#include "../utils/util.h"
 #include "../core/console.h"
 
+#if __DEBUG__
 void k_baseTask(void) {
 	int mouseX, mouseY;
 	int windowWidth, windowHeight;
@@ -69,3 +70,4 @@ void k_baseTask(void) {
 		}
 	}
 }
+#endif // __DEBUG__

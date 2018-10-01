@@ -12,6 +12,8 @@
 
 #define null 0
 
+#define __DEBUG__ 1 // 0: release mode, 1: debug mode
+
 // Original offsetof macro function is defined in stddef.h.
 // But, the same macro function is defined here in order to avoid type duplication.
 #define offsetof(TYPE, MEMBER) __builtin_offsetof(TYPE, MEMBER)

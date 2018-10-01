@@ -1,11 +1,12 @@
 #include "task.h"
 #include "descriptors.h"
-#include "util.h"
+#include "../utils/util.h"
 #include "asm_util.h"
 #include "sync.h"
 #include "console.h"
 #include "multiprocessor.h"
 #include "mp_config_table.h"
+#include "window.h"
 
 static TaskPoolManager g_taskPoolManager;
 static Scheduler g_schedulers[MAXPROCESSORCOUNT];
@@ -187,7 +188,7 @@ static void k_setTask(Task* task, qword flags, qword entryPointAddr, void* stack
 	task->context.registers[TASK_RBP_OFFSET] = (qword)stackAddr + stackSize - 8;
 	
 	// push the address of k_exitTask function to the top (8 bytes) of stack as the return address,
-	// in order to move to ExitTask function when entry point function of task returns.
+	// in order to move to k_exitTask function when entry point function of task returns.
 	*(qword*)((qword)stackAddr + stackSize - 8) = (qword)k_exitTask;
 	
 	// set segment selector.
@@ -331,7 +332,7 @@ static bool k_addTaskToReadyList(byte apicId, Task* task) {
 	byte priority;
 	
 	priority = GETTASKPRIORITY(task->flags);
-	if (priority == TASK_FLAGS_END) {
+	if (priority == TASK_FLAGS_ENDPRIORITY) {
 		k_addListToTail(&(g_schedulers[apicId].endList), task);
 		return true;
 		
@@ -364,7 +365,7 @@ static Task* k_removeTaskFromReadyList(byte apicId, qword taskId) {
 	}
 	
 	// remove task from ready list with the priority.
-	target = k_removeList(&(g_schedulers[apicId].readyLists[priority]), taskId);
+	target = k_removeListById(&(g_schedulers[apicId].readyLists[priority]), taskId);
 	
 	return target;
 }
@@ -584,7 +585,7 @@ bool k_schedule(void) {
 	 */
 	
 	// If it's switched from end task, move end task to end list, switch task.
-	if ((runningTask->flags & TASK_FLAGS_ENDTASK) == TASK_FLAGS_ENDTASK) {
+	if ((runningTask->flags & TASK_FLAGS_END) == TASK_FLAGS_END) {
 		k_addListToTail(&(g_schedulers[currentApicId].endList), runningTask);
 		k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
 		// restore next task context from task pool to registers.
@@ -642,7 +643,7 @@ bool k_scheduleInInterrupt(void) {
 	 */
 	
 	// If it's switched from end task, move end task to end list, switch task.
-	if ((runningTask->flags & TASK_FLAGS_ENDTASK) == TASK_FLAGS_ENDTASK) {
+	if ((runningTask->flags & TASK_FLAGS_END) == TASK_FLAGS_END) {
 		k_addListToTail(&(g_schedulers[currentApicId].endList), runningTask);
 		
 	// If it's switched from normal task, move normal task to ready list, switch task.
@@ -664,7 +665,7 @@ bool k_scheduleInInterrupt(void) {
 	// restore next task context from task pool to IST.
 	k_memcpy(contextAddr, &(nextTask->context), sizeof(Context));
 	
-	if ((runningTask->flags & TASK_FLAGS_ENDTASK) != TASK_FLAGS_ENDTASK) {
+	if ((runningTask->flags & TASK_FLAGS_END) != TASK_FLAGS_END) {
 		k_addTaskToSchedulerWithLoadBalancing(runningTask);
 	}
 	
@@ -690,7 +691,7 @@ bool k_endTask(qword taskId) {
 	Task* target;
 	byte priority;
 	byte apicId;
-	
+
 	if (k_findSchedulerByTaskWithLock(taskId, &apicId) == false) {
 		return false;
 	}
@@ -699,8 +700,12 @@ bool k_endTask(qword taskId) {
 	
 	// If it's a running task, set end task flag, and switch task
 	if (target->link.id == taskId) {
-		target->flags |= TASK_FLAGS_ENDTASK;
-		SETTASKPRIORITY(target->flags, TASK_FLAGS_END);
+		if (target->flags & TASK_FLAGS_GUI) {
+			k_deleteWindowsByTask(target->link.id);
+		}
+
+		target->flags |= TASK_FLAGS_END;
+		SETTASKPRIORITY(target->flags, TASK_FLAGS_ENDPRIORITY);
 		
 		k_unlockSpin(&(g_schedulers[apicId].spinlock));
 		
@@ -723,8 +728,12 @@ bool k_endTask(qword taskId) {
 	if (target == null) {
 		target = k_getTaskFromPool(GETTASKOFFSET(taskId));
 		if (target != null) {
-			target->flags |= TASK_FLAGS_ENDTASK;
-			SETTASKPRIORITY(target->flags, TASK_FLAGS_END);
+			if (target->flags & TASK_FLAGS_GUI) {
+				k_deleteWindowsByTask(target->link.id);
+			}
+
+			target->flags |= TASK_FLAGS_END;
+			SETTASKPRIORITY(target->flags, TASK_FLAGS_ENDPRIORITY);
 		}
 		
 		k_unlockSpin(&(g_schedulers[apicId].spinlock));
@@ -732,8 +741,12 @@ bool k_endTask(qword taskId) {
 		return true;
 	}
 	
-	target->flags |= TASK_FLAGS_ENDTASK;
-	SETTASKPRIORITY(target->flags, TASK_FLAGS_END);
+	if (target->flags & TASK_FLAGS_GUI) {
+		k_deleteWindowsByTask(target->link.id);
+	}
+
+	target->flags |= TASK_FLAGS_END;
+	SETTASKPRIORITY(target->flags, TASK_FLAGS_ENDPRIORITY);
 	k_addListToTail(&(g_schedulers[apicId].endList), target);
 	
 	k_unlockSpin(&(g_schedulers[apicId].spinlock));
@@ -1049,7 +1062,7 @@ void k_idleTask(void) {
 					process = k_getProcessByThread(task);
 					if (process != null) {
 						if (k_findSchedulerByTaskWithLock(process->link.id, &processApicId) == true) {
-							k_removeList(&(process->childThreadList), task->link.id);
+							k_removeListById(&(process->childThreadList), task->link.id);
 							k_unlockSpin(&(g_schedulers[processApicId].spinlock));
 						}
 					}
@@ -1058,7 +1071,9 @@ void k_idleTask(void) {
 				// free task of end task (If task is freed, then also stack is freed automatically.)
 				taskId = task->link.id;
 				k_freeTask(taskId);
+				#if __DEBUG__
 				k_printf("IDLE: Task (0x%q) has completely ended.\n", taskId);
+				#endif // __DEBUG__
 			}
 		}
 		

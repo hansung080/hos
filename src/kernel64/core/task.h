@@ -2,7 +2,7 @@
 #define __CORE_TASK_H__
 
 #include "types.h"
-#include "list.h"
+#include "../utils/list.h"
 #include "sync.h"
 
 // count and size of context registers
@@ -53,19 +53,20 @@
 #define TASK_MAXREADYLISTCOUNT 5
 
 // task priority (low 8 bits of task flags)
-#define TASK_FLAGS_HIGHEST 0x00 // highest
-#define TASK_FLAGS_HIGH    0x01 // high
-#define TASK_FLAGS_MEDIUM  0x02 // medium
-#define TASK_FLAGS_LOW     0x03 // low
-#define TASK_FLAGS_LOWEST  0x04 // lowest
-#define TASK_FLAGS_END     0xFF // end task priority
+#define TASK_FLAGS_HIGHEST     0x00 // highest
+#define TASK_FLAGS_HIGH        0x01 // high
+#define TASK_FLAGS_MEDIUM      0x02 // medium
+#define TASK_FLAGS_LOW         0x03 // low
+#define TASK_FLAGS_LOWEST      0x04 // lowest
+#define TASK_FLAGS_ENDPRIORITY 0xFF // end task priority
 
 // task flags
-#define TASK_FLAGS_ENDTASK 0x8000000000000000 // end task flag
+#define TASK_FLAGS_END     0x8000000000000000 // end task flag
 #define TASK_FLAGS_SYSTEM  0x4000000000000000 // system task flag
 #define TASK_FLAGS_PROCESS 0x2000000000000000 // processor flag
 #define TASK_FLAGS_THREAD  0x1000000000000000 // thread flag
 #define TASK_FLAGS_IDLE    0x0800000000000000 // idle task flag
+#define TASK_FLAGS_GUI     0x0400000000000000 // GUI task flag
 
 // affinity
 #define TASK_AFFINITY_LOADBALANCING 0xFF // no affinity
@@ -95,6 +96,7 @@ typedef struct k_Task {
 	                         //             bit 61  : processor flag
 	                         //             bit 60  : thread flag
 	                         //             bit 59  : idle task flag
+							 //             bit 58  : GUI task flag
 	void* memAddr;           // start address of process memory area (code, data area)
 	qword memSize;           // size of process memory area (code, data area)
 	

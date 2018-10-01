@@ -2,7 +2,7 @@
 #include "pic.h"
 #include "keyboard.h"
 #include "console.h"
-#include "util.h"
+#include "../utils/util.h"
 #include "task.h"
 #include "descriptors.h"
 #include "asm_util.h"
@@ -105,7 +105,7 @@ void k_deviceNotAvailableHandler(int vector) {
 	qword lastFpuTaskId; // last FPU-used task ID
 	byte currentApicId;
 	
-	//====================================================================================================
+	#if __DEBUG__
 	/* print FPU exception message */
 	char buffer[] = "[EXC:  , ]";
 	static int fpuExceptionCount = 0;
@@ -120,7 +120,7 @@ void k_deviceNotAvailableHandler(int vector) {
 	
 	// print in the first position of the first line.
 	k_printStrXy(0, 0, buffer);
-	//====================================================================================================
+	#endif // __DEBUG__
 	
 	currentApicId = k_getApicId();
 	
@@ -157,12 +157,13 @@ void k_deviceNotAvailableHandler(int vector) {
 }
 
 void k_commonInterruptHandler(int vector) {
-	char buffer[] = "[INT:  , ]";
-	static int commonInterruptCount = 0;
 	int irq;
 	
-	//====================================================================================================
+	#if __DEBUG__
 	/* print interrupt message */
+	char buffer[] = "[INT:  , ]";
+	static int commonInterruptCount = 0;
+
 	// set vector number (2 digits integer).
 	buffer[5] = '0' + vector / 10;
 	buffer[6] = '0' + vector % 10;
@@ -173,7 +174,7 @@ void k_commonInterruptHandler(int vector) {
 	
 	// print in the last position of the first line.
 	k_printStrXy(70, 0, buffer);
-	//====================================================================================================
+	#endif // __DEBUG__
 	
 	irq = vector - PIC_IRQSTARTVECTOR;
 	
@@ -185,13 +186,14 @@ void k_commonInterruptHandler(int vector) {
 }
 
 void k_timerHandler(int vector) {
-	char buffer[] = "[INT:  , ]";
-	static int timerInterruptCount = 0;
 	int irq;
 	byte currentApicId;
 	
-	//====================================================================================================
+	#if __DEBUG__
 	/* print interrupt message */
+	char buffer[] = "[INT:  , ]";
+	static int timerInterruptCount = 0;
+
 	// set vector number (2 digits integer).
 	buffer[5] = '0' + vector / 10;
 	buffer[6] = '0' + vector % 10;
@@ -202,7 +204,7 @@ void k_timerHandler(int vector) {
 	
 	// print in the last position of the first line.
 	k_printStrXy(70, 0, buffer);
-	//====================================================================================================
+	#endif // __DEBUG__
 	
 	irq = vector - PIC_IRQSTARTVECTOR;
 	
@@ -224,13 +226,14 @@ void k_timerHandler(int vector) {
 }
 
 void k_keyboardHandler(int vector) {
-	char buffer[] = "[INT:  , ]";
-	static int keyboardInterruptCount = 0;
 	byte data;
 	int irq;
 	
-	//====================================================================================================
+	#if __DEBUG__
 	/* print interrupt message */
+	char buffer[] = "[INT:  , ]";
+	static int keyboardInterruptCount = 0;
+
 	// set vector number (2 digits integer).
 	buffer[5] = '0' + vector / 10;
 	buffer[6] = '0' + vector % 10;
@@ -241,7 +244,7 @@ void k_keyboardHandler(int vector) {
 	
 	// print in the first position of the first line.
 	k_printStrXy(0, 0, buffer);
-	//====================================================================================================
+	#endif // __DEBUG__
 	
 	if (k_isOutputBufferFull() == true) {
 		if (k_isMouseDataInOutputBuffer() == false) {
@@ -271,13 +274,14 @@ void k_keyboardHandler(int vector) {
 }
 
 void k_mouseHandler(int vector) {
-	char buffer[] = "[INT:  , ]";
-	static int mouseInterruptCount = 0;
 	byte data;
 	int irq;
 	
-	//====================================================================================================
+	#if __DEBUG__
 	/* print interrupt message */
+	char buffer[] = "[INT:  , ]";
+	static int mouseInterruptCount = 0;
+
 	// set vector number (2 digits integer).
 	buffer[5] = '0' + vector / 10;
 	buffer[6] = '0' + vector % 10;
@@ -288,7 +292,7 @@ void k_mouseHandler(int vector) {
 	
 	// print in the first position of the first line.
 	k_printStrXy(0, 0, buffer);
-	//====================================================================================================
+	#endif // __DEBUG__
 	
 	if (k_isOutputBufferFull() == true) {
 		if (k_isMouseDataInOutputBuffer() == false) {
@@ -318,12 +322,13 @@ void k_mouseHandler(int vector) {
 }
 
 void k_hddHandler(int vector) {
-	char buffer[] = "[INT:  , ]";
-	static int hddInterruptCount = 0;
 	int irq;
 	
-	//====================================================================================================
+	#if __DEBUG__
 	/* print interrupt message */
+	char buffer[] = "[INT:  , ]";
+	static int hddInterruptCount = 0;
+		
 	// set vector number (2 digits integer).
 	buffer[5] = '0' + vector / 10;
 	buffer[6] = '0' + vector % 10;
@@ -334,7 +339,7 @@ void k_hddHandler(int vector) {
 	
 	// print in the second position of the first line.
 	k_printStrXy(10, 0, buffer);
-	//====================================================================================================
+	#endif // __DEBUG__
 	
 	irq = vector - PIC_IRQSTARTVECTOR;
 	

@@ -1,8 +1,8 @@
 #include "types.h"
 #include "asm_util.h"
 #include "keyboard.h"
-#include "queue.h"
-#include "util.h"
+#include "../utils/queue.h"
+#include "../utils/util.h"
 #include "sync.h"
 #include "mouse.h"
 
@@ -434,7 +434,7 @@ bool k_convertScanCodeToAsciiCode(byte scanCode, byte* asciiCode, byte* flags) {
 
 bool k_initKeyboard(void) {
 	// initialize key queue.
-	k_initQueue(&g_keyQueue, g_keyBuffer, KEY_MAXQUEUECOUNT, sizeof(Key));
+	k_initQueue(&g_keyQueue, g_keyBuffer, sizeof(Key), KEY_MAXQUEUECOUNT);
 	
 	// initialize spinlock.
 	k_initSpinlock(&(g_keyboardManager.spinlock));

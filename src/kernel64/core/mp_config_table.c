@@ -1,6 +1,6 @@
 #include "mp_config_table.h"
 #include "console.h"
-#include "util.h"
+#include "../utils/util.h"
 
 static MpConfigManager g_mpConfigManager = {0, };
 

@@ -1,17 +1,17 @@
 #include "queue.h"
 #include "util.h"
 
-void k_initQueue(Queue* queue, void* array, int maxDataCount, int dataSize) {
+void k_initQueue(Queue* queue, void* array, int dataSize, int maxDataCount) {
 	queue->dataSize = dataSize;
 	queue->maxDataCount = maxDataCount;
 	queue->array = array;
-	queue->getIndex = 0;
 	queue->putIndex = 0;
+	queue->getIndex = 0;
 	queue->lastOperationPut = false;
 }
 
 bool k_isQueueFull(const Queue* queue) {
-	if ((queue->getIndex == queue->putIndex) && (queue->lastOperationPut == true)) {
+	if ((queue->putIndex == queue->getIndex) && (queue->lastOperationPut == true)) {
 		return true;
 	}
 	
@@ -19,7 +19,7 @@ bool k_isQueueFull(const Queue* queue) {
 }
 
 bool k_isQueueEmpty(const Queue* queue) {
-	if ((queue->getIndex == queue->putIndex) && (queue->lastOperationPut == false)) {
+	if ((queue->putIndex == queue->getIndex) && (queue->lastOperationPut == false)) {
 		return true;
 	}
 	

@@ -1,5 +1,5 @@
 #include "descriptors.h"
-#include "util.h"
+#include "../utils/util.h"
 #include "isr.h"
 
 void k_initGdtAndTss(void) {

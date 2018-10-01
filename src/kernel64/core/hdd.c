@@ -1,6 +1,6 @@
 #include "hdd.h"
 #include "asm_util.h"
-#include "util.h"
+#include "../utils/util.h"
 #include "console.h"
 
 static HddManager g_hddManager;

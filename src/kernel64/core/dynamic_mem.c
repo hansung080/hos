@@ -1,5 +1,5 @@
 #include "dynamic_mem.h"
-#include "util.h"
+#include "../utils/util.h"
 #include "sync.h"
 #include "console.h"
 

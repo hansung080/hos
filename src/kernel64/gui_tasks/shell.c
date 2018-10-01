@@ -1,15 +1,16 @@
 #include "shell.h"
 #include "../core/window.h"
-#include "../core/util.h"
+#include "../utils/util.h"
 #include "../core/console.h"
 #include "../core/task.h"
 #include "../core/shell.h"
 #include "../fonts/fonts.h"
+#include "../core/multiprocessor.h"
 
 static Char g_prevScreenBuffer[CONSOLE_WIDTH * CONSOLE_HEIGHT];
+volatile qword g_guiShellWindowId = WINDOW_INVALIDID;
 
 void k_guiShellTask(void) {
-	static qword windowId = WINDOW_INVALIDID;
 	Rect screenArea;
 	int windowWidth;
 	int windowHeight;
@@ -27,8 +28,8 @@ void k_guiShellTask(void) {
 
 	// GUI shell window had better exist only one,
 	// even though user executes shell app many times.
-	if (windowId != WINDOW_INVALIDID) {
-		k_moveWindowToTop(windowId);
+	if (g_guiShellWindowId != WINDOW_INVALIDID) {
+		k_moveWindowToTop(g_guiShellWindowId);
 		return;
 	}
 
@@ -37,31 +38,32 @@ void k_guiShellTask(void) {
 
 	// The window has 2 pixels-thick free space on left, 2 pixels-thick free space on right,
 	// title bar on top, and 2 pixels-thick free space on bottom.
-	windowWidth = FONT_VERAMONO_ENG_WIDTH * CONSOLE_WIDTH + 4;
-	windowHeight = FONT_VERAMONO_ENG_HEIGHT * CONSOLE_HEIGHT + WINDOW_TITLEBAR_HEIGHT + 2;
+	windowWidth = FONT_DEFAULT_WIDTH * CONSOLE_WIDTH + 4;
+	windowHeight = FONT_DEFAULT_HEIGHT * CONSOLE_HEIGHT + WINDOW_TITLEBAR_HEIGHT + 2;
 
-	windowId = k_createWindow((screenArea.x2 - windowWidth) / 2, (screenArea.y2 - windowHeight) / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT, "Shell");
-	if (windowId == WINDOW_INVALIDID) {
+	g_guiShellWindowId = k_createWindow((screenArea.x2 - windowWidth) / 2, (screenArea.y2 - windowHeight) / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT, "Shell");
+	if (g_guiShellWindowId == WINDOW_INVALIDID) {
 		return;
 	}
 
 	/* create shell task */
 	k_setShellExitFlag(false);
+
 	shellTask = k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_shellTask, TASK_AFFINITY_LOADBALANCING);
 	if (shellTask == null) {
-		k_deleteWindow(windowId);
+		k_deleteWindow(g_guiShellWindowId);
 		return;
 	}
 
 	shellTaskId = shellTask->link.id;
 
 	k_memset(g_prevScreenBuffer, 0xFF, sizeof(g_prevScreenBuffer));
-
+	
 	/* event processing loop */
 	while (true) {
-		k_processConsoleScreenBuffer(windowId);
+		k_processConsoleScreenBuffer(g_guiShellWindowId);
 
-		if (k_recvEventFromWindow(&event, windowId) == false) {
+		if (k_recvEventFromWindow(&event, g_guiShellWindowId) == false) {
 			k_sleep(0);
 			continue;
 		}
@@ -73,8 +75,8 @@ void k_guiShellTask(void) {
 				k_sleep(1);
 			}
 
-			k_deleteWindow(windowId);
-			windowId = WINDOW_INVALIDID;
+			k_deleteWindow(g_guiShellWindowId);
+			g_guiShellWindowId = WINDOW_INVALIDID;
 
 			return;
 
@@ -124,7 +126,7 @@ static void k_processConsoleScreenBuffer(qword windowId) {
 
 		for (j = 0; j < CONSOLE_WIDTH; j++) {
 			if ((screenBuffer->char_ != prevScreenBuffer->char_) || (fullRedraw == true)) {
-				k_drawText(windowId, FONT_VERAMONO_ENG_WIDTH * j + 2, FONT_VERAMONO_ENG_HEIGHT * i + WINDOW_TITLEBAR_HEIGHT, RGB(0, 255, 0), RGB(0, 0, 0), &screenBuffer->char_, 1);
+				k_drawText(windowId, FONT_DEFAULT_WIDTH * j + 2, FONT_DEFAULT_HEIGHT * i + WINDOW_TITLEBAR_HEIGHT, RGB(0, 255, 0), RGB(0, 0, 0), &screenBuffer->char_, 1);
 				k_memcpy(prevScreenBuffer, screenBuffer, sizeof(Char));
 				changed = true;
 			}
@@ -135,7 +137,7 @@ static void k_processConsoleScreenBuffer(qword windowId) {
 
 		// update current line of console screen if current line has the changes.
 		if (changed == true) {
-			k_setRect(&lineArea, 2, FONT_VERAMONO_ENG_HEIGHT * i + WINDOW_TITLEBAR_HEIGHT, FONT_VERAMONO_ENG_WIDTH * CONSOLE_WIDTH + 5, FONT_VERAMONO_ENG_HEIGHT * (i + 1) + WINDOW_TITLEBAR_HEIGHT - 1);
+			k_setRect(&lineArea, 2, FONT_DEFAULT_HEIGHT * i + WINDOW_TITLEBAR_HEIGHT, FONT_DEFAULT_WIDTH * CONSOLE_WIDTH + 5, FONT_DEFAULT_HEIGHT * (i + 1) + WINDOW_TITLEBAR_HEIGHT - 1);
 			k_updateScreenByWindowArea(windowId, &lineArea);
 		}
 	}

@@ -16,6 +16,7 @@ all: prepare $(TARGET)
 prepare:
 	mkdir -p $(OUT_DIR)
 	mkdir -p $(OUT_DIR)/core
+	mkdir -p $(OUT_DIR)/utils
 	mkdir -p $(OUT_DIR)/fonts
 	mkdir -p $(OUT_DIR)/gui_tasks
 
@@ -40,6 +41,8 @@ CORE_C_SRCS=$(wildcard $(SRC_DIR_FROM_OUT)/core/*.c)
 CORE_C_OBJS=$(patsubst %.c, core/%.o, $(notdir $(CORE_C_SRCS)))
 CORE_ASM_SRCS=$(wildcard $(SRC_DIR_FROM_OUT)/core/*.asm)
 CORE_ASM_OBJS=$(patsubst %.asm, core/%.o, $(notdir $(CORE_ASM_SRCS)))
+UTILS_C_SRCS=$(wildcard $(SRC_DIR_FROM_OUT)/utils/*.c)
+UTILS_C_OBJS=$(patsubst %.c, utils/%.o, $(notdir $(UTILS_C_SRCS)))
 FONTS_C_SRCS=$(wildcard $(SRC_DIR_FROM_OUT)/fonts/*.c)
 FONTS_C_OBJS=$(patsubst %.c, fonts/%.o, $(notdir $(FONTS_C_SRCS)))
 GUITASKS_C_SRCS=$(wildcard $(SRC_DIR_FROM_OUT)/gui_tasks/*.c)
@@ -48,11 +51,13 @@ GUITASKS_C_OBJS=$(patsubst %.c, gui_tasks/%.o, $(notdir $(GUITASKS_C_SRCS)))
 internal-dep:
 	$(GCC64) -MM $(CORE_C_SRCS) > core.dep
 	../tools/dep_modifier/dep-modifier core.dep core/
+	$(GCC64) -MM $(UTILS_C_SRCS) > utils.dep
+	../tools/dep_modifier/dep-modifier utils.dep utils/	
 	$(GCC64) -MM $(FONTS_C_SRCS) > fonts.dep
 	../tools/dep_modifier/dep-modifier fonts.dep fonts/
 	$(GCC64) -MM $(GUITASKS_C_SRCS) > gui_tasks.dep
 	../tools/dep_modifier/dep-modifier gui_tasks.dep gui_tasks/
-	cat core.dep fonts.dep gui_tasks.dep > dependency.dep
+	cat core.dep utils.dep fonts.dep gui_tasks.dep > dependency.dep
 
 $(EP_OBJ): $(EP_SRC)
 	$(NASM64) -o $@ $<
@@ -63,13 +68,16 @@ core/%.o: $(SRC_DIR_FROM_OUT)/core/%.c
 core/%.o: $(SRC_DIR_FROM_OUT)/core/%.asm
 	$(NASM64) -o $@ $<
 
+utils/%.o: $(SRC_DIR_FROM_OUT)/utils/%.c
+	$(GCC64) -o $@ -c $<
+
 fonts/%.o: $(SRC_DIR_FROM_OUT)/fonts/%.c
 	$(GCC64) -o $@ -c $<
 
 gui_tasks/%.o: $(SRC_DIR_FROM_OUT)/gui_tasks/%.c
 	$(GCC64) -o $@ -c $<
 
-kernel64.elf: $(EP_OBJ) $(CORE_C_OBJS) $(CORE_ASM_OBJS) $(FONTS_C_OBJS) $(GUITASKS_C_OBJS)
+kernel64.elf: $(EP_OBJ) $(CORE_C_OBJS) $(CORE_ASM_OBJS) $(UTILS_C_OBJS) $(FONTS_C_OBJS) $(GUITASKS_C_OBJS)
 	$(LD64) -o $@ $^
 
 ifeq (dependency.dep, $(wildcard dependency.dep))

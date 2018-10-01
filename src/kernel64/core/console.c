@@ -1,7 +1,7 @@
 #include <stdarg.h>
 #include "console.h"
 #include "keyboard.h"
-#include "util.h"
+#include "../utils/util.h"
 #include "task.h"
 #include "asm_util.h"
 
@@ -19,7 +19,7 @@ void k_initConsole(int x, int y) {
 	} else {
 		g_consoleManager.screenBuffer = g_screenBuffer;
 		k_initMutex(&g_consoleManager.mutex);
-		k_initQueue(&g_consoleManager.keyQueue, g_keyBuffer, CONSOLE_KEYQUEUE_MAXCOUNT, sizeof(Key));
+		k_initQueue(&g_consoleManager.keyQueue, g_keyBuffer, sizeof(Key), CONSOLE_KEYQUEUE_MAXCOUNT);
 	}
 
 	k_setCursor(x, y);
@@ -69,14 +69,14 @@ void k_getCursor(int* x, int* y) {
 
 void k_printf(const char* format, ...) {
 	va_list ap;
-	char buffer[1024];
+	char str[1024];
 	int nextPrintOffset;
 	
 	va_start(ap, format);
-	k_vsprintf(buffer, format, ap);
+	k_vsprintf(str, format, ap);
 	va_end(ap);
 	
-	nextPrintOffset = k_printStr(buffer);
+	nextPrintOffset = k_printStr(str);
 	
 	k_setCursor(nextPrintOffset % CONSOLE_WIDTH, nextPrintOffset / CONSOLE_WIDTH);
 }

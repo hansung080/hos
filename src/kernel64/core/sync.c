@@ -1,5 +1,5 @@
 #include "sync.h"
-#include "util.h"
+#include "../utils/util.h"
 #include "task.h"
 #include "asm_util.h"
 #include "multiprocessor.h"

@@ -4,8 +4,8 @@
 #include "types.h"
 #include "2d_graphics.h"
 #include "sync.h"
-#include "list.h"
-#include "queue.h"
+#include "../utils/list.h"
+#include "../utils/queue.h"
 #include "keyboard.h"
 
 /**
@@ -237,7 +237,7 @@ qword k_getBackgroundWindowId(void);
 void k_getScreenArea(Rect* screenArea);
 qword k_createWindow(int x, int y, int width, int height, dword flags, const char* title);
 bool k_deleteWindow(qword windowId);
-bool k_deleteAllWindowsByTask(qword taskId);
+bool k_deleteWindowsByTask(qword taskId);
 Window* k_getWindow(qword windowId);
 Window* k_getWindowWithLock(qword windowId);
 bool k_showWindow(qword windowId, bool show);

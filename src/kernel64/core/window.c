@@ -4,7 +4,7 @@
 #include "multiprocessor.h"
 #include "../fonts/fonts.h"
 #include "dynamic_mem.h"
-#include "util.h"
+#include "../utils/util.h"
 #include "console.h"
 
 static WindowPoolManager g_windowPoolManager;
@@ -132,7 +132,7 @@ void k_initGui(void) {
 		}
 	}
 
-	k_initQueue(&g_windowManager.eventQueue, g_windowManager.eventBuffer, EVENTQUEUE_WINDOWMANAGER_MAXCOUNT, sizeof(Event));
+	k_initQueue(&g_windowManager.eventQueue, g_windowManager.eventBuffer, sizeof(Event), EVENTQUEUE_WINDOWMANAGER_MAXCOUNT);
 
 	// allocate screen bitmap.
 	g_windowManager.screenBitmap = (byte*)k_allocMem((vbeMode->xResolution * vbeMode->yResolution + 7) / 8);
@@ -203,7 +203,7 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 		return WINDOW_INVALIDID;	
 	}
 
-	k_initQueue(&window->eventQueue, window->eventBuffer, EVENTQUEUE_WINDOW_MAXCOUNT, sizeof(Event));
+	k_initQueue(&window->eventQueue, window->eventBuffer, sizeof(Event), EVENTQUEUE_WINDOW_MAXCOUNT);
 
 	task = k_getRunningTask(k_getApicId());
 	window->taskId = task->link.id;
@@ -268,7 +268,7 @@ bool k_deleteWindow(qword windowId) {
 	}
 
 	/* remove window from window list */
-	if (k_removeList(&g_windowManager.windowList, windowId) == null) {
+	if (k_removeListById(&g_windowManager.windowList, windowId) == null) {
 		k_unlock(&window->mutex);
 		k_unlock(&g_windowManager.mutex);
 		return false;
@@ -303,7 +303,7 @@ bool k_deleteWindow(qword windowId) {
 	return true;
 }
 
-bool k_deleteAllWindowsByTask(qword taskId) {
+bool k_deleteWindowsByTask(qword taskId) {
 	Window* window;
 	Window* nextWindow;
 
@@ -878,7 +878,7 @@ bool k_moveWindowToTop(qword windowId) {
 	/* move window to top */
 	k_lock(&g_windowManager.mutex);
 
-	window = k_removeList(&g_windowManager.windowList, windowId);
+	window = k_removeListById(&g_windowManager.windowList, windowId);
 	if (window != null) {
 		k_addListToHead(&g_windowManager.windowList, window);
 		k_convertRectScreenToWindow(windowId, &window->area, &area);
@@ -1425,11 +1425,11 @@ bool k_drawButton(qword windowId, const Rect* buttonArea, Color backgroundColor,
 	buttonWidth = k_getRectWidth(buttonArea);
 	buttonHeight = k_getRectHeight(buttonArea);
 	textLen = k_strlen(text);
-	textWidth = textLen * FONT_VERAMONO_ENG_WIDTH;
+	textWidth = textLen * FONT_DEFAULT_WIDTH;
 
 	// draw a text in the center.
 	textX = (buttonArea->x1 + buttonWidth / 2) - textWidth / 2;
-	textY = (buttonArea->y1 + buttonHeight / 2) - FONT_VERAMONO_ENG_HEIGHT / 2;
+	textY = (buttonArea->y1 + buttonHeight / 2) - FONT_DEFAULT_HEIGHT / 2;
 	__k_drawText(window->buffer, &area, textX, textY, textColor, backgroundColor, text, textLen);
 		
 	// draw top lines (2 pixels-thick) of the button with bright color in order to make it 3-dimensional.

@@ -1,5 +1,5 @@
 #include "rdd.h"
-#include "util.h"
+#include "../utils/util.h"
 #include "dynamic_mem.h"
 
 static RddManager g_rddManager;

@@ -1,9 +1,6 @@
 #include "util.h"
-#include "asm_util.h"
-#include "vbe.h"
-
-// interrupt-occurring count by Timer(IRQ 0, PIT Controller)
-volatile qword g_tickCount = 0;
+#include "../core/asm_util.h"
+#include "../core/vbe.h"
 
 //====================================================================================================
 // k_memset, k_memcpy, k_memcmp (by 1 byte)
@@ -146,53 +143,6 @@ inline void k_memsetWord(void* dest, word data, int wordSize) {
 	}
 }
 
-bool k_equalStr(const char* str1, const char* str2) {
-	int len1;
-	int len2;
-	
-	len1 = k_strlen(str1);
-	len2 = k_strlen(str2);
-	
-	if ((len1 == len2) && (k_memcmp(str1, str2, len1) == 0)) {
-		return true;
-	}
-	
-	return false;
-}
-
-
-bool k_setInterruptFlag(bool interruptFlag) {
-	qword rflags;
-	
-	rflags = k_readRflags();
-	
-	if (interruptFlag == true) {
-		k_enableInterrupt();
-		
-	} else {
-		k_disableInterrupt();
-	}
-	
-	// check IF(bit 9) of RFLAGS Register, and return previous interrupt flag.
-	if (rflags & 0x0200) {
-		return true;
-	}
-	
-	return false;
-}
-
-int k_strlen(const char* buffer) {
-	int i;
-	
-	for (i = 0; ; i++) {
-		if (buffer[i] == '\0') {
-			break;
-		}
-	}
-	
-	return i;
-}
-
 // total RAM size (MBytes)
 static qword g_totalRamMbSize = 0;
 
@@ -226,126 +176,100 @@ qword k_getTotalRamSize(void) {
 	return g_totalRamMbSize;
 }
 
-long k_atoi(const char* buffer, int base) {
-	long ret;
-	
-	switch (base) {
-	case 16:
-		ret = k_hexStrToQword(buffer);
-		break;
-		
-	case 10:
-	default:
-		ret = k_decimalStrToLong(buffer);
-		break;
-	}
-	
-	return ret;
-}
-
-qword k_hexStrToQword(const char* buffer) {
-	qword value = 0;
+int k_strlen(const char* str) {
 	int i;
 	
-	for (i = 0; buffer[i] != '\0'; i++) {
-		value *= 16;
-		
-		if ('A' <= buffer[i] && buffer[i] <= 'Z') {
-			value += (buffer[i] - 'A') + 10;
-			
-		} else if ('a' <= buffer[i] && buffer[i] <= 'z') {
-			value += (buffer[i] - 'a') + 10;
-			
-		} else {
-			value += (buffer[i] - '0');
-		}
+	for (i = 0; str[i] != '\0'; i++) {
+		;
 	}
-	
-	return value;
+		
+	return i;
 }
 
-long k_decimalStrToLong(const char* buffer) {
+void k_reverseStr(char* str) {
+	int len;
+	int i;
+	char temp;
+	
+	len = k_strlen(str);
+	
+	for (i = 0; i < (len / 2); i++) {
+		temp = str[i];
+		str[i] = str[len - 1 - i];
+		str[len - 1 - i] = temp;
+	}
+}
+
+bool k_equalStr(const char* str1, const char* str2) {
+	int len1;
+	int len2;
+	
+	len1 = k_strlen(str1);
+	len2 = k_strlen(str2);
+	
+	if ((len1 == len2) && (k_memcmp(str1, str2, len1) == 0)) {
+		return true;
+	}
+	
+	return false;
+}
+
+long k_atol10(const char* str) {
 	long value = 0;
 	int i;
 	
-	if (buffer[0] == '-') {
+	if (str[0] == '-') {
 		i = 1;
 		
 	} else {
 		i = 0;
 	}
 	
-	for ( ; buffer[i] != '\0'; i++) {
+	for ( ; str[i] != '\0'; i++) {
 		value *= 10;
-		value += (buffer[i] - '0');
+		value += (str[i] - '0');
 	}
 	
-	if (buffer[0] == '-') {
+	if (str[0] == '-') {
 		value = -value;
 	}
 	
 	return value;
 }
 
-int k_itoa(long value, char* buffer, int base) {
-	int ret;
+qword k_atol16(const char* str) {
+	qword value = 0;
+	int i;
 	
-	switch (base) {
-	case 16:
-		ret = k_hexToStr(value, buffer);
-		break;
+	for (i = 0; str[i] != '\0'; i++) {
+		value *= 16;
 		
-	case 10:
-	default:
-		ret = k_decimalToStr(value, buffer);
-		break;
-	}
-	
-	return ret;
-}
-
-int k_hexToStr(qword value, char* buffer) {
-	qword i;
-	qword currentValue;
-	
-	if (value == 0) {
-		buffer[0] = '0';
-		buffer[1] = '\0';
-		return 1;
-	}
-	
-	for (i = 0; value > 0; i++) {
-		currentValue = value % 16;
-		
-		if (currentValue >= 10) {
-			buffer[i] = (currentValue - 10) + 'A';
+		if ('A' <= str[i] && str[i] <= 'Z') {
+			value += (str[i] - 'A') + 10;
+			
+		} else if ('a' <= str[i] && str[i] <= 'z') {
+			value += (str[i] - 'a') + 10;
 			
 		} else {
-			buffer[i] = currentValue + '0';
+			value += (str[i] - '0');
 		}
-		
-		value /= 16;
 	}
 	
-	buffer[i] = '\0';
-	
-	k_reverseStr(buffer);
-	
-	return i;
+	return value;
 }
 
-int k_decimalToStr(long value, char* buffer) {
+int k_ltoa10(long value, char* str) {
 	long i;
 	
 	if (value == 0) {
-		buffer[0] = '0';
-		buffer[1] = '\0';
+		str[0] = '0';
+		str[1] = '\0';
 		return 1;
 	}
 	
 	if (value < 0) {
 		i = 1;
-		buffer[0] = '-';
+		str[0] = '-';
 		value = -value;
 		
 	} else {
@@ -353,42 +277,58 @@ int k_decimalToStr(long value, char* buffer) {
 	}
 	
 	for ( ; value > 0; i++) {
-		buffer[i] = (value % 10) + '0';
+		str[i] = (value % 10) + '0';
 		value /= 10;
 	}
 	
-	buffer[i] = '\0';
+	str[i] = '\0';
 	
-	if (buffer[0] == '-') {
-		k_reverseStr(&(buffer[1]));
+	if (str[0] == '-') {
+		k_reverseStr(&(str[1]));
 		
 	} else {
-		k_reverseStr(buffer);
+		k_reverseStr(str);
 	}
 	
 	return i;
 }
 
-void k_reverseStr(char* buffer) {
-	int len;
-	int i;
-	char temp;
+int k_ltoa16(qword value, char* str) {
+	qword i;
+	qword currentValue;
 	
-	len = k_strlen(buffer);
-	
-	for (i = 0; i < (len / 2); i++) {
-		temp = buffer[i];
-		buffer[i] = buffer[len - 1 - i];
-		buffer[len - 1 - i] = temp;
+	if (value == 0) {
+		str[0] = '0';
+		str[1] = '\0';
+		return 1;
 	}
+	
+	for (i = 0; value > 0; i++) {
+		currentValue = value % 16;
+		
+		if (currentValue >= 10) {
+			str[i] = (currentValue - 10) + 'A';
+			
+		} else {
+			str[i] = currentValue + '0';
+		}
+		
+		value /= 16;
+	}
+	
+	str[i] = '\0';
+	
+	k_reverseStr(str);
+	
+	return i;
 }
 
-int k_sprintf(char* buffer, const char* format, ...) {
+int k_sprintf(char* str, const char* format, ...) {
 	va_list ap;
 	int ret;
 	
 	va_start(ap, format);
-	ret = k_vsprintf(buffer, format, ap);
+	ret = k_vsprintf(str, format, ap);
 	va_end(ap);
 	
 	// return length of printed string.
@@ -404,9 +344,9 @@ int k_sprintf(char* buffer, const char* format, ...) {
   - %q, %Q, %p : qword (hexadecimal, unsigned)
   - %f         : float (print down to the second position below decimal point by half-rounding up at the third position below decimal point.)
  */
-int k_vsprintf(char* buffer, const char* format, va_list ap) {
+int k_vsprintf(char* str, const char* format, va_list ap) {
 	qword i, j, k;
-	int index = 0; // buffer index
+	int index = 0; // string index
 	int formatLen, copyLen;
 	char* copyStr;
 	qword qwvalue;
@@ -423,32 +363,32 @@ int k_vsprintf(char* buffer, const char* format, va_list ap) {
 			case 's':
 				copyStr = (char*)(va_arg(ap, char*));
 				copyLen = k_strlen(copyStr);
-				k_memcpy(buffer + index, copyStr, copyLen);
+				k_memcpy(str + index, copyStr, copyLen);
 				index += copyLen;
 				break;
 				
 			case 'c':
-				buffer[index] = (char)(va_arg(ap, int));
+				str[index] = (char)(va_arg(ap, int));
 				index++;
 				break;
 				
 			case 'd':
 			case 'i':
 				ivalue = (int)(va_arg(ap, int));
-				index += k_itoa(ivalue, buffer + index, 10);
+				index += k_ltoa10(ivalue, str + index);
 				break;
 				
 			case 'x':
 			case 'X':
 				qwvalue = (dword)(va_arg(ap, dword)) & 0xFFFFFFFF;
-				index += k_itoa(qwvalue, buffer + index, 16);
+				index += k_ltoa16(qwvalue, str + index);
 				break;
 				
 			case 'q':
 			case 'Q':
 			case 'p':
 				qwvalue = (qword)(va_arg(ap, qword));
-				index += k_itoa(qwvalue, buffer + index, 16);
+				index += k_ltoa16(qwvalue, str + index);
 				break;
 				
 			case 'f':
@@ -457,10 +397,10 @@ int k_vsprintf(char* buffer, const char* format, va_list ap) {
 				// half-round up at the third position below decimal point.
 				dvalue += 0.005;
 				
-				// save value to buffer sequentially from the second position below decimal point in decimal part.
-				buffer[index] = '0' + ((qword)(dvalue * 100) % 10);
-				buffer[index + 1] = '0' + ((qword)(dvalue * 10) % 10);
-				buffer[index + 2] = '.';
+				// save value to string sequentially from the second position below decimal point in decimal part.
+				str[index] = '0' + ((qword)(dvalue * 100) % 10);
+				str[index + 1] = '0' + ((qword)(dvalue * 10) % 10);
+				str[index + 2] = '.';
 				
 				for (k = 0; ; k++) {
 					// If integer part == 0, break.
@@ -468,36 +408,39 @@ int k_vsprintf(char* buffer, const char* format, va_list ap) {
 						break;
 					}
 					
-					// save value to buffer sequentially from the units digit in integer part.
-					buffer[index + 3 + k] = '0' + ((qword)dvalue % 10);
+					// save value to string sequentially from the units digit in integer part.
+					str[index + 3 + k] = '0' + ((qword)dvalue % 10);
 					dvalue = dvalue / 10;
 				}
 				
-				buffer[index + 3 + k] = '\0';
+				str[index + 3 + k] = '\0';
 				
-				// reverse as many as float-saved length, increase buffer index.
-				k_reverseStr(buffer + index);
+				// reverse as many as float-saved length, increase string index.
+				k_reverseStr(str + index);
 				index += 3 + k;
 				break;
 				
 			default:
-				buffer[index] = format[i];
+				str[index] = format[i];
 				index++;
 				break;
 			}
 			
 		// If not '%', it's normal character.
 		} else {
-			buffer[index] = format[i];
+			str[index] = format[i];
 			index++;
 		}
 	}
 	
-	buffer[index] = '\0';
+	str[index] = '\0';
 	
 	// return length of printed string.
 	return index;
 }
+
+// interrupt-occurring count by Timer(IRQ 0, PIT Controller)
+volatile qword g_tickCount = 0;
 
 qword k_getTickCount(void) {
 	return g_tickCount;
@@ -511,6 +454,33 @@ void k_sleep(qword millisecond) {
 	while ((g_tickCount - lastTickCount) <= millisecond) {
 		k_schedule();
 	}
+}
+
+static volatile qword g_randomValue = 0;
+
+qword k_random(void) {
+	g_randomValue = (g_randomValue * 412153 + 5571031) >> 16;
+	return g_randomValue;
+}
+
+bool k_setInterruptFlag(bool interruptFlag) {
+	qword rflags;
+	
+	rflags = k_readRflags();
+	
+	if (interruptFlag == true) {
+		k_enableInterrupt();
+		
+	} else {
+		k_disableInterrupt();
+	}
+	
+	// check IF(bit 9) of RFLAGS Register, and return previous interrupt flag.
+	if (rflags & 0x0200) {
+		return true;
+	}
+	
+	return false;
 }
 
 bool k_isGraphicMode(void) {

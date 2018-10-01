@@ -8,11 +8,11 @@
 // app panel-related macros
 #define APPPANEL_TITLE      "SYS_APPPANEL"
 #define APPPANEL_HEIGHT     31
-#define APPPANEL_CLOCKWIDTH (FONT_VERAMONO_ENG_WIDTH * 8) // clock ex) 09:00 AM
+#define APPPANEL_CLOCKWIDTH (FONT_DEFAULT_WIDTH * 8) // clock ex) 09:00 AM
 
 // app list-related macros
 #define APPLIST_TITLE      "SYS_APPLIST"
-#define APPLIST_ITEMHEIGHT (FONT_VERAMONO_ENG_HEIGHT + 4)
+#define APPLIST_ITEMHEIGHT (FONT_DEFAULT_HEIGHT + 4)
 
 // app panel color
 #define APPPANEL_COLOR_OUTERLINE  RGB(109, 218, 22)

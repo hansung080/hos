@@ -7,7 +7,7 @@
 #include "shell.h"
 #include "task.h"
 #include "pit.h"
-#include "util.h"
+#include "../utils/util.h"
 #include "dynamic_mem.h"
 #include "hdd.h"
 #include "file_system.h"

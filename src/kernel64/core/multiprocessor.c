@@ -3,7 +3,7 @@
 #include "asm_util.h"
 #include "local_apic.h"
 #include "pit.h"
-#include "util.h"
+#include "../utils/util.h"
 
 volatile int g_awakeApCount = 0; // awake AP count
 volatile qword g_apicIdAddr = 0; // Local APIC ID Register address

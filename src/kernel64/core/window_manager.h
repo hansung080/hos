@@ -11,4 +11,8 @@ bool k_processMouseData(void);
 bool k_processKey(void);
 bool k_processWindowManagerEvent(void);
 
+#if __DEBUG__
+extern volatile qword g_winMgrMinLoopCount;
+#endif // __DEBUG__
+
 #endif // __CORE_WINDOWMANAGER_H__

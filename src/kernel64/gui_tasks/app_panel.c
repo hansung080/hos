@@ -5,11 +5,13 @@
 #include "shell.h"
 #include "../core/rtc.h"
 #include "../core/task.h"
-#include "../core/util.h"
+#include "../utils/util.h"
 #include "../core/console.h"
 
 static AppEntry g_appTable[] = {
+	#if __DEBUG__
 	{"Base", k_baseTask},
+	#endif // __DEBUG__
 	{"Event Monitor", k_eventMonitorTask},
 	{"System Monitor", k_systemMonitorTask},
 	{"Shell", k_guiShellTask}
@@ -104,12 +106,14 @@ static void k_drawDigitalClock(qword windowId) {
 	buffer[3] = minute / 10 + '0';
 	buffer[4] = minute % 10 + '0';
 	
+	#if __DEBUG__
 	if ((second % 2) == 1) {
 		buffer[2] = ' ';
 
 	} else {
 		buffer[2] = ':';
 	}
+	#endif // __DEBUG__
 
 	k_getWindowArea(windowId, &windowArea);
 	k_setRect(&updateArea, windowArea.x2 - APPPANEL_CLOCKWIDTH - 13, 5, windowArea.x2 - 5, 25);
@@ -193,7 +197,7 @@ static bool k_createAppList(void) {
 		}
 	}
 
-	windowWidth = FONT_VERAMONO_ENG_WIDTH * maxNameLen + 20;
+	windowWidth = FONT_DEFAULT_WIDTH * maxNameLen + 20;
 	x = g_appPanelManager.buttonArea.x1;
 	y = g_appPanelManager.buttonArea.y2 + 5;
 
@@ -275,7 +279,7 @@ static bool k_processAppListEvent(void) {
 				break;
 			}
 
-			k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)g_appTable[mouseOverIndex].entryPoint, TASK_AFFINITY_LOADBALANCING);
+			k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD | TASK_FLAGS_GUI, null, 0, (qword)g_appTable[mouseOverIndex].entryPoint, TASK_AFFINITY_LOADBALANCING);
 
 			// send mouse event in oder to make app list invisible.
 			k_sendMouseEventToWindow(g_appPanelManager.appPanelId, EVENT_MOUSE_LBUTTONDOWN, g_appPanelManager.buttonArea.x1, g_appPanelManager.buttonArea.y1, 0);

@@ -6,4 +6,6 @@
 void k_guiShellTask(void);
 static void k_processConsoleScreenBuffer(qword windowId);
 
+extern volatile qword g_guiShellWindowId;
+
 #endif // __GUITASKS_SHELL_H__

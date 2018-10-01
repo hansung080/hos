@@ -1,6 +1,6 @@
 #include "event_monitor.h"
 #include "../core/window.h"
-#include "../core/util.h"
+#include "../utils/util.h"
 #include "../core/console.h"
 
 void k_eventMonitorTask(void) {

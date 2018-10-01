@@ -10,6 +10,25 @@ int k_getListCount(const List* list) {
 	return list->count;
 }
 
+void k_addListToHead(List* list, void* item) {
+	ListLink* link;
+	
+	link = (ListLink*)item;
+	link->next = list->head;
+	
+	// If list items == 0 (list is empty).
+	if (list->head == null) {
+		list->head = item;
+		list->tail = item;
+		
+	// If list items >= 1.
+	} else {
+		list->head = item;
+	}
+	
+	list->count++;
+}
+
 void k_addListToTail(List* list, void* item) {
 	ListLink* link;
 	
@@ -33,26 +52,7 @@ void k_addListToTail(List* list, void* item) {
 	list->count++;
 }
 
-void k_addListToHead(List* list, void* item) {
-	ListLink* link;
-	
-	link = (ListLink*)item;
-	link->next = list->head;
-	
-	// If list items == 0 (list is empty).
-	if (list->head == null) {
-		list->head = item;
-		list->tail = item;
-		
-	// If list items >= 1.
-	} else {
-		list->head = item;
-	}
-	
-	list->count++;
-}
-
-void* k_removeList(List* list, qword id) {
+void* k_removeListById(List* list, qword id) {
 	ListLink* link;
 	ListLink* prevLink;
 	
@@ -97,7 +97,7 @@ void* k_removeListFromHead(List* list) {
 	}
 	
 	link = (ListLink*)list->head;
-	return k_removeList(list, link->id);
+	return k_removeListById(list, link->id);
 }
 
 void* k_removeListFromTail(List* list) {
@@ -109,10 +109,10 @@ void* k_removeListFromTail(List* list) {
 	}
 	
 	link = (ListLink*)list->tail;
-	return k_removeList(list, link->id);
+	return k_removeListById(list, link->id);
 }
 
-void* k_findList(const List* list, qword id) {
+void* k_findListById(const List* list, qword id) {
 	ListLink* link;
 	
 	for (link = (ListLink*)list->head; link != null; link = link->next) {

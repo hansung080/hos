@@ -1,7 +1,7 @@
 #include "2d_graphics.h"
 #include "vbe.h"
 #include "../fonts/fonts.h"
-#include "util.h"
+#include "../utils/util.h"
 
 inline void k_setRect(Rect* rect, int x1, int y1, int x2, int y2) {
 	// This logic guarantee the rule that rect.x1 < rect.x2.
@@ -350,17 +350,17 @@ void __k_drawText(Color* outMem, const Rect* area, int x, int y, Color textColor
 		currentY = y * areaWidth;
 		
 		// process clipping.
-		k_setRect(&fontArea, currentX, y, currentX + FONT_VERAMONO_ENG_WIDTH - 1, y + FONT_VERAMONO_ENG_HEIGHT - 1);
+		k_setRect(&fontArea, currentX, y, currentX + FONT_DEFAULT_WIDTH - 1, y + FONT_DEFAULT_HEIGHT - 1);
 		if (k_getOverlappedRect(area, &fontArea, &overArea) == false) {
 			// move to the next character.
-			currentX += FONT_VERAMONO_ENG_WIDTH;
+			currentX += FONT_DEFAULT_WIDTH;
 			continue;
 		}
 
-		// Bitstream Vera Sans Mono (English) font data has 8 * 16 bits per a character,
-		// and the font data has same order as ASCII code.
+		// Default font data has width * height bits per a character,
+		// and it has same order as ASCII code.
 		// Thus, bitmap index indicates a byte (8 bits) of current character in the font data.
-		bitmapIndex = str[i] * FONT_VERAMONO_ENG_HEIGHT;
+		bitmapIndex = str[i] * FONT_DEFAULT_HEIGHT;
 		
 		startXOffset = overArea.x1 - currentX;
 		startYOffset = overArea.y1 - y;
@@ -371,8 +371,8 @@ void __k_drawText(Color* outMem, const Rect* area, int x, int y, Color textColor
 
 		// draw a character.
 		for (j = startYOffset; j < overHeight; j++) {
-			bitmap = g_fontVeraMonoEng[bitmapIndex++];
-			currentBitmask = 0x01 << (FONT_VERAMONO_ENG_WIDTH - 1 - startXOffset);
+			bitmap = FONT_DEFAULT_BITMAP[bitmapIndex++];
+			currentBitmask = 0x01 << (FONT_DEFAULT_WIDTH - 1 - startXOffset);
 			
 			// draw a line in a character.
 			for (k = startXOffset; k < overWidth; k++) {
@@ -393,6 +393,6 @@ void __k_drawText(Color* outMem, const Rect* area, int x, int y, Color textColor
 		}
 		
 		// move to the next character.
-		currentX += FONT_VERAMONO_ENG_WIDTH;
+		currentX += FONT_DEFAULT_WIDTH;
 	}
 }
