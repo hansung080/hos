@@ -82,13 +82,13 @@
 
 /**
   < Event Classification >
-  *** window event ***
+  @ window event
   - mouse event
   - window event
   - key event
   - user event
 
-  *** window manager event ***
+  @ window manager event
   - screen update event
 */
 

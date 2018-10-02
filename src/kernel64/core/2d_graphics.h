@@ -39,10 +39,10 @@ bool k_isRectOverlapped(const Rect* rect1, const Rect* rect2);
 bool k_getOverlappedRect(const Rect* rect1, const Rect* rect2, Rect* overRect);
 
 /* Drawing Functions */
-void __k_drawPixel(Color* outMem, const Rect* area, int x, int y, Color color);
-void __k_drawLine(Color* outMem, const Rect* area, int x1, int y1, int x2, int y2, Color color);
-void __k_drawRect(Color* outMem, const Rect* area, int x1, int y1, int x2, int y2, Color color, bool fill);
-void __k_drawCircle(Color* outMem, const Rect* area, int x, int y, int radius, Color color, bool fill);
-void __k_drawText(Color* outMem, const Rect* area, int x, int y, Color textColor, Color backgroundColor, const char* str, int len);
+void __k_drawPixel(Color* outBuffer, const Rect* area, int x, int y, Color color);
+void __k_drawLine(Color* outBuffer, const Rect* area, int x1, int y1, int x2, int y2, Color color);
+void __k_drawRect(Color* outBuffer, const Rect* area, int x1, int y1, int x2, int y2, Color color, bool fill);
+void __k_drawCircle(Color* outBuffer, const Rect* area, int x, int y, int radius, Color color, bool fill);
+void __k_drawText(Color* outBuffer, const Rect* area, int x, int y, Color textColor, Color backgroundColor, const char* str, int len);
 
 #endif // __CORE_2DGRAPHICS_H__

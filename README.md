@@ -92,6 +92,7 @@ on your computer or QEMU.
 - ECC: Error Correcting Code
 - VBE: Vesa Bios Extention
 - GUI: Graphic User Interface
+- JPEG: Joint Photographic Experts Group
 
 < Abbreviation >
 - init: initialize

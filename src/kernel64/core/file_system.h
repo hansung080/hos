@@ -87,7 +87,7 @@ typedef int (* WriteHddSector)(bool primary, bool master, dword lba, int sectorC
    -> C=Cluster, CL=ClusterLink, FN=FileName, FS=FileSize, FD=FileData
    -> cluster link -> current cluster index : next cluster index (but, 0xFFFFFFFF=last cluster, 0x00=free cluster)
   ====================================================================================================
- */
+*/
 
 #pragma pack(push, 1)
 

@@ -94,7 +94,7 @@ inline bool k_getOverlappedRect(const Rect* rect1, const Rect* rect2, Rect* over
 	return true;
 }
 
-inline void __k_drawPixel(Color* outMem, const Rect* area, int x, int y, Color color) {
+inline void __k_drawPixel(Color* outBuffer, const Rect* area, int x, int y, Color color) {
 	int width;
 
 	// process clipping.
@@ -104,7 +104,7 @@ inline void __k_drawPixel(Color* outMem, const Rect* area, int x, int y, Color c
 
 	width = k_getRectWidth(area);
 
-	*(outMem + (y * width) + x) = color;
+	*(outBuffer + (y * width) + x) = color;
 }
 
 /**
@@ -124,7 +124,7 @@ inline void __k_drawPixel(Color* outMem, const Rect* area, int x, int y, Color c
       error' = error' - 2*dx
       --------------------------------------------------
 */
-void __k_drawLine(Color* outMem, const Rect* area, int x1, int y1, int x2, int y2, Color color) {
+void __k_drawLine(Color* outBuffer, const Rect* area, int x1, int y1, int x2, int y2, Color color) {
 	int deltaX, deltaY;
 	int error = 0;
 	int deltaError;
@@ -162,7 +162,7 @@ void __k_drawLine(Color* outMem, const Rect* area, int x1, int y1, int x2, int y
 		deltaError = deltaY << 1; // 2*dy
 		y = y1;
 		for (x = x1; x != x2; x += stepX) {
-			__k_drawPixel(outMem, area, x, y, color);
+			__k_drawPixel(outBuffer, area, x, y, color);
 			
 			error += deltaError;
 			if (error >= deltaX) { // error' = 2*dy*n >= dx
@@ -171,14 +171,14 @@ void __k_drawLine(Color* outMem, const Rect* area, int x1, int y1, int x2, int y
 			}
 		}
 		
-		__k_drawPixel(outMem, area, x, y, color);
+		__k_drawPixel(outBuffer, area, x, y, color);
 		
 	// If deltaX <= deltaY, draw line based on y-axis.
 	} else {
 		deltaError = deltaX << 1; // 2*dx
 		x = x1;
 		for (y = y1; y != y2; y += stepY) {
-			__k_drawPixel(outMem, area, x, y, color);
+			__k_drawPixel(outBuffer, area, x, y, color);
 			
 			error += deltaError;
 			if (error >= deltaY) { // error' = 2*dx*n >= dy
@@ -187,11 +187,11 @@ void __k_drawLine(Color* outMem, const Rect* area, int x1, int y1, int x2, int y
 			}
 		}
 		
-		__k_drawPixel(outMem, area, x, y, color);
+		__k_drawPixel(outBuffer, area, x, y, color);
 	}
 }
 
-void __k_drawRect(Color* outMem, const Rect* area, int x1, int y1, int x2, int y2, Color color, bool fill) {
+void __k_drawRect(Color* outBuffer, const Rect* area, int x1, int y1, int x2, int y2, Color color, bool fill) {
 	int temp;
 	int y; // y to draw rectangle.
 	Rect drawRect;
@@ -201,10 +201,10 @@ void __k_drawRect(Color* outMem, const Rect* area, int x1, int y1, int x2, int y
 	
 	if (fill == false) {
 		// draw 4 lines (edges) of rectangle.
-		__k_drawLine(outMem, area, x1, y1, x2, y1, color);
-		__k_drawLine(outMem, area, x1, y1, x1, y2, color);
-		__k_drawLine(outMem, area, x2, y1, x2, y2, color);
-		__k_drawLine(outMem, area, x1, y2, x2, y2, color);
+		__k_drawLine(outBuffer, area, x1, y1, x2, y1, color);
+		__k_drawLine(outBuffer, area, x1, y1, x1, y2, color);
+		__k_drawLine(outBuffer, area, x2, y1, x2, y2, color);
+		__k_drawLine(outBuffer, area, x1, y2, x2, y2, color);
 		
 	} else {
 		// process clipping.
@@ -216,14 +216,14 @@ void __k_drawRect(Color* outMem, const Rect* area, int x1, int y1, int x2, int y
 		overWidth = k_getRectWidth(&overArea);
 		areaWidth = k_getRectWidth(area);
 				
-		outMem += overArea.y1 * areaWidth + overArea.x1;
+		outBuffer += overArea.y1 * areaWidth + overArea.x1;
 		
 		for (y = overArea.y1; y < overArea.y2; y++) {
-			k_memsetWord(outMem, color, overWidth);
-			outMem += areaWidth;
+			k_memsetWord(outBuffer, color, overWidth);
+			outBuffer += areaWidth;
 		}
 		
-		k_memsetWord(outMem, color, overWidth);
+		k_memsetWord(outBuffer, color, overWidth);
 	}
 }
 
@@ -263,7 +263,7 @@ void __k_drawRect(Color* outMem, const Rect* area, int x1, int y1, int x2, int y
       --------------------------------------------------
 */
 
-void __k_drawCircle(Color* outMem, const Rect* area, int x, int y, int radius, Color color, bool fill) {
+void __k_drawCircle(Color* outBuffer, const Rect* area, int x, int y, int radius, Color color, bool fill) {
 	int circleX, circleY; // x, y to draw circle.
 	int distance; // distance difference
 	
@@ -276,15 +276,15 @@ void __k_drawCircle(Color* outMem, const Rect* area, int x, int y, int radius, C
 	
 	if (fill == false) {
 		// draw 4 points contacting with x-axis and y-axis.
-		__k_drawPixel(outMem, area, 0 + x, radius + y, color);
-		__k_drawPixel(outMem, area, 0 + x, -radius + y, color);
-		__k_drawPixel(outMem, area, radius + x, 0 + y, color);
-		__k_drawPixel(outMem, area, -radius + x, 0 + y, color);
+		__k_drawPixel(outBuffer, area, 0 + x, radius + y, color);
+		__k_drawPixel(outBuffer, area, 0 + x, -radius + y, color);
+		__k_drawPixel(outBuffer, area, radius + x, 0 + y, color);
+		__k_drawPixel(outBuffer, area, -radius + x, 0 + y, color);
 		
 	} else {
 		// draw 2 lines matching x-axis and y-axis.
-		__k_drawLine(outMem, area, 0 + x, radius + y, 0 + x, -radius + y, color);
-		__k_drawLine(outMem, area, radius + x, 0 + y, -radius + x, 0 + y, color);
+		__k_drawLine(outBuffer, area, 0 + x, radius + y, 0 + x, -radius + y, color);
+		__k_drawLine(outBuffer, area, radius + x, 0 + y, -radius + x, 0 + y, color);
 	}
 	
 	distance = -radius; // d_first = -r  // discard 0.25 in integer operation.
@@ -305,27 +305,27 @@ void __k_drawCircle(Color* outMem, const Rect* area, int x, int y, int radius, C
 		
 		if (fill == false) {
 			// draw 8 points in the symmetric position of (circleX, circleY).
-			__k_drawPixel(outMem, area, circleX + x, circleY + y, color);
-			__k_drawPixel(outMem, area, circleX + x, -circleY + y, color);
-			__k_drawPixel(outMem, area, -circleX + x, circleY + y, color);
-			__k_drawPixel(outMem, area, -circleX + x, -circleY + y, color);
-			__k_drawPixel(outMem, area, circleY + x, circleX + y, color);
-			__k_drawPixel(outMem, area, circleY + x, -circleX + y, color);
-			__k_drawPixel(outMem, area, -circleY + x, circleX + y, color);
-			__k_drawPixel(outMem, area, -circleY + x, -circleX + y, color);
+			__k_drawPixel(outBuffer, area, circleX + x, circleY + y, color);
+			__k_drawPixel(outBuffer, area, circleX + x, -circleY + y, color);
+			__k_drawPixel(outBuffer, area, -circleX + x, circleY + y, color);
+			__k_drawPixel(outBuffer, area, -circleX + x, -circleY + y, color);
+			__k_drawPixel(outBuffer, area, circleY + x, circleX + y, color);
+			__k_drawPixel(outBuffer, area, circleY + x, -circleX + y, color);
+			__k_drawPixel(outBuffer, area, -circleY + x, circleX + y, color);
+			__k_drawPixel(outBuffer, area, -circleY + x, -circleX + y, color);
 			
 		} else {
 			// draw 4 parallel lines of x-axis in the symmetric position.
 			// (use k_drawRect instead of k_drawLine, because it's faster when drawing a parallel line of x-axis.)
-			__k_drawRect(outMem, area, -circleX + x, circleY + y, circleX + x, circleY + y, color, true);
-			__k_drawRect(outMem, area, -circleX + x, -circleY + y, circleX + x, -circleY + y, color, true);
-			__k_drawRect(outMem, area, -circleY + x, circleX + y, circleY + x, circleX + y, color, true);
-			__k_drawRect(outMem, area, -circleY + x, -circleX + y, circleY + x, -circleX + y, color, true);
+			__k_drawRect(outBuffer, area, -circleX + x, circleY + y, circleX + x, circleY + y, color, true);
+			__k_drawRect(outBuffer, area, -circleX + x, -circleY + y, circleX + x, -circleY + y, color, true);
+			__k_drawRect(outBuffer, area, -circleY + x, circleX + y, circleY + x, circleX + y, color, true);
+			__k_drawRect(outBuffer, area, -circleY + x, -circleX + y, circleY + x, -circleX + y, color, true);
 		}
 	}
 }
 
-void __k_drawText(Color* outMem, const Rect* area, int x, int y, Color textColor, Color backgroundColor, const char* str, int len) {
+void __k_drawText(Color* outBuffer, const Rect* area, int x, int y, Color textColor, Color backgroundColor, const char* str, int len) {
 	int currentX, currentY; // x, y to draw text.
 	int i, j, k;
 	byte bitmap;
@@ -378,11 +378,11 @@ void __k_drawText(Color* outMem, const Rect* area, int x, int y, Color textColor
 			for (k = startXOffset; k < overWidth; k++) {
 				// If a bit in bitmap == 1, draw a pixel with text color.
 				if (bitmap & currentBitmask) {
-					outMem[currentY + currentX + k] = textColor;
+					outBuffer[currentY + currentX + k] = textColor;
 					
 				// If a bit in bitmap == 0, draw a pixel with backgroud color.
 				} else {
-					outMem[currentY + currentX + k] = backgroundColor;
+					outBuffer[currentY + currentX + k] = backgroundColor;
 				}
 
 				currentBitmask = currentBitmask >> 1;
