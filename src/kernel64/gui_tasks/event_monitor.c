@@ -39,7 +39,7 @@ void k_eventMonitorTask(void) {
 
 	/* check graphic mode */
 	if (k_isGraphicMode() == false) {
-		k_printf("event monitor task error: not graphic mode\n");
+		k_printf("[event monitor error] not graphic mode\n");
 		return;
 	}
 

@@ -15,7 +15,7 @@ void k_baseTask(void) {
 
 	/* check graphic mode */
 	if (k_isGraphicMode() == false) {
-		k_printf("base task error: not graphic mode\n");
+		k_printf("[base error] not graphic mode\n");
 		return;
 	}
 

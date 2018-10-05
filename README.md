@@ -133,3 +133,8 @@ on your computer or QEMU.
 - [REF]: reference comment
 - [TODO]: to do
 - [TEMP]: temporary code
+
+< Task Log >
+- [task name info]: info message
+- [task name error]: error message
+- [task name debug]: debug message

@@ -131,7 +131,7 @@ void* k_allocMem(qword size) {
 	// search buddy block size which is the closest one to the allocating memory size.
 	alignedSize = k_getBuddyBlockSize(size);
 	if (alignedSize == 0) {
-		k_printf("dynamic memory error: can not get buddy block size\n");
+		k_printf("dynamic memory error: can not get buddy block size.\n");
 		return null;
 	}
 	
@@ -144,7 +144,7 @@ void* k_allocMem(qword size) {
 	// allocate buddy block, and return bitmap offset of block list of the allocated block.
 	offset = k_allocBuddyBlock(alignedSize);
 	if (offset == -1) {
-		k_printf("dynamic memory error: buddy block allocation error\n");
+		k_printf("dynamic memory error: buddy block allocation failure\n");
 		return null;
 	}
 	
@@ -317,7 +317,7 @@ bool k_freeMem(void* addr) {
 	int bitmapOffset;    // bitmap offset of free block
 	
 	if (addr == null) {
-		k_printf("dynamic memory error: address is null\n");
+		k_printf("dynamic memory error: Address is null.\n");
 		return false;
 	}
 	
@@ -347,7 +347,7 @@ bool k_freeMem(void* addr) {
 		return true;
 	}
 	
-	k_printf("dynamic memory error: buddy block freeing error\n");
+	k_printf("dynamic memory error: buddy block freeing failure\n");
 	
 	return false;
 }

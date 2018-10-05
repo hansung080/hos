@@ -13,7 +13,7 @@
   
   < Mutex >
   - Mutex synchronizes data used among tasks.
-  - Mutex dose not disable interrupts.
+  - Mutex does not disable interrupts.
   - Mutex uses lock flag to control race condition among tasks.
   - Mutex is safe in multi-core processor.
   - Mutex allows duplicated lock.

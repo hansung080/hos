@@ -97,7 +97,7 @@ void k_shellTask(void) {
 			break;
 		}
 		
-		/* process Backspace key */
+		/* process backspace key */
 		if (key == KEY_BACKSPACE) {
 			if (commandBufferIndex > 0) {
 				k_getCursor(&x, &y);
@@ -106,7 +106,7 @@ void k_shellTask(void) {
 				commandBufferIndex--;
 			}
 			
-		/* process Enter key */
+		/* process enter key */
 		} else if (key == KEY_ENTER) {
 			k_printf("\n");
 			
@@ -121,7 +121,7 @@ void k_shellTask(void) {
 			k_memset(commandBuffer, '\0', sizeof(commandBuffer));
 			commandBufferIndex = 0;
 			
-		/* ignore Shift, Caps Lock, Num Lock, Scroll Lock key */
+		/* ignore shift, caps lock, num lock, scroll lock key */
 		} else if (key == KEY_LSHIFT || key == KEY_RSHIFT || key == KEY_CAPSLOCK || key == KEY_NUMLOCK || key == KEY_SCROLLLOCK) {
 			;
 			
@@ -628,7 +628,7 @@ static void k_showCpuLoad(const char* paramBuffer) {
 		}
 		
 		k_sprintf(buffer, "core %d: %d %%", i, k_getProcessorLoad(i));
-		k_printf("%s", buffer); // Using format "%s" is essential if buffer has '%' and '%' dose not mean data type in buffer.
+		k_printf("%s", buffer); // Using format "%s" is essential if buffer has '%' and '%' does not mean data type in buffer.
 		
 		// put spaces to remain cells out of 19 cells.
 		remainLen = 19 - k_strlen(buffer);
@@ -986,7 +986,7 @@ static void k_writeDataToFile(const char* paramBuffer) {
 	while (true) {
 		key = k_getch();
 		
-		// press Enter key 3 times continuously to finish writing file.
+		// press enter key 3 times continuously to finish writing file.
 		if (key == KEY_ENTER) {
 			enterCount++;
 			if (enterCount >= 3) {
@@ -1053,7 +1053,7 @@ static void k_readDataFromFile(const char* paramBuffer) {
 		
 		k_printf("%c", key);
 		
-		// increase count if Enter key is pressed.
+		// increase count if enter key is pressed.
 		if (key == KEY_ENTER) {
 			enterCount++;
 			
@@ -1111,7 +1111,7 @@ static void k_downloadFile(const char* paramBuffer) {
 	if ((fileNameLen = k_getNextParam(&list, fileName)) <= 0) {
 		k_printf("Usage) download <fname>\n");
 		k_printf("  - fname: file name\n");
-		k_printf("  - example: download a.txt");
+		k_printf("  - example: download a.txt\n");
 		return;
 	}
 	

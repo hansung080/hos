@@ -287,7 +287,7 @@ int k_readHddSector(bool primary, bool master, dword lba, int sectorCount, char*
 		// If error occurs in processing, return.
 		status = k_readHddStatus(primary);
 		if ((status & HDD_STATUS_ERROR) == HDD_STATUS_ERROR) {
-			k_printf("HDD error: error has occured while reading HDD sector\n");
+			k_printf("HDD error: Error has occured while reading HDD sector.\n");
 			k_unlock(&(g_hddManager.mutex));
 			return i; // return real read sector count.
 		}
@@ -302,7 +302,7 @@ int k_readHddSector(bool primary, bool master, dword lba, int sectorCount, char*
 			
 			// If interrupt dosen't occurs, return.
 			if (waitResult == false) {
-				k_printf("HDD error: interrupt has not occured while reading HDD sector\n");
+				k_printf("HDD error: Interrupt has not occured while reading HDD sector.\n");
 				k_unlock(&(g_hddManager.mutex));
 				return false;
 			}
@@ -420,7 +420,7 @@ int k_writeHddSector(bool primary, bool master, dword lba, int sectorCount, char
 		// If error occurs in processing, return.
 		status = k_readHddStatus(primary);
 		if ((status & HDD_STATUS_ERROR) == HDD_STATUS_ERROR) {
-			k_printf("HDD error: error has occured while writing HDD sector\n");
+			k_printf("HDD error: Error has occured while writing HDD sector.\n");
 			k_unlock(&(g_hddManager.mutex));
 			return i; // return real written sector count.
 		}
@@ -435,7 +435,7 @@ int k_writeHddSector(bool primary, bool master, dword lba, int sectorCount, char
 			
 			// If interrupt dosen't occur, return.
 			if (waitResult == false) {
-				k_printf("HDD error: interrupt has not occured while writing HDD sector\n");
+				k_printf("HDD error: Interrupt has not occured while writing HDD sector.\n");
 				k_unlock(&(g_hddManager.mutex));
 				return false;
 			}

@@ -268,7 +268,7 @@ static CacheBuffer* k_allocCacheBufferWithFlush(int cacheTableIndex) {
 		
 		// If old cache buffer dosen't exist, do error handling.
 		if (cacheBuffer == null) {
-			k_printf("cache error: cache buffer allocation error\n");
+			k_printf("file system error: cache buffer allocation failure\n");
 			return null;
 		}
 		
@@ -277,7 +277,7 @@ static CacheBuffer* k_allocCacheBufferWithFlush(int cacheTableIndex) {
 			switch(cacheTableIndex){
 			case CACHE_CLUSTERLINKTABLEAREA:
 				if (k_writeClusterLinkTableWithoutCache(cacheBuffer->tag, cacheBuffer->buffer) == false) {
-					k_printf("cache error: cache buffer writing error (cluster link table area)\n");
+					k_printf("file system error: cache buffer writing failure (cluster link table area)\n");
 					return null;
 				}
 				
@@ -285,16 +285,15 @@ static CacheBuffer* k_allocCacheBufferWithFlush(int cacheTableIndex) {
 				
 			case CACHE_DATAAREA:
 				if (k_writeClusterWithoutCache(cacheBuffer->tag, cacheBuffer->buffer) == false) {
-					k_printf("cache error: cache buffer writing error (data area)\n");
+					k_printf("file system error: cache buffer writing failure (data area)\n");
 					return null;
 				}
 				
 				break;
 				
 			default:
-				k_printf("cache error: cache table index error");
+				k_printf("file system error: invalid cache table index");
 				return null;
-				break;
 			}
 		}
 	}

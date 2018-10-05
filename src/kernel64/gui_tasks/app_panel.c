@@ -3,6 +3,7 @@
 #include "event_monitor.h"
 #include "system_monitor.h"
 #include "shell.h"
+#include "image_viewer.h"
 #include "../core/rtc.h"
 #include "../core/task.h"
 #include "../utils/util.h"
@@ -14,7 +15,8 @@ static AppEntry g_appTable[] = {
 	#endif // __DEBUG__
 	{"Event Monitor", k_eventMonitorTask},
 	{"System Monitor", k_systemMonitorTask},
-	{"Shell", k_guiShellTask}
+	{"Shell", k_guiShellTask},
+	{"Image Viewer", k_imageViewerTask}
 };
 
 static AppPanelManager g_appPanelManager;
@@ -25,7 +27,7 @@ void k_appPanelTask(void) {
 
 	/* check graphic mode */
 	if (k_isGraphicMode() == false) {
-		k_printf("app panel task error: not graphic mode\n");
+		k_printf("[app panel error] not graphic mode\n");
 		return;
 	}
 

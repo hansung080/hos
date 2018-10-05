@@ -6,6 +6,8 @@
 #include "dynamic_mem.h"
 #include "../utils/util.h"
 #include "console.h"
+#include "../utils/jpeg.h"
+#include "../images/images.h"
 
 static WindowPoolManager g_windowPoolManager;
 static WindowManager g_windowManager;
@@ -20,7 +22,7 @@ static void k_initWindowPool(void) {
 	// allocate window pool.
 	windowPoolAddr = k_allocMem(sizeof(Window) * WINDOW_MAXCOUNT);
 	if (windowPoolAddr == null) {
-		k_printf("window error: window pool allocation error\n");
+		k_printf("window error: window pool allocation failure\n");
 		while (true) {
 			;
 		}
@@ -126,7 +128,7 @@ void k_initGui(void) {
 	// allocate event buffer.
 	g_windowManager.eventBuffer = (Event*)k_allocMem(sizeof(Event) * EVENTQUEUE_WINDOWMANAGER_MAXCOUNT);
 	if (g_windowManager.eventBuffer == null) {
-		k_printf("window error: window manager event buffer allocation error\n");
+		k_printf("window error: window manager event buffer allocation failure\n");
 		while (true) {
 			;
 		}
@@ -137,7 +139,7 @@ void k_initGui(void) {
 	// allocate screen bitmap.
 	g_windowManager.screenBitmap = (byte*)k_allocMem((vbeMode->xResolution * vbeMode->yResolution + 7) / 8);
 	if (g_windowManager.screenBitmap == null) {
-		k_printf("window error: window manager screen bitmap allocation error\n");
+		k_printf("window error: window manager screen bitmap allocation failure\n");
 	}
 
 	g_windowManager.prevButtonStatus = 0;
@@ -149,6 +151,7 @@ void k_initGui(void) {
 	backgroundWindowId = k_createWindow(0, 0, vbeMode->xResolution, vbeMode->yResolution, 0, WINDOW_BACKGROUNDWINDOWTITLE);
 	g_windowManager.backgroundWindowId = backgroundWindowId;
 	k_drawRect(backgroundWindowId, 0, 0, vbeMode->xResolution - 1, vbeMode->yResolution - 1, WINDOW_COLOR_SYSTEMBACKGROUND, true);	
+	k_drawBackgroundImage();
 	k_showWindow(backgroundWindowId, true);
 }
 
@@ -1551,6 +1554,99 @@ bool k_drawText(qword windowId, int x, int y, Color textColor, Color backgroundC
 	k_unlock(&window->mutex);
 
 	return true;
+}
+
+bool k_bitblt(qword windowId, int x, int y, const Color* buffer, int width, int height) {
+	Window* window;
+	Rect windowArea;
+	Rect bufferArea;
+	Rect overArea;
+	int windowWidth;
+	int overWidth, overHeight;
+	int startX, startY;
+	int i;
+	int windowOffset;
+	int bufferOffset;
+	
+	window = k_getWindowWithLock(windowId);
+	if (window == null) {
+		return false;
+	}
+
+	// convert window area from screen coordinates to window coordinates.
+	k_setRect(&windowArea, 0, 0, window->area.x2 - window->area.x1, window->area.y2 - window->area.y1);
+	k_setRect(&bufferArea, x, y, x + width - 1, y + height - 1);
+	if (k_getOverlappedRect(&windowArea, &bufferArea, &overArea) == false) {
+		k_unlock(&window->mutex);
+		return false;
+	}
+
+	windowWidth = k_getRectWidth(&windowArea);
+	overWidth = k_getRectWidth(&overArea);
+	overHeight = k_getRectHeight(&overArea);
+
+	// If x < 0 or y < 0, buffer to copy is clipped.
+	if (x < 0) {
+		startX = x;
+
+	} else {
+		startX = 0;
+	}
+
+	if (y < 0) {
+		startY = y;
+
+	} else {
+		startY = 0;
+	}
+
+	for (i = 0; i < overHeight; i++) {
+		windowOffset = windowWidth * (overArea.y1 + i) + overArea.x1;
+		bufferOffset = width * (startY + i) + startX;
+		k_memcpy(window->buffer + windowOffset, buffer + bufferOffset, sizeof(Color) * overWidth);
+	}
+
+	k_unlock(&window->mutex);
+
+	return true;
+}
+
+void k_drawBackgroundImage(void) {
+	Jpeg* jpeg;
+	Color* imageBuffer;
+	WindowManager* windowManager;
+	int screenWidth, screenHeight;
+		
+	jpeg = (Jpeg*)k_allocMem(sizeof(Jpeg));
+	if (jpeg == null) {
+		return;
+	}
+
+	if (k_initJpeg(jpeg, g_imageWallpaper, g_sizeWallpaper) == false) {
+		k_freeMem(jpeg);
+		return;
+	}
+
+	imageBuffer = (Color*)k_allocMem(sizeof(Color) * jpeg->width * jpeg->height);
+	if (imageBuffer == null) {
+		k_freeMem(jpeg);
+		return;
+	}
+
+	if (k_decodeJpeg(jpeg, imageBuffer) == false) {
+		k_freeMem(imageBuffer);
+		k_freeMem(jpeg);
+		return;
+	}
+
+	windowManager = k_getWindowManager();
+	screenWidth = k_getRectWidth(&windowManager->screenArea);
+	screenHeight = k_getRectHeight(&windowManager->screenArea);
+
+	k_bitblt(windowManager->backgroundWindowId, (screenWidth - jpeg->width) / 2, (screenHeight - jpeg->height) / 2, imageBuffer, jpeg->width, jpeg->height);
+
+	k_freeMem(imageBuffer);
+	k_freeMem(jpeg);
 }
 
 // mouse cursor bitmap (20 * 20 = 400 bytes)

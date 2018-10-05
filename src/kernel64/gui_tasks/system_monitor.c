@@ -25,7 +25,7 @@ void k_systemMonitorTask(void) {
 
 	/* check graphic mode */
 	if (k_isGraphicMode() == false) {
-		k_printf("system monitor task error: not graphic mode\n");
+		k_printf("[system monitor error] not graphic mode\n");
 		return;
 	}
 

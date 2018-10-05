@@ -258,7 +258,7 @@ void k_initScheduler(void) {
 		task->flags = TASK_FLAGS_LOWEST | TASK_FLAGS_PROCESS | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE;
 	}
 	
-	// set task itself ID to parent process ID, because the first task of kernel dose not have parent process.
+	// set task itself ID to parent process ID, because the first task of kernel does not have parent process.
 	task->parentProcessId = task->link.id;
 	task->memAddr = (void*)0x100000;
 	task->memSize = 0x500000;
@@ -1072,7 +1072,7 @@ void k_idleTask(void) {
 				taskId = task->link.id;
 				k_freeTask(taskId);
 				#if __DEBUG__
-				k_printf("IDLE: Task (0x%q) has completely ended.\n", taskId);
+				k_printf("[idle debug] Task (0x%q) has completely ended.\n", taskId);
 				#endif // __DEBUG__
 			}
 		}

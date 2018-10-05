@@ -72,7 +72,7 @@ typedef struct k_Jpeg {
 	// DRI: data restart interval
 	int interval;
 	
-	int mcu_buf[32*32*4]; // buffer
+	int mcu_buf[32 * 32 * 4]; // buffer
 	int *mcu_yuv[4];
 	int mcu_preDC[3];
 	
@@ -84,7 +84,7 @@ typedef struct k_Jpeg {
 	Huff huff[2][3];
 	
 	// I/O: input/output
-	unsigned char *data;
+	const unsigned char* data;
 	int data_index;
 	int data_size;
 	
@@ -92,8 +92,8 @@ typedef struct k_Jpeg {
 	int bit_remain;
 } Jpeg;
 
-bool k_initJpeg(Jpeg* jpeg, byte* fileBuffer, dword fileSize);
-bool k_decodeJpeg(Jpeg* jpeg, Color* outBuffer);
+bool k_initJpeg(Jpeg* jpeg, const byte* fileBuffer, dword fileSize);
+bool k_decodeJpeg(Jpeg* jpeg, Color* imageBuffer);
 
 /* Buffer Read Functions */
 static unsigned char get_byte(Jpeg* jpeg);
@@ -123,6 +123,6 @@ static int jpeg_decode_huff(Jpeg* jpeg, int scan, int* block);
 /* Block Restoring Functions */
 static void jpeg_mcu_bitblt(int* src, int* dest, int width, int x0, int y0, int x1, int y1);
 static int jpeg_decode_mcu(Jpeg* jpeg);
-static int jpeg_decode_yuv(Jpeg* jpeg, int h, int v, Color* outBuffer);
+static int jpeg_decode_yuv(Jpeg* jpeg, int h, int v, Color* imageBuffer);
 
 #endif // __UTILS_JPEG_H__

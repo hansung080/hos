@@ -28,7 +28,7 @@ int zigzag_table[] = {
 };
 
 // initialize JPEG struct using file buffer and file size of JPEG image file.
-bool k_initJpeg(Jpeg* jpeg, byte* fileBuffer, dword fileSize) {
+bool k_initJpeg(Jpeg* jpeg, const byte* fileBuffer, dword fileSize) {
 	int i;
 	unsigned char c;
 	
@@ -103,7 +103,7 @@ bool k_initJpeg(Jpeg* jpeg, byte* fileBuffer, dword fileSize) {
 }
 
 // decode JPEG image and save it to out buffer.
-bool k_decodeJpeg(Jpeg* jpeg, Color* outBuffer) {
+bool k_decodeJpeg(Jpeg* jpeg, Color* imageBuffer) {
 	int h_unit, v_unit;
 	int mcu_count, h, v;
 	
@@ -115,7 +115,7 @@ bool k_decodeJpeg(Jpeg* jpeg, Color* outBuffer) {
 	h_unit = jpeg->width / jpeg->mcu_width;
 	v_unit = jpeg->height / jpeg->mcu_height;
 	
-	if ((jpeg->width  % jpeg->mcu_width) > 0) {
+	if ((jpeg->width % jpeg->mcu_width) > 0) {
 		h_unit++;
 	}
 	
@@ -129,7 +129,7 @@ bool k_decodeJpeg(Jpeg* jpeg, Color* outBuffer) {
 		for (h = 0; h < h_unit; h++) {
 			mcu_count++;
 			jpeg_decode_mcu(jpeg);
-			jpeg_decode_yuv(jpeg, h, v, outBuffer);
+			jpeg_decode_yuv(jpeg, h, v, imageBuffer);
 			
 			if (jpeg->interval > 0 && mcu_count >= jpeg->interval) {
 				// skip RST marker (FF hoge)
@@ -651,7 +651,7 @@ static int jpeg_decode_mcu(Jpeg* jpeg) {
 }
 
 // color space conversion (YCbCr -> RGB)
-static int jpeg_decode_yuv(Jpeg* jpeg, int h, int v, Color* outBuffer) {
+static int jpeg_decode_yuv(Jpeg* jpeg, int h, int v, Color* imageBuffer) {
 	int x0, y0, x, y, x1, y1;
 	int* py, * pu, * pv;
 	int Y, U, V, k;
@@ -697,7 +697,7 @@ static int jpeg_decode_yuv(Jpeg* jpeg, int h, int v, Color* outBuffer) {
 			B = (B & 0xffffff00) ? (B >> 24) ^ 0xff : B;
 			
 			// RGB888 -> RGB565 conversion
-			outBuffer[(y0 + y) * w + (x0 + x)] = RGB(R, G, B);
+			imageBuffer[(y0 + y) * w + (x0 + x)] = RGB(R, G, B);
 		}
 	}
 	

@@ -53,6 +53,7 @@ typedef int (* WriteHddSector)(bool primary, bool master, dword lba, int sectorC
 #define size_t dword
 #define dirent DirEntry
 #define d_name fileName
+#define d_size fileSize
 
 /**
   ====================================================================================================

@@ -53,7 +53,7 @@ int main(int argc, const char** argv) {
 	// open file
 	file = fopen(fileName, "rb");
 	if (file == NULL) {
-		fprintf(stderr, "%s opening failure\n", fileName);
+		fprintf(stderr, "[error] %s opening failure\n", fileName);
 		exit(8);
 	}
 	
@@ -61,7 +61,7 @@ int main(int argc, const char** argv) {
 	fseek(file, 0, SEEK_END);
 	dataLen = ftell(file);
 	fseek(file, 0, SEEK_SET);
-	printf("file name: %s, data length: %d bytes\n", fileName, dataLen);
+	printf("[info] file name: %s, data length: %d bytes\n", fileName, dataLen);
 	
 	//----------------------------------------------------------------------------------------------------
 	// connect to network
@@ -77,11 +77,11 @@ int main(int argc, const char** argv) {
 	
 	// connect to network.
 	if (connect(sockfd, (struct sockaddr*)&sockAddr, sizeof(sockAddr)) == -1) {
-		fprintf(stderr, "socket connection failure: address: %s, port: %d\n", SERVER_IP, SERVER_PORT);
+		fprintf(stderr, "[error] socket connection failure: address: %s, port: %d\n", SERVER_IP, SERVER_PORT);
 		exit(8);
 		
 	} else {
-		printf("socket connection success: address: %s, port: %d\n", SERVER_IP, SERVER_PORT);
+		printf("[info] socket connection success: address: %s, port: %d\n", SERVER_IP, SERVER_PORT);
 	}
 	
 	//----------------------------------------------------------------------------------------------------
@@ -90,21 +90,21 @@ int main(int argc, const char** argv) {
 	
 	// send data length.
 	if (send(sockfd, &dataLen, 4, 0) != 4) {
-		fprintf(stderr, "data length sending failure: data length: %d bytes\n", dataLen);
+		fprintf(stderr, "[error] data length sending failure: data length: %d bytes\n", dataLen);
 		exit(8);
 		
 	} else {
-		printf("data length sending success: data length: %d bytes\n", dataLen);
+		printf("[info] data length sending success: data length: %d bytes\n", dataLen);
 	}
 	
 	// wait until ACK will be received.
 	if (recv(sockfd, &ack, 1, 0) != 1) {
-		fprintf(stderr, "ACK receiving failure\n");
+		fprintf(stderr, "[error] ACK receiving failure\n");
 		exit(8);
 	}
 	
 	// send data.
-	printf("send data...");
+	printf("[info] send data...");
 	sentSize = 0;
 	while (sentSize < dataLen) {
 		// sending byte count = MIN(remained byte count, FIFO max size)
@@ -113,31 +113,31 @@ int main(int argc, const char** argv) {
 		
 		// read file.
 		if (fread(dataBuffer, 1, tempSize, file) != tempSize) {
-			fprintf(stderr, "%s reading failure\n", fileName);
+			fprintf(stderr, "[error] %s reading failure\n", fileName);
 			exit(8);
 		}
 		
 		// send data which is read from file.
 		if (send(sockfd, dataBuffer, tempSize, 0) != tempSize) {
-			fprintf(stderr, "data sending failure\n");
+			fprintf(stderr, "[error] data sending failure\n");
 			exit(8);
 		}
 		
 		// wait until ACK will be received.
 		if (recv(sockfd, &ack, 1, 0) != 1) {
-			fprintf(stderr, "ACK receiving failure\n");
+			fprintf(stderr, "[error] ACK receiving failure\n");
 			exit(8);
 		}
 	}
 	
-	printf("success\n");
+	printf("[info] success\n");
 	
 	// close file and socket.
 	fclose(file);
 	close(sockfd);
 	
 	// print send complete message and wait for Enter key.
-	printf("sending complete: sent size: %d bytes\n", sentSize);
+	printf("[info] sending complete: sent size: %d bytes\n", sentSize);
 	printf("Press any key to exit.");
 	getchar();
 	

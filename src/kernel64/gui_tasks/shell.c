@@ -22,7 +22,7 @@ void k_guiShellTask(void) {
 
 	/* check graphic mode */
 	if (k_isGraphicMode() == false) {
-		k_printf("GUI shell task error: not graphic mode\n");
+		k_printf("[GUI shell error] not graphic mode\n");
 		return;
 	}
 

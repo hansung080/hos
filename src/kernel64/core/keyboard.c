@@ -99,7 +99,7 @@ bool k_changeKeyboardLed(bool capslockOn, bool numlockOn, bool scrolllockOn) {
 		return false;
 	}
 	
-	// send Keyboard LED Status Change Data: send [CapsLock(bit 2) | NumLock(bit 1) | ScrollLock(bit 0)] to Input Buffer.
+	// send Keyboard LED Status Change Data: send [caps lock (bit 2) | num lock (bit 1) | scroll lock (bit 0)] to Input Buffer.
 	k_outPortByte(0x60, (capslockOn << 2) | (numlockOn << 1) | (scrolllockOn));
 	
 	for (i = 0; i < 0xFFFF; i++) {
@@ -311,7 +311,7 @@ bool k_isCombinedKeyUsing(byte scanCode) {
 	
 	downScanCode = scanCode & 0x7F;
 	
-	// Alphabet keys get affected by Shift or Caps Lock key.
+	// Alphabet keys get affected by shift or caps lock key.
 	if (k_isAlphabetScanCode(downScanCode) == true) {
 		if (g_keyboardManager.shiftDown ^ g_keyboardManager.capslockOn) {
 			combinedKey = true;
@@ -320,7 +320,7 @@ bool k_isCombinedKeyUsing(byte scanCode) {
 			combinedKey = false;
 		}
 	
-	// Number or Symbol keys get affected by Shift key.
+	// Number or Symbol keys get affected by shift key.
 	} else if (k_isNumberOrSymbolScanCode(downScanCode) == true) {
 		if(g_keyboardManager.shiftDown == true){
 			combinedKey = true;
@@ -329,7 +329,7 @@ bool k_isCombinedKeyUsing(byte scanCode) {
 			combinedKey = false;
 		}
 		
-	// Number pad keys get affected by Num Lock key.
+	// Number pad keys get affected by num lock key.
 	// and process only when extended key codes are not received, because extended key codes and number pad key codes are duplicated except 0xE0.
 	} else if ((k_isNumberPadScanCode(downScanCode) == true) && (g_keyboardManager.extendedCodeIn == false)) {
 		if(g_keyboardManager.numlockOn == true){
@@ -348,8 +348,8 @@ void k_updateCombinedKeyStatusAndLed(byte scanCode) {
 	byte downScanCode;
 	bool ledStatusChanged = false;
 	
-	// If the highest bit (bit 7) of scan code == 1, it's Up Code.
-	// If the highest bit (bit 7) of scan code == 0, it's Down Code.
+	// If the highest bit (bit 7) of scan code == 1, it's up code.
+	// If the highest bit (bit 7) of scan code == 0, it's down code.
 	if (scanCode & 0x80) {
 		down = false;
 		downScanCode = scanCode & 0x7F;
@@ -359,21 +359,21 @@ void k_updateCombinedKeyStatusAndLed(byte scanCode) {
 		downScanCode = scanCode;
 	}
 	
-	// If [42:Left Shift] or [54:Right Shift].
+	// If [42: left shift] or [54: right shift].
 	if ((downScanCode == 42) || (downScanCode == 54)) {
 		g_keyboardManager.shiftDown = down;
 		
-	// If [58:Caps Lock] and Down Code.
+	// If [58: caps lock] and down code.
 	} else if ((downScanCode == 58) && (down == true)) {
 		g_keyboardManager.capslockOn ^= true;
 		ledStatusChanged = true;
 		
-	// If [69:Num Lock] and Down Code.
+	// If [69: num lock] and down code.
 	} else if ((downScanCode == 69) && (down == true)) {
 		g_keyboardManager.numlockOn ^= true;
 		ledStatusChanged = true;
 		
-	// If [70:Scroll Lock] and Down Code.
+	// If [70: scroll lock] and down code.
 	} else if ((downScanCode == 70) && (down == true)) {
 		g_keyboardManager.scrolllockOn ^= true;
 		ledStatusChanged = true;
@@ -393,7 +393,7 @@ bool k_convertScanCodeToAsciiCode(byte scanCode, byte* asciiCode, byte* flags) {
 		return false;
 	}
 	
-	// If [0xE1: Pause key].
+	// If [0xE1: pause key].
 	if (scanCode == 0xE1) {
 		*asciiCode = KEY_PAUSE;
 		*flags = KEY_FLAGS_DOWN;

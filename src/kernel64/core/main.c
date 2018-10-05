@@ -75,7 +75,7 @@ void k_main(void) {
 	k_printf("pass\n");
 	
 	// initialize PIT.
-    // Timer interrupt occurs once per 1 millisecond periodically.
+	// Timer interrupt occurs once per 1 millisecond periodically.
 	k_printf("- initialize PIT (once per 1 ms).............");
 	k_initPit(MSTOCOUNT(1), true);
 	k_printf("pass\n");

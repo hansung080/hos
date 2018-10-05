@@ -291,6 +291,8 @@ bool k_drawLine(qword windowId, int x1, int y1, int x2, int y2, Color color);
 bool k_drawRect(qword windowId, int x1, int y1, int x2, int y2, Color color, bool fill);
 bool k_drawCircle(qword windowId, int x, int y, int radius, Color color, bool fill);
 bool k_drawText(qword windowId, int x, int y, Color textColor, Color backgroundColor, const char* str, int len);
+bool k_bitblt(qword windowId, int x, int y, const Color* buffer, int width, int height);
+void k_drawBackgroundImage(void);
 
 /* Mouse Cursor Functions */
 static void k_drawMouseCursor(int x, int y);
