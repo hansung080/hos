@@ -148,7 +148,9 @@ static bool k_showImage(qword mainWindowId, const char* fileName) {
 	int windowWidth;
 	Event event;
 	KeyEvent* keyEvent;
-
+	int imageWidth, imageHeight;
+	bool exit;
+	
 	/* search image file in root directory */
 	dir = opendir("/");
 	fileSize = 0;
@@ -228,7 +230,7 @@ static bool k_showImage(qword mainWindowId, const char* fileName) {
 	}
 
 	k_getScreenArea(&screenArea);
-	windowId = k_createWindow((screenArea.x2 - jpeg->width) / 2, (screenArea.y2 - jpeg->height) / 2, jpeg->width, jpeg->height + WINDOW_TITLEBAR_HEIGHT, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW, fileName);
+	windowId = k_createWindow((screenArea.x2 - jpeg->width) / 2, (screenArea.y2 - jpeg->height) / 2, jpeg->width, jpeg->height + WINDOW_TITLEBAR_HEIGHT, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW | WINDOW_FLAGS_RESIZABLE, fileName);
 	if (windowId == WINDOW_INVALIDID) {
 		k_printf("[image viewer error] image viewer creation failure\n");
 		k_freeMem(imageBuffer);
@@ -251,25 +253,38 @@ static bool k_showImage(qword mainWindowId, const char* fileName) {
 	k_memcpy(window->buffer + (windowWidth * WINDOW_TITLEBAR_HEIGHT), imageBuffer, sizeof(Color) * jpeg->width * jpeg->height);
 	k_unlock(&window->mutex);
 
-	k_freeMem(imageBuffer);
+	// backup image width, image height before freeing jpeg.
+	imageWidth = jpeg->width;
+	imageHeight = jpeg->height;
+
+	// Do not free image buffer here in order to reuse it when EVENT_WINDOW_RESIZE event receives.
+	//k_freeMem(imageBuffer);
 	k_freeMem(jpeg);
 	k_freeMem(fileBuffer);
 
 	k_showWindow(windowId, true);
 	k_showWindow(mainWindowId, false);
 
+	exit = false;
+
 	/* event processing loop */	
-	while (true) {
+	while (exit == false) {
 		if (k_recvEventFromWindow(&event, windowId) == false) {
 			k_sleep(0);
 			continue;
 		}
 
 		switch (event.type) {
+		case EVENT_WINDOW_RESIZE:
+			k_bitblt(windowId, 0, WINDOW_TITLEBAR_HEIGHT, imageBuffer, imageWidth, imageHeight);
+			k_showWindow(windowId, true);
+			break;
+
 		case EVENT_WINDOW_CLOSE:
 			k_deleteWindow(windowId);
 			k_showWindow(mainWindowId, true);
-			return true;			
+			exit = true;
+			break;
 
 		case EVENT_KEY_DOWN:
 			keyEvent = &event.keyEvent;
@@ -278,7 +293,7 @@ static bool k_showImage(qword mainWindowId, const char* fileName) {
 			if (keyEvent->asciiCode == KEY_ESC) {
 				k_deleteWindow(windowId);
 				k_showWindow(mainWindowId, true);
-				return true;
+				exit = true;
 			}
 
 			break;
@@ -287,6 +302,8 @@ static bool k_showImage(qword mainWindowId, const char* fileName) {
 			break;
 		}
 	}
+
+	k_freeMem(imageBuffer);	
 
 	return true;
 }

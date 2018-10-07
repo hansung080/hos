@@ -102,7 +102,7 @@ static void k_freeWindow(qword windowId) {
 	k_unlock(&g_windowPoolManager.mutex);
 }
 
-void k_initGui(void) {
+void k_initGuiSystem(void) {
 	VbeModeInfoBlock* vbeMode;
 	qword backgroundWindowId;
 
@@ -146,6 +146,10 @@ void k_initGui(void) {
 	g_windowManager.windowMoving = false;
 	g_windowManager.movingWindowId = WINDOW_INVALIDID;
 
+	g_windowManager.windowResizing = false;
+	g_windowManager.resizingWindowId = WINDOW_INVALIDID;
+	k_memset(&g_windowManager.resizingWindowArea, 0, sizeof(Rect));
+
 	/* create background window */
 	// set 0 to flags in order not to show. After drawing background color, It will show.
 	backgroundWindowId = k_createWindow(0, 0, vbeMode->xResolution, vbeMode->yResolution, 0, WINDOW_BACKGROUNDWINDOWTITLE);
@@ -174,6 +178,16 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 
 	if ((width <= 0) || (height <= 0)) {
 		return WINDOW_INVALIDID;
+	}
+
+	if (flags & WINDOW_FLAGS_DRAWTITLEBAR) {
+		if (width < WINDOW_MINWIDTH) {
+			width = WINDOW_MINWIDTH;
+		}
+
+		if (height < WINDOW_MINHEIGHT) {
+			height = WINDOW_MINHEIGHT;
+		}
 	}
 
 	/* allocate window */
@@ -934,7 +948,22 @@ bool k_isPointInCloseButton(qword windowId, int x, int y) {
 		return false;
 	}
 
-	if ((window->area.x2 - 1 - WINDOW_CLOSEBUTTON_SIZE <= x) && (x <= window->area.x2 - 1) && (window->area.y1 + 1 <= y) && (y <= window->area.y1 + 1 + WINDOW_CLOSEBUTTON_SIZE)) {
+	if ((window->area.x2 - 1 - WINDOW_XBUTTON_SIZE <= x) && (x <= window->area.x2 - 1) && (window->area.y1 + 1 <= y) && (y <= window->area.y1 + 1 + WINDOW_XBUTTON_SIZE)) {
+		return true;
+	}
+
+	return false;
+}
+
+bool k_isPointInResizeButton(qword windowId, int x, int y) {
+	Window* window;
+
+	window = k_getWindow(windowId);
+	if ((window == null) || ((window->flags & WINDOW_FLAGS_DRAWTITLEBAR) != WINDOW_FLAGS_DRAWTITLEBAR) || ((window->flags & WINDOW_FLAGS_RESIZABLE) != WINDOW_FLAGS_RESIZABLE)) {
+		return false;
+	}
+
+	if ((window->area.x2 - 2 - (WINDOW_XBUTTON_SIZE * 2) <= x) && (x <= window->area.x2 - 2 - WINDOW_XBUTTON_SIZE) && (window->area.y1 + 1 <= y) && (y <= window->area.y1 + 1 + WINDOW_XBUTTON_SIZE)) {
 		return true;
 	}
 
@@ -944,8 +973,6 @@ bool k_isPointInCloseButton(qword windowId, int x, int y) {
 bool k_moveWindow(qword windowId, int x, int y) {
 	Window* window;
 	Rect prevArea;
-	int width;
-	int height;
 
 	window = k_getWindowWithLock(windowId);
 	if (window == null) {
@@ -954,9 +981,10 @@ bool k_moveWindow(qword windowId, int x, int y) {
 
 	/* change window area */
 	k_memcpy(&prevArea, &window->area, sizeof(Rect));
-	width = k_getRectWidth(&prevArea);
-	height = k_getRectHeight(&prevArea);
-	k_setRect(&window->area, x, y, x + width - 1, y + height - 1);
+	window->area.x1 = x;
+	window->area.y1 = y;
+	window->area.x2 = x + k_getRectWidth(&prevArea) - 1;
+	window->area.y2 = y + k_getRectHeight(&prevArea) - 1;
 
 	k_unlock(&window->mutex);
 
@@ -981,6 +1009,70 @@ static bool k_updateWindowTitleBar(qword windowId, bool selected) {
 	}
 
 	return false;
+}
+
+bool k_resizeWindow(qword windowId, int x, int y, int width, int height) {
+	Window* window;
+	Color* newBuffer;
+	Color* oldBuffer;
+	Rect prevArea;
+
+	window = k_getWindowWithLock(windowId);
+	if (window == null) {
+		return false;
+	}
+
+	if (window->flags & WINDOW_FLAGS_DRAWTITLEBAR) {
+		if (width < WINDOW_MINWIDTH) {
+			width = WINDOW_MINWIDTH;
+		}
+
+		if (height < WINDOW_MINHEIGHT) {
+			height = WINDOW_MINHEIGHT;
+		}
+	}
+
+	/* change window buffer */
+	newBuffer = (Color*)k_allocMem(sizeof(Color) * width * height);
+	if (newBuffer == null) {
+		return false;
+	}
+
+	oldBuffer = window->buffer;
+	window->buffer = newBuffer;
+	k_freeMem(oldBuffer);
+
+	/* change window area */
+	k_memcpy(&prevArea, &window->area, sizeof(Rect));
+	window->area.x1 = x;
+	window->area.y1 = y;
+	window->area.x2 = x + width - 1;
+	window->area.y2 = y + height - 1;
+
+	/** 
+	  draw window basic objects
+	  - GUI task have to draw window contents when it receives EVENT_WINDOW_RESIZE event from window manger task. 
+	*/
+	k_drawWindowBackground(windowId);
+
+	if (window->flags & WINDOW_FLAGS_DRAWFRAME) {
+		k_drawWindowFrame(windowId);
+	}
+
+	if (window->flags & WINDOW_FLAGS_DRAWTITLEBAR) {
+		k_drawWindowTitleBar(windowId, window->title, true);
+	}
+
+	k_unlock(&window->mutex);
+
+	/* update screen and send window event */
+	if (window->flags & WINDOW_FLAGS_SHOW) {
+		k_updateScreenByScreenArea(&prevArea);
+		k_updateScreenById(windowId);
+		k_sendWindowEventToWindow(windowId, EVENT_WINDOW_RESIZE);
+	}
+
+	return true;
 }
 
 bool k_getWindowArea(qword windowId, Rect* area) {
@@ -1268,31 +1360,6 @@ bool k_updateScreenByScreenArea(const Rect* area) {
 	return k_sendEventToWindowManager(&event);
 }
 
-bool k_drawWindowFrame(qword windowId) {
-	Window* window;
-	int width;
-	int height;	
-	Rect area;
-
-	window = k_getWindowWithLock(windowId);
-	if (window == null) {
-		return false;
-	}
-
-	// get width, height and set clipping area on window coordinates.
-	width = k_getRectWidth(&window->area);
-	height = k_getRectHeight(&window->area);
-	k_setRect(&area, 0, 0, width - 1, height - 1);
-
-	// draw edges (2 pixes-thick) of a window frame.
-	__k_drawRect(window->buffer, &area, 0, 0, width - 1, height - 1, WINDOW_COLOR_FRAME, false);
-	__k_drawRect(window->buffer, &area, 1, 1, width - 2, height - 2, WINDOW_COLOR_FRAME, false);
-
-	k_unlock(&window->mutex);
-
-	return true;
-}
-
 bool k_drawWindowBackground(qword windowId) {
 	Window* window;
 	int width;
@@ -1326,12 +1393,37 @@ bool k_drawWindowBackground(qword windowId) {
 	k_unlock(&window->mutex);
 }
 
+bool k_drawWindowFrame(qword windowId) {
+	Window* window;
+	int width;
+	int height;	
+	Rect area;
+
+	window = k_getWindowWithLock(windowId);
+	if (window == null) {
+		return false;
+	}
+
+	// get width, height and set clipping area on window coordinates.
+	width = k_getRectWidth(&window->area);
+	height = k_getRectHeight(&window->area);
+	k_setRect(&area, 0, 0, width - 1, height - 1);
+
+	// draw edges (2 pixes-thick) of a window frame.
+	__k_drawRect(window->buffer, &area, 0, 0, width - 1, height - 1, WINDOW_COLOR_FRAME, false);
+	__k_drawRect(window->buffer, &area, 1, 1, width - 2, height - 2, WINDOW_COLOR_FRAME, false);
+
+	k_unlock(&window->mutex);
+
+	return true;
+}
+
 bool k_drawWindowTitleBar(qword windowId, const char* title, bool selected) {
 	Window* window;
 	int width;
 	int height;
 	Rect area;
-	Rect closeButtonArea;
+	Rect buttonArea;
 
 	window = k_getWindowWithLock(windowId);
 	if (window == null) {
@@ -1377,24 +1469,58 @@ bool k_drawWindowTitleBar(qword windowId, const char* title, bool selected) {
 	/* draw a close button */
 
 	// draw a close button.
-	k_setRect(&closeButtonArea, width - 1 - WINDOW_CLOSEBUTTON_SIZE, 1, width - 2, WINDOW_CLOSEBUTTON_SIZE - 1);
-	k_drawButton(windowId, &closeButtonArea, WINDOW_COLOR_BACKGROUND, "", WINDOW_COLOR_BACKGROUND);
+	k_setRect(&buttonArea, width - 1 - WINDOW_XBUTTON_SIZE, 1, width - 2, WINDOW_XBUTTON_SIZE - 1);
+	k_drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "", WINDOW_COLOR_BACKGROUND);
 
 	window = k_getWindowWithLock(windowId);
 	if (window == null) {
 		return false;
 	}
 
-	// draw 'X' mark (3 pixels-thick) on the close button.
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 1 + 4, width - 2 - 4, WINDOW_TITLEBAR_HEIGHT - 6, WINDOW_COLOR_CLOSEBUTTONMARK);
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 5, 1 + 4, width - 2 - 4, WINDOW_TITLEBAR_HEIGHT - 7, WINDOW_COLOR_CLOSEBUTTONMARK);
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 1 + 5, width - 2 - 5, WINDOW_TITLEBAR_HEIGHT - 6, WINDOW_COLOR_CLOSEBUTTONMARK);
+	// draw 'X' mark on the close button.
+	// draw '\' mark (3 pixels-thick).
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 1 + 4, width - 2 - 4, WINDOW_TITLEBAR_HEIGHT - 6, WINDOW_COLOR_XBUTTONMARK);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 5, 1 + 4, width - 2 - 4, WINDOW_TITLEBAR_HEIGHT - 7, WINDOW_COLOR_XBUTTONMARK);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 1 + 5, width - 2 - 5, WINDOW_TITLEBAR_HEIGHT - 6, WINDOW_COLOR_XBUTTONMARK);
 	
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 19 - 4, width - 2 - 4, 1 + 4, WINDOW_COLOR_CLOSEBUTTONMARK);
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 5, 19 - 4, width - 2 - 4, 1 + 5, WINDOW_COLOR_CLOSEBUTTONMARK);
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 19 - 5, width - 2 - 5, 1 + 4, WINDOW_COLOR_CLOSEBUTTONMARK);
+	// draw '/' mark (3 pixels-thick).
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 19 - 4, width - 2 - 4, 1 + 4, WINDOW_COLOR_XBUTTONMARK);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 5, 19 - 4, width - 2 - 4, 1 + 5, WINDOW_COLOR_XBUTTONMARK);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 19 - 5, width - 2 - 5, 1 + 4, WINDOW_COLOR_XBUTTONMARK);
 
 	k_unlock(&window->mutex);
+
+	/* draw a resize button */
+	if (window->flags & WINDOW_FLAGS_RESIZABLE) {
+		// draw a resize button.
+		k_setRect(&buttonArea, width - 2 - (WINDOW_XBUTTON_SIZE * 2), 1, width - 2 - WINDOW_XBUTTON_SIZE, WINDOW_XBUTTON_SIZE - 1);
+		k_drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "", WINDOW_COLOR_BACKGROUND);
+
+		window = k_getWindowWithLock(windowId);
+		if (window == null) {
+			return false;
+		}
+
+		// draw '<->' mark on the resize button.
+		// draw '/' mark (3 pixels-thick).
+		__k_drawLine(window->buffer, &area, buttonArea.x1 + 4, buttonArea.y2 - 4, buttonArea.x2 - 5, buttonArea.y1 + 3, WINDOW_COLOR_XBUTTONMARK);
+		__k_drawLine(window->buffer, &area, buttonArea.x1 + 4, buttonArea.y2 - 3, buttonArea.x2 - 4, buttonArea.y1 + 3, WINDOW_COLOR_XBUTTONMARK);
+		__k_drawLine(window->buffer, &area, buttonArea.x1 + 5, buttonArea.y2 - 3, buttonArea.x2 - 4, buttonArea.y1 + 4, WINDOW_COLOR_XBUTTONMARK);
+
+		// draw '>' mark (2 pixels-thick).
+		__k_drawLine(window->buffer, &area, buttonArea.x1 + 9, buttonArea.y1 + 3, buttonArea.x2 - 4, buttonArea.y1 + 3, WINDOW_COLOR_XBUTTONMARK);
+		__k_drawLine(window->buffer, &area, buttonArea.x1 + 9, buttonArea.y1 + 4, buttonArea.x2 - 4, buttonArea.y1 + 4, WINDOW_COLOR_XBUTTONMARK);
+		__k_drawLine(window->buffer, &area, buttonArea.x2 - 4, buttonArea.y1 + 5, buttonArea.x2 - 4, buttonArea.y1 + 9, WINDOW_COLOR_XBUTTONMARK);
+		__k_drawLine(window->buffer, &area, buttonArea.x2 - 5, buttonArea.y1 + 5, buttonArea.x2 - 5, buttonArea.y1 + 9, WINDOW_COLOR_XBUTTONMARK);
+
+		// draw '<' mark (2 pixels-thick).
+		__k_drawLine(window->buffer, &area, buttonArea.x1 + 4, buttonArea.y1 + 8, buttonArea.x1 + 4, buttonArea.y2 - 3, WINDOW_COLOR_XBUTTONMARK);
+		__k_drawLine(window->buffer, &area, buttonArea.x1 + 5, buttonArea.y1 + 8, buttonArea.x1 + 5, buttonArea.y2 - 3, WINDOW_COLOR_XBUTTONMARK);
+		__k_drawLine(window->buffer, &area, buttonArea.x1 + 6, buttonArea.y2 - 4, buttonArea.x1 + 10, buttonArea.y2 - 4, WINDOW_COLOR_XBUTTONMARK);
+		__k_drawLine(window->buffer, &area, buttonArea.x1 + 6, buttonArea.y2 - 3, buttonArea.x1 + 10, buttonArea.y2 - 3, WINDOW_COLOR_XBUTTONMARK);
+
+		k_unlock(&window->mutex);
+	}
 
 	return true;
 }
@@ -1585,7 +1711,7 @@ bool k_bitblt(qword windowId, int x, int y, const Color* buffer, int width, int 
 	overWidth = k_getRectWidth(&overArea);
 	overHeight = k_getRectHeight(&overArea);
 
-	// If x < 0 or y < 0, buffer to copy is clipped.
+	// process clipping: If x < 0 or y < 0, buffer to copy is clipped.
 	if (x < 0) {
 		startX = x;
 
@@ -1743,4 +1869,49 @@ void k_moveMouseCursor(int x, int y) {
 void k_getMouseCursorPos(int* x, int* y) {
 	*x = g_windowManager.mouseX;
 	*y = g_windowManager.mouseY;
+}
+
+void k_drawResizeMarker(const Rect* area, bool show) {
+	Rect markerArea;
+
+	/* draw resize marker */
+	if (show == true) {
+		// draw left-top marker.
+		k_setRect(&markerArea, area->x1, area->y1, area->x1 + RESIZEMARKER_SIZE, area->y1 + RESIZEMARKER_SIZE);
+		__k_drawRect(g_windowManager.videoMem, &g_windowManager.screenArea, markerArea.x1, markerArea.y1, markerArea.x2, markerArea.y1 + RESIZEMARKER_THICK, RESIZEMARKER_COLOR, true);
+		__k_drawRect(g_windowManager.videoMem, &g_windowManager.screenArea, markerArea.x1, markerArea.y1, markerArea.x1 + RESIZEMARKER_THICK, markerArea.y2, RESIZEMARKER_COLOR, true);
+
+		// draw right-top marker.
+		k_setRect(&markerArea, area->x2 - RESIZEMARKER_SIZE, area->y1, area->x2, area->y1 + RESIZEMARKER_SIZE);
+		__k_drawRect(g_windowManager.videoMem, &g_windowManager.screenArea, markerArea.x1, markerArea.y1, markerArea.x2, markerArea.y1 + RESIZEMARKER_THICK, RESIZEMARKER_COLOR, true);
+		__k_drawRect(g_windowManager.videoMem, &g_windowManager.screenArea, markerArea.x2 - RESIZEMARKER_THICK, markerArea.y1, markerArea.x2, markerArea.y2, RESIZEMARKER_COLOR, true);
+
+		// draw left-bottom marker.
+		k_setRect(&markerArea, area->x1, area->y2 - RESIZEMARKER_SIZE, area->x1 + RESIZEMARKER_SIZE, area->y2);
+		__k_drawRect(g_windowManager.videoMem, &g_windowManager.screenArea, markerArea.x1, markerArea.y2 - RESIZEMARKER_THICK, markerArea.x2, markerArea.y2, RESIZEMARKER_COLOR, true);
+		__k_drawRect(g_windowManager.videoMem, &g_windowManager.screenArea, markerArea.x1, markerArea.y1, markerArea.x1 + RESIZEMARKER_THICK, markerArea.y2, RESIZEMARKER_COLOR, true);
+
+		// draw right-bottom marker.
+		k_setRect(&markerArea, area->x2 - RESIZEMARKER_SIZE, area->y2 - RESIZEMARKER_SIZE, area->x2, area->y2);
+		__k_drawRect(g_windowManager.videoMem, &g_windowManager.screenArea, markerArea.x1, markerArea.y2 - RESIZEMARKER_THICK, markerArea.x2, markerArea.y2, RESIZEMARKER_COLOR, true);
+		__k_drawRect(g_windowManager.videoMem, &g_windowManager.screenArea, markerArea.x2 - RESIZEMARKER_THICK, markerArea.y1, markerArea.x2, markerArea.y2, RESIZEMARKER_COLOR, true);
+
+	/* clear resize marker */
+	} else {
+		// clear left-top marker.
+		k_setRect(&markerArea, area->x1, area->y1, area->x1 + RESIZEMARKER_SIZE, area->y1 + RESIZEMARKER_SIZE);
+		k_redrawWindowByArea(WINDOW_INVALIDID, &markerArea);
+
+		// clear right-top marker.
+		k_setRect(&markerArea, area->x2 - RESIZEMARKER_SIZE, area->y1, area->x2, area->y1 + RESIZEMARKER_SIZE);
+		k_redrawWindowByArea(WINDOW_INVALIDID, &markerArea);
+
+		// clear left-bottom marker.
+		k_setRect(&markerArea, area->x1, area->y2 - RESIZEMARKER_SIZE, area->x1 + RESIZEMARKER_SIZE, area->y2);
+		k_redrawWindowByArea(WINDOW_INVALIDID, &markerArea);
+
+		// clear right-bottom marker.
+		k_setRect(&markerArea, area->x2 - RESIZEMARKER_SIZE, area->y2 - RESIZEMARKER_SIZE, area->x2, area->y2);
+		k_redrawWindowByArea(WINDOW_INVALIDID, &markerArea);
+	}
 }

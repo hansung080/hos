@@ -41,15 +41,18 @@
 #define WINDOW_FLAGS_SHOW         0x00000001 // show flag
 #define WINDOW_FLAGS_DRAWFRAME    0x00000002 // draw frame flag
 #define WINDOW_FLAGS_DRAWTITLEBAR 0x00000004 // draw title bar flag
+#define WINDOW_FLAGS_RESIZABLE    0x00000008 // resizable flag
 #define WINDOW_FLAGS_DEFAULT      (WINDOW_FLAGS_SHOW | WINDOW_FLAGS_DRAWFRAME | WINDOW_FLAGS_DRAWTITLEBAR)
 
-// title bar-related macros
+// window size
 #define WINDOW_TITLEBAR_HEIGHT  21 // title bar height
-#define WINDOW_CLOSEBUTTON_SIZE 19 // close button size
+#define WINDOW_XBUTTON_SIZE     19 // close button, resize button size
+#define WINDOW_MINWIDTH         (WINDOW_XBUTTON_SIZE * 2 + 30) // min window width
+#define WINDOW_MINHEIGHT        (WINDOW_TITLEBAR_HEIGHT + 30)  // min window height
 
 // window color
-#define WINDOW_COLOR_FRAME                      RGB(109, 218, 22)
 #define WINDOW_COLOR_BACKGROUND                 RGB(255, 255, 255)
+#define WINDOW_COLOR_FRAME                      RGB(109, 218, 22)
 #define WINDOW_COLOR_TITLEBARTEXT               RGB(255, 255, 255)
 #define WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE   RGB(79, 204, 11)   // bright green
 #define WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE RGB(55, 135, 11)   // dark green
@@ -59,7 +62,7 @@
 #define WINDOW_COLOR_BUTTONBRIGHT               RGB(229, 229, 229) // bright color
 #define WINDOW_COLOR_BUTTONDARK                 RGB(86, 86, 86)    // dark color
 #define WINDOW_COLOR_SYSTEMBACKGROUND           RGB(232, 255, 232) // brighter green
-#define WINDOW_COLOR_CLOSEBUTTONMARK            RGB(71, 199, 21)   // 'X' mark on close button
+#define WINDOW_COLOR_XBUTTONMARK                RGB(71, 199, 21)   // 'X' mark on close button, '<->' mark on resize button  
 
 // background window title
 #define WINDOW_BACKGROUNDWINDOWTITLE "SYS_BACKGROUND"
@@ -79,6 +82,11 @@
 // event queue-related macros
 #define EVENTQUEUE_WINDOW_MAXCOUNT        100             // window event queue max count
 #define EVENTQUEUE_WINDOWMANAGER_MAXCOUNT WINDOW_MAXCOUNT // window manager event queue max count
+
+// resize marker-related macros
+#define RESIZEMARKER_SIZE  20
+#define RESIZEMARKER_THICK 4
+#define RESIZEMARKER_COLOR RGB(210, 20, 20) // bright red
 
 /**
   < Event Classification >
@@ -193,6 +201,7 @@ typedef struct k_Window {
 	dword flags;        // window flags: bit 0 : show flag
 	                    //               bit 1 : draw frame flag
 	                    //               bit 2 : draw title bar flag
+						//               bit 3 : resizable flag
 	Queue eventQueue;   // event queue for mouse, window, key, user event
 	Event* eventBuffer; // event buffer
 	char title[WINDOW_MAXTITLELENGTH + 1]; // window title: include last null character
@@ -220,6 +229,9 @@ typedef struct k_WindowManager {
 	byte prevButtonStatus;    // previous mouse button status
 	bool windowMoving;        // window moving flag
 	qword movingWindowId;     // moving window ID
+	bool windowResizing;      // window resizing flag
+	qword resizingWindowId;   // resizing window ID
+	Rect resizingWindowArea;  // resizing window area
 	byte* screenBitmap;       // screen bitmap
 } WindowManager;
 
@@ -231,7 +243,7 @@ static Window* k_allocWindow(void);
 static void k_freeWindow(qword windowId);
 
 /* Window and Window Manager Functions */
-void k_initGui(void);
+void k_initGuiSystem(void);
 WindowManager* k_getWindowManager(void);
 qword k_getBackgroundWindowId(void);
 void k_getScreenArea(Rect* screenArea);
@@ -254,8 +266,10 @@ qword k_getTopWindowId(void);
 bool k_moveWindowToTop(qword windowId);
 bool k_isPointInTitleBar(qword windowId, int x, int y);
 bool k_isPointInCloseButton(qword windowId, int x, int y);
+bool k_isPointInResizeButton(qword windowId, int x, int y);
 bool k_moveWindow(qword windowId, int x, int y);
 static bool k_updateWindowTitleBar(qword windowId, bool selected);
+bool k_resizeWindow(qword windowId, int x, int y, int width, int height);
 
 /* Coordinates Conversion Functions */
 bool k_getWindowArea(qword windowId, Rect* area);
@@ -282,8 +296,8 @@ bool k_updateScreenByWindowArea(qword windowId, const Rect* area); // window coo
 bool k_updateScreenByScreenArea(const Rect* area); // screen coordinates
 
 /* Window Drawing Functions: draw objects in window buffer using window coordinates */
-bool k_drawWindowFrame(qword windowId);
 bool k_drawWindowBackground(qword windowId);
+bool k_drawWindowFrame(qword windowId);
 bool k_drawWindowTitleBar(qword windowId, const char* title, bool selected);
 bool k_drawButton(qword windowId, const Rect* buttonArea, Color backgroundColor, const char* text, Color textColor);
 bool k_drawPixel(qword windowId, int x, int y, Color color);
@@ -295,8 +309,11 @@ bool k_bitblt(qword windowId, int x, int y, const Color* buffer, int width, int 
 void k_drawBackgroundImage(void);
 
 /* Mouse Cursor Functions */
-static void k_drawMouseCursor(int x, int y);
-void k_moveMouseCursor(int x, int y);
-void k_getMouseCursorPos(int* x, int* y);
+static void k_drawMouseCursor(int x, int y); // draw mouse cursor in video memory using screen coordinates.  
+void k_moveMouseCursor(int x, int y); // screen coordinates
+void k_getMouseCursorPos(int* x, int* y); // screen coordinates
+
+/* Resize Marker Functions */
+void k_drawResizeMarker(const Rect* area, bool show); // draw resize marker in video memory using screen coordinates.
 
 #endif // __CORE_WINDOW_H__

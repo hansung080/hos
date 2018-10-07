@@ -33,6 +33,7 @@ void k_windowManagerTask(void) {
 	bool mouseResult;
 	bool keyResult;
 	bool windowManagerResult;
+	WindowManager* windowManager;
 	#if __DEBUG__
 	/* Screen Update Performance Test */
 	qword lastTickCount;
@@ -40,8 +41,8 @@ void k_windowManagerTask(void) {
 	qword prevLoopCount;
 	#endif // __DEBUG__
 	
-	// initialize GUI.
-	k_initGui();
+	// initialize GUI system.
+	k_initGuiSystem();
 	
 	// draw mouse cursor at current mouse position (center in screen).
 	k_getMouseCursorPos(&mouseX, &mouseY);
@@ -50,6 +51,9 @@ void k_windowManagerTask(void) {
 	// create app panel task.
 	k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD | TASK_FLAGS_GUI, null, 0, (qword)k_appPanelTask, TASK_AFFINITY_LOADBALANCING);
 	
+	// get window manager.
+	windowManager = k_getWindowManager();	
+
 	#if __DEBUG__
 	/* Screen Update Performance Test */
 	lastTickCount = k_getTickCount();
@@ -86,7 +90,13 @@ void k_windowManagerTask(void) {
 		while (k_processWindowManagerEvent() == true) {
 			windowManagerResult = true;
 		}
-		
+						
+		// If window manager event (screen update event) had occured, resize marker might have been cleared,
+		// so draw resize marker again.
+		if ((windowManagerResult == true) && (windowManager->windowResizing == true)) {
+			k_drawResizeMarker(&windowManager->resizingWindowArea, true);
+		}
+
 		// If no data/events have been processed, switch task.
 		if ((mouseResult == false) && (keyResult == false) && (windowManagerResult == false)) {
 			k_sleep(0);
@@ -158,6 +168,12 @@ bool k_processMouseData(void) {
 				if (k_isPointInCloseButton(underMouseWindowId, mouseX, mouseY) == true) {
 					k_sendWindowEventToWindow(underMouseWindowId, EVENT_WINDOW_CLOSE);
 
+				} else if (k_isPointInResizeButton(underMouseWindowId, mouseX, mouseY) == true) {
+					windowManager->windowResizing = true;
+					windowManager->resizingWindowId = underMouseWindowId;
+					k_getWindowArea(underMouseWindowId, &windowManager->resizingWindowArea);
+					k_drawResizeMarker(&windowManager->resizingWindowArea, true);
+
 				} else {
 					windowManager->windowMoving = true;
 					windowManager->movingWindowId = underMouseWindowId;
@@ -172,6 +188,18 @@ bool k_processMouseData(void) {
 			if (windowManager->windowMoving == true) {
 				windowManager->windowMoving = false;
 				windowManager->movingWindowId = WINDOW_INVALIDID;
+
+			} else if (windowManager->windowResizing == true) {
+				k_resizeWindow(windowManager->resizingWindowId
+							  ,windowManager->resizingWindowArea.x1
+							  ,windowManager->resizingWindowArea.y1
+							  ,k_getRectWidth(&windowManager->resizingWindowArea)
+							  ,k_getRectHeight(&windowManager->resizingWindowArea));
+
+				k_drawResizeMarker(&windowManager->resizingWindowArea, false);
+
+				windowManager->windowResizing = false;
+				windowManager->resizingWindowId = WINDOW_INVALIDID;
 
 			} else {
 				k_sendMouseEventToWindow(underMouseWindowId, EVENT_MOUSE_LBUTTONUP, mouseX, mouseY, buttonStatus);
@@ -214,8 +242,25 @@ bool k_processMouseData(void) {
 			windowManager->windowMoving = false;
 			windowManager->movingWindowId = WINDOW_INVALIDID;
 		}
-	}
 
+	/* process window resize */
+	} else if (windowManager->windowResizing == true) {
+		k_drawResizeMarker(&windowManager->resizingWindowArea, false);
+
+		windowManager->resizingWindowArea.x2 += mouseX - prevMouseX;
+		windowManager->resizingWindowArea.y1 += mouseY - prevMouseY;
+
+		if ((windowManager->resizingWindowArea.x2 < windowManager->resizingWindowArea.x1) || (k_getRectWidth(&windowManager->resizingWindowArea) < WINDOW_MINWIDTH)) {
+			windowManager->resizingWindowArea.x2 = windowManager->resizingWindowArea.x1 + WINDOW_MINWIDTH - 1;	
+		}
+
+		if ((windowManager->resizingWindowArea.y2 < windowManager->resizingWindowArea.y1) || (k_getRectHeight(&windowManager->resizingWindowArea) < WINDOW_MINHEIGHT)) {
+			windowManager->resizingWindowArea.y1 = windowManager->resizingWindowArea.y2 - WINDOW_MINHEIGHT + 1;	
+		}
+
+		k_drawResizeMarker(&windowManager->resizingWindowArea, true);
+	}
+	
 	windowManager->prevButtonStatus = buttonStatus;
 
 	return true;
