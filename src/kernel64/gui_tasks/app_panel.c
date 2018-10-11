@@ -281,7 +281,7 @@ static bool k_processAppListEvent(void) {
 				break;
 			}
 
-			k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD | TASK_FLAGS_GUI, null, 0, (qword)g_appTable[mouseOverIndex].entryPoint, TASK_AFFINITY_LOADBALANCING);
+			k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)g_appTable[mouseOverIndex].entryPoint, TASK_AFFINITY_LOADBALANCING);
 
 			// send mouse event in oder to make app list invisible.
 			k_sendMouseEventToWindow(g_appPanelManager.appPanelId, EVENT_MOUSE_LBUTTONDOWN, g_appPanelManager.buttonArea.x1, g_appPanelManager.buttonArea.y1, 0);

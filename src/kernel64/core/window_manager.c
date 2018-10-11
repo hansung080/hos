@@ -49,7 +49,7 @@ void k_windowManagerTask(void) {
 	k_moveMouseCursor(mouseX, mouseY);
 
 	// create app panel task.
-	k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD | TASK_FLAGS_GUI, null, 0, (qword)k_appPanelTask, TASK_AFFINITY_LOADBALANCING);
+	k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_appPanelTask, TASK_AFFINITY_LOADBALANCING);
 	
 	// get window manager.
 	windowManager = k_getWindowManager();	

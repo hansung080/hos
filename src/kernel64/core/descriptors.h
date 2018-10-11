@@ -4,56 +4,84 @@
 #include "types.h"
 #include "multiprocessor.h"
 
-/* Macros Related with GDT/TSS */
-
+/* GDT/TSS Macros */
 // null/code/data/TSS segment descriptor field
-#define GDT_TYPE_CODE        0x0A // Code Segment (Execute/Read)
-#define GDT_TYPE_DATA        0x02 // Data Segment (Read/Write)
-#define GDT_TYPE_TSS         0x09 // TSS Segment (Not Busy)
-#define GDT_FLAGS_LOWER_S    0x10 // Descriptor Type (1:segment descriptor, 0:system descriptor)
-#define GDT_FLAGS_LOWER_DPL0 0x00 // Descriptor Privilege Level 0 (Highest, Kernel)
-#define GDT_FLAGS_LOWER_DPL1 0x20 // Descriptor Privilege Level 1
-#define GDT_FLAGS_LOWER_DPL2 0x40 // Descriptor Privilege Level 2
-#define GDT_FLAGS_LOWER_DPL3 0x60 // Descriptor Privilege Level 3 (Lowest, User)
-#define GDT_FLAGS_LOWER_P    0x80 // Present (1:valid current descriptor, 0:invalid current descriptor)
-#define GDT_FLAGS_UPPER_L    0x20 // field for IA-32e mode (1: code segment for 64-bit mode of IA-32e mode, 0: code segment for 32-bit mode of IA-32e mode)
-#define GDT_FLAGS_UPPER_DB   0x40 // Default Operation Size (1: 32-bit segment, 0: 16-bit segment).
-#define GDT_FLAGS_UPPER_G    0x80 // Granularity (1: set segment size up to 1MB(Limit 20bits)*4KB(weight)=4GB, 0: set segment size up to 1MB(Limit 20bits))
+#define GDT_TYPE_CODE        0x0A // code segment (execute/read)
+#define GDT_TYPE_DATA        0x02 // data segment (read/write)
+#define GDT_TYPE_TSS         0x09 // TSS segment (not busy)
+#define GDT_FLAGS_LOWER_S    0x10 // descriptor type: 1: segment descriptor, 0: system descriptor
+#define GDT_FLAGS_LOWER_DPL0 0x00 // descriptor privilege level 0: Ring 0, kernel, highest
+#define GDT_FLAGS_LOWER_DPL1 0x20 // descriptor privilege level 1: Ring 1, kernel
+#define GDT_FLAGS_LOWER_DPL2 0x40 // descriptor privilege level 2: Ring 2, kernel
+#define GDT_FLAGS_LOWER_DPL3 0x60 // descriptor privilege level 3: Ring 3, user, lowest
+#define GDT_FLAGS_LOWER_P    0x80 // present: 1: valid current descriptor, 0: invalid current descriptor
+#define GDT_FLAGS_UPPER_L    0x20 // IA-32e mode field: 1: code segment for 64-bit mode of IA-32e mode, 0: code segment for 32-bit mode of IA-32e mode
+#define GDT_FLAGS_UPPER_DB   0x40 // default operation size: 1: 32-bit segment, 0: 16-bit segment
+#define GDT_FLAGS_UPPER_G    0x80 // granularity: 1: set segment size up to 1 MB (limit 20 bits) * 4 KB (weight) = 4 GB, 0: set segment size up to 1 MB (limit 20 bits)
 
 // useful macros
 #define GDT_FLAGS_LOWER_KERNELCODE (GDT_TYPE_CODE | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL0 | GDT_FLAGS_LOWER_P)
 #define GDT_FLAGS_LOWER_KERNELDATA (GDT_TYPE_DATA | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL0 | GDT_FLAGS_LOWER_P)
-#define GDT_FLAGS_LOWER_TSS        (GDT_FLAGS_LOWER_DPL0 | GDT_FLAGS_LOWER_P)
 #define GDT_FLAGS_LOWER_USERCODE   (GDT_TYPE_CODE | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL3 | GDT_FLAGS_LOWER_P)
 #define GDT_FLAGS_LOWER_USERDATA   (GDT_TYPE_DATA | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL3 | GDT_FLAGS_LOWER_P)
+#define GDT_FLAGS_LOWER_TSS        (GDT_FLAGS_LOWER_DPL0 | GDT_FLAGS_LOWER_P)
 #define GDT_FLAGS_UPPER_CODE       (GDT_FLAGS_UPPER_G | GDT_FLAGS_UPPER_L)
 #define GDT_FLAGS_UPPER_DATA       (GDT_FLAGS_UPPER_G | GDT_FLAGS_UPPER_L)
 #define GDT_FLAGS_UPPER_TSS        (GDT_FLAGS_UPPER_G)
 
+/**
+  [NOTE] GDT_OFFSET_USERDATASEGMENT is positioned before GDT_OFFSET_USERCODESEGMENT,
+         because SYSCALL, SYSRET command have to be switched fast between user-level (Ring 3) and kernel-level (Ring 0).
+*/
+
 // segment descriptor offset from GDT base address
-#define GDT_KERNELCODESEGMENT 0x08
-#define GDT_KERNELDATASEGMENT 0x10
-#define GDT_TSSSEGMENT        0x18
+#define GDT_OFFSET_KERNELCODESEGMENT 0x08
+#define GDT_OFFSET_KERNELDATASEGMENT 0x10
+#define GDT_OFFSET_USERDATASEGMENT   0x18
+#define GDT_OFFSET_USERCODESEGMENT   0x20
+#define GDT_OFFSET_TSSSEGMENT        0x28
 
 // etc macros
 #define GDTR_STARTADDRESS   0x142000
-#define GDT_MAXENTRY8COUNT  3
-#define GDT_MAXENTRY16COUNT (MAXPROCESSORCOUNT)
+#define GDT_MAXENTRY8COUNT  5
+#define GDT_MAXENTRY16COUNT MAXPROCESSORCOUNT
 #define GDT_TABLESIZE       ((sizeof(GdtEntry8) * GDT_MAXENTRY8COUNT) + (sizeof(GdtEntry16) * GDT_MAXENTRY16COUNT))
 #define TSS_SEGMENTSIZE     (sizeof(Tss) * MAXPROCESSORCOUNT)
 
-/* Macros Related with IDT */
+/**
+  < Kernel Memory Protection >
+  - CS, DS, ES, FS, GS, SS segment selector: RPL 0~3 (requested privilege level)
+  - CS segment selector: CPL 0~3 (current privilege level)
+  - segment descriptor: DPL 0~3 (descriptor privilege level)
+  - page: US (user: Ring 3, supervisor: Ring 0~2)
 
+  > If task's RPL and CPL is equal and higher than descriptor's DPL, task can access descriptor.
+  > If task's RPL and CPL is equal and higher than page's US, task can access page.
+
+  < Segment Selector (16 bits) >
+  - bit 0 ~ 1  : RPL : requested privilege level 0~3
+  - bit 2      : TI  : 0: GDT, 1: LDT
+  - bit 3 ~ 15 : segment descriptor offset 
+*/
+
+/* Segment Selector Macros */
+// segment selector RPL (bit 0 ~ 1)
+#define SELECTOR_RPL0 0x00 // requested privilege level 0: Ring 0, kernel, highest
+#define SELECTOR_RPL1 0x01 // requested privilege level 1: Ring 1, kernel
+#define SELECTOR_RPL2 0x02 // requested privilege level 2: Ring 2, kernel
+#define SELECTOR_RPL3 0x03 // requested privilege level 3: Ring 3, user, lowest
+
+/* IDT Macros */
 // IDT gate descriptor field
-#define IDT_TYPE_INTERRUPT 0x0E // Interrupt Gate
-#define IDT_TYPE_TRAP      0x0F // Trap Date
-#define IDT_FLAGS_DPL0     0x00 // Descriptor Privilege Level 0 (Highest, Kernel)
-#define IDT_FLAGS_DPL1     0x20 // Descriptor Privilege Level 1
-#define IDT_FLAGS_DPL2     0x40 // Descriptor Privilege Level 2
-#define IDT_FLAGS_DPL3     0x60 // Descriptor Privilege Level 3 (Lowest, User)
-#define IDT_FLAGS_P        0x80 // Present (1:valid current descriptor, 0: invalid current descriptor)
+#define IDT_TYPE_INTERRUPT 0x0E // interrupt gate
+#define IDT_TYPE_TRAP      0x0F // trap date
+#define IDT_FLAGS_DPL0     0x00 // descriptor privilege level 0: Ring 0, kernel, highest
+#define IDT_FLAGS_DPL1     0x20 // descriptor privilege level 1: Ring 1, kernel
+#define IDT_FLAGS_DPL2     0x40 // descriptor privilege level 2: Ring 2, kernel
+#define IDT_FLAGS_DPL3     0x60 // descriptor privilege level 3: Ring 3, user, lowest
+#define IDT_FLAGS_P        0x80 // present: 1:valid current descriptor, 0: invalid current descriptor
 #define IDT_FLAGS_IST0     0    // stack switching in a traditional way: switching stack only when the privilege changes.
-#define IDT_FLAGS_IST1     1    // stack switching in a IST way: switching stack always, HansOS only use IST 1 out of IST 1~7).
+#define IDT_FLAGS_IST1     1    // stack switching in a IST way: switching stack always, hansos only use IST 1 out of IST 1~7).
 
 // useful macros
 #define IDT_FLAGS_KERNEL (IDT_FLAGS_DPL0 | IDT_FLAGS_P)
@@ -65,7 +93,7 @@
 #define IDT_STARTADDRESS  (IDTR_STARTADDRESS + sizeof(Idtr))
 #define IDT_TABLESIZE     (IDT_MAXENTRYCOUNT * sizeof(IdtEntry))
 
-// macros related with IST
+/* IST Macros */
 #define IST_STARTADDRESS 0x700000 // 7 MB
 #define IST_SIZE         0x100000 // 1 MB
 

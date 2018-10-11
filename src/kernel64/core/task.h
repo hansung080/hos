@@ -5,46 +5,44 @@
 #include "../utils/list.h"
 #include "sync.h"
 
-// count and size of context registers
+// context register count and size
 #define TASK_REGISTERCOUNT 24 // 24 = 5 (SS, RSP, RFLAGS, CS, RIP) + 19 (registers saved in ISR)
 #define TASK_REGISTERSIZE  8
 
-// register offset of Context structure
-#define TASK_GS_OFFSET     0
-#define TASK_FS_OFFSET     1
-#define TASK_ES_OFFSET     2
-#define TASK_DS_OFFSET     3
-#define TASK_R15_OFFSET    4
-#define TASK_R14_OFFSET    5
-#define TASK_R13_OFFSET    6
-#define TASK_R12_OFFSET    7
-#define TASK_R11_OFFSET    8
-#define TASK_R10_OFFSET    9
-#define TASK_R9_OFFSET     10
-#define TASK_R8_OFFSET     11
-#define TASK_RSI_OFFSET    12
-#define TASK_RDI_OFFSET    13
-#define TASK_RDX_OFFSET    14
-#define TASK_RCX_OFFSET    15
-#define TASK_RBX_OFFSET    16
-#define TASK_RAX_OFFSET    17
-#define TASK_RBP_OFFSET    18
-#define TASK_RIP_OFFSET    19
-#define TASK_CS_OFFSET     20
-#define TASK_RFLAGS_OFFSET 21
-#define TASK_RSP_OFFSET    22
-#define TASK_SS_OFFSET     23
+// context register index
+#define TASK_INDEX_GS     0
+#define TASK_INDEX_FS     1
+#define TASK_INDEX_ES     2
+#define TASK_INDEX_DS     3
+#define TASK_INDEX_R15    4
+#define TASK_INDEX_R14    5
+#define TASK_INDEX_R13    6
+#define TASK_INDEX_R12    7
+#define TASK_INDEX_R11    8
+#define TASK_INDEX_R10    9
+#define TASK_INDEX_R9     10
+#define TASK_INDEX_R8     11
+#define TASK_INDEX_RSI    12
+#define TASK_INDEX_RDI    13
+#define TASK_INDEX_RDX    14
+#define TASK_INDEX_RCX    15
+#define TASK_INDEX_RBX    16
+#define TASK_INDEX_RAX    17
+#define TASK_INDEX_RBP    18
+#define TASK_INDEX_RIP    19
+#define TASK_INDEX_CS     20
+#define TASK_INDEX_RFLAGS 21
+#define TASK_INDEX_RSP    22
+#define TASK_INDEX_SS     23
 
-// macros related with task pool
-#define TASK_TASKPOOLADDRESS 0x800000 // 8M
-#define TASK_MAXCOUNT        1024     // max task count
-
-// macros related with stack pool
-#define TASK_STACKPOOLADDRESS (TASK_TASKPOOLADDRESS + (sizeof(Task) * TASK_MAXCOUNT))
-#define TASK_STACKSIZE        8192 // 8KB
+// task pool and task stack-related macros
+#define TASK_TASKPOOLSTARTADDRESS 0x800000    // 8 MB
+#define TASK_MAXCOUNT             1024        // max task count
+#define TASK_TASKPOOLENDADDRESS   (TASK_TASKPOOLSTARTADDRESS + (sizeof(Task) * TASK_MAXCOUNT))
+#define TASK_STACKSIZE            (64 * 1024) // 64 KB
 
 // invalid task ID
-#define TASK_INVALIDID     0xFFFFFFFFFFFFFFFF
+#define TASK_INVALIDID 0xFFFFFFFFFFFFFFFF
 
 // maximum processor time for task to use at once (5 milliseconds)
 #define TASK_PROCESSORTIME 5
@@ -66,7 +64,8 @@
 #define TASK_FLAGS_PROCESS 0x2000000000000000 // processor flag
 #define TASK_FLAGS_THREAD  0x1000000000000000 // thread flag
 #define TASK_FLAGS_IDLE    0x0800000000000000 // idle task flag
-#define TASK_FLAGS_GUI     0x0400000000000000 // GUI task flag
+#define TASK_FLAGS_GUI     0x0400000000000000 // GUI task flag: set in k_createWindow.
+#define TASK_FLAGS_USER    0x0200000000000000 // user task flag
 
 // affinity
 #define TASK_AFFINITY_LOADBALANCING 0xFF // no affinity
@@ -97,6 +96,7 @@ typedef struct k_Task {
 	                         //             bit 60  : thread flag
 	                         //             bit 59  : idle task flag
 							 //             bit 58  : GUI task flag
+							 //             bit 57  : user task flag
 	void* memAddr;           // start address of process memory area (code, data area)
 	qword memSize;           // size of process memory area (code, data area)
 	

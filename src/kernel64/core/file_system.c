@@ -129,7 +129,7 @@ bool k_format(void) {
 	maxClusterCount = totalSectorCount / FS_SECTORSPERCLUSTER;
 	
 	// Fist of all, calculate sector count of cluster link table area with max cluster count.
-	// aligned with 128 (sector unit, rounding up), because 128 cluster links (4B) can be created in a sector (512B).
+	// aligned with 128 (sector-level, rounding up), because 128 cluster links (4B) can be created in a sector (512B).
 	clusterLinkSectorCount = (maxClusterCount + 127) / 128;
 	
 	// sector count of general data area = total sector count of hard disk - sector count of MBR area (1) - sector count of reserved area (0) - sector count of cluster link table area
@@ -1054,7 +1054,7 @@ bool k_writeZero(File* file, dword count) {
 		return false;
 	}
 	
-	// allocate memory and write by cluster unit in order to improve speed.
+	// allocate memory and write by cluster-level in order to improve speed.
 	buffer = (byte*)k_allocMem(FS_CLUSTERSIZE);
 	if (buffer == null) {
 		return false;
@@ -1063,7 +1063,7 @@ bool k_writeZero(File* file, dword count) {
 	// put 0 to buffer.
 	k_memset(buffer, 0, FS_CLUSTERSIZE);
 	
-	// write by cluster unit.
+	// write by cluster-level.
 	remainCount = count;
 	while (remainCount != 0) {
 		writeCount = MIN(remainCount, FS_CLUSTERSIZE);

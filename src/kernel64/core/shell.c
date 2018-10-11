@@ -825,7 +825,7 @@ static void k_showRootDir(const char* paramBuffer) {
 			usedClusterCount++;
 			
 		} else {
-			// align file size with cluster size unit (rounding up), get used cluster count.
+			// align file size with cluster-level (rounding up), get used cluster count.
 			usedClusterCount += ((entry->fileSize + (FS_CLUSTERSIZE - 1)) / FS_CLUSTERSIZE);
 		}
 	}
@@ -1986,19 +1986,19 @@ static void k_testSeqAlloc(void) {
 		k_printf("allocate and compare memory...\n");
 		
 		for (j = 0; j < (manager->smallestBlockCount >> i); j++) {
-			buffer = (qword*)k_allocMem(DMEM_MIN_SIZE << i);
+			buffer = (qword*)k_allocMem(DMEM_MINSIZE << i);
 			if (buffer == null) {
 				k_printf("test failure: memory allocation failure\n");
 				return;
 			}
 			
 			// put value to allocated memory.
-			for (k = 0; k < ((DMEM_MIN_SIZE << i) / 8); k++) {
+			for (k = 0; k < ((DMEM_MINSIZE << i) / 8); k++) {
 				buffer[k] = k;
 			}
 			
 			// compare
-			for (k = 0; k < ((DMEM_MIN_SIZE << i) / 8); k++) {
+			for (k = 0; k < ((DMEM_MINSIZE << i) / 8); k++) {
 				if (buffer[k] != k) {
 					k_printf("test failure: memory comparison failure\n");
 					return;
@@ -2009,7 +2009,7 @@ static void k_testSeqAlloc(void) {
 		// free all blocks.
 		k_printf("free memory...\n");
 		for (j = 0; j < (manager->smallestBlockCount >> i); j++) {
-			if (k_freeMem((void*)(manager->startAddr + ((DMEM_MIN_SIZE << i) * j))) == false) {
+			if (k_freeMem((void*)(manager->startAddr + ((DMEM_MINSIZE << i) * j))) == false) {
 				k_printf("test failure: memory freeing failure\n");
 				return;
 			}
@@ -2537,7 +2537,7 @@ static void k_testPerformance(const char* paramBuffer) {
 	
 	k_printf("*** File IO Performance Test (2 tests) ***\n");
 	
-	// set file size (cluster unit: 1MB, byte unit: 16KB)
+	// set file size (cluster-level: 1MB, byte-level: 16KB)
 	clusterTestFileSize = 1024 * 1024;
 	oneByteTestFileSize = 16 * 1024;
 	
@@ -2566,7 +2566,7 @@ static void k_testPerformance(const char* paramBuffer) {
 	
 	lastTickCount = k_getTickCount();
 	
-	// write test by cluster unit.
+	// write test by cluster-level.
 	for (i = 0; i < (clusterTestFileSize / FS_CLUSTERSIZE); i++) {
 		if (fwrite(buffer, 1, FS_CLUSTERSIZE, file) != FS_CLUSTERSIZE) {
 			k_printf("test failure: file writing failure\n");
@@ -2589,7 +2589,7 @@ static void k_testPerformance(const char* paramBuffer) {
 	
 	lastTickCount = k_getTickCount();
 	
-	// read test by cluster unit.
+	// read test by cluster-level.
 	for (i = 0; i < (clusterTestFileSize / FS_CLUSTERSIZE); i++) {
 		if (fread(buffer, 1, FS_CLUSTERSIZE, file) != FS_CLUSTERSIZE) {
 			k_printf("test failure: file reading failure\n");
@@ -2620,7 +2620,7 @@ static void k_testPerformance(const char* paramBuffer) {
 	
 	lastTickCount = k_getTickCount();
 	
-	// write test by byte unit.
+	// write test by byte-level.
 	for (i = 0; i < oneByteTestFileSize; i++) {
 		if (fwrite(buffer, 1, 1, file) != 1) {
 			k_printf("test failure: file writing failure\n");
@@ -2643,7 +2643,7 @@ static void k_testPerformance(const char* paramBuffer) {
 	
 	lastTickCount = k_getTickCount();
 	
-	// read test by byte unit.
+	// read test by byte-level.
 	for (i = 0; i < oneByteTestFileSize; i++) {
 		if (fread(buffer, 1, 1, file) != 1) {
 			k_printf("test failure: file reading failure\n");

@@ -7,6 +7,7 @@
 #include "multiprocessor.h"
 #include "mp_config_table.h"
 #include "window.h"
+#include "dynamic_mem.h"
 
 static TaskPoolManager g_taskPoolManager;
 static Scheduler g_schedulers[MAXPROCESSORCOUNT];
@@ -18,8 +19,8 @@ static void k_initTaskPool(void) {
 	k_memset(&g_taskPoolManager, 0, sizeof(g_taskPoolManager));
 	
 	// initialize task pool.
-	g_taskPoolManager.startAddr = (Task*)TASK_TASKPOOLADDRESS;
-	k_memset((void*)TASK_TASKPOOLADDRESS, 0, sizeof(Task) * TASK_MAXCOUNT);
+	g_taskPoolManager.startAddr = (Task*)TASK_TASKPOOLSTARTADDRESS;
+	k_memset((void*)TASK_TASKPOOLSTARTADDRESS, 0, sizeof(Task) * TASK_MAXCOUNT);
 	
 	// set task ID (offset) to tasks in pool.
 	for(i = 0; i < TASK_MAXCOUNT; i++){
@@ -122,11 +123,19 @@ Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAd
 		return null;
 	}
 	
+	// allocate stack.
+	stackAddr = k_allocMem(TASK_STACKSIZE);
+	if (stackAddr == null) {
+		k_freeTask(task->link.id);
+		return null;
+	}
+
 	k_lockSpin(&(g_schedulers[currentApicId].spinlock));
 	
 	// get process with running task in it.
 	process = k_getProcessByThread(k_getRunningTask(currentApicId));
 	if (process == null) {
+		k_freeMem(stackAddr);
 		k_freeTask(task->link.id);
 		k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
 		return null;
@@ -157,10 +166,7 @@ Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAd
 	task->threadLink.id = task->link.id;
 	
 	k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
-	
-	// set stack address of task. (use task ID offset as stack pool offset.)
-	stackAddr = (void*)(TASK_STACKPOOLADDRESS + (TASK_STACKSIZE * GETTASKOFFSET(task->link.id)));
-	
+		
 	// set task.
 	k_setTask(task, flags, entryPointAddr, stackAddr, TASK_STACKSIZE);
 	
@@ -184,25 +190,41 @@ static void k_setTask(Task* task, qword flags, qword entryPointAddr, void* stack
 	k_memset(task->context.registers, 0, sizeof(task->context.registers));
 	
 	// set RSP, RBP.
-	task->context.registers[TASK_RSP_OFFSET] = (qword)stackAddr + stackSize - 8;
-	task->context.registers[TASK_RBP_OFFSET] = (qword)stackAddr + stackSize - 8;
+	task->context.registers[TASK_INDEX_RSP] = (qword)stackAddr + stackSize - 8;
+	task->context.registers[TASK_INDEX_RBP] = (qword)stackAddr + stackSize - 8;
 	
 	// push the address of k_exitTask function to the top (8 bytes) of stack as the return address,
 	// in order to move to k_exitTask function when entry point function of task returns.
 	*(qword*)((qword)stackAddr + stackSize - 8) = (qword)k_exitTask;
 	
 	// set segment selector.
-	task->context.registers[TASK_CS_OFFSET] = GDT_KERNELCODESEGMENT;
-	task->context.registers[TASK_DS_OFFSET] = GDT_KERNELDATASEGMENT;
-	task->context.registers[TASK_ES_OFFSET] = GDT_KERNELDATASEGMENT;
-	task->context.registers[TASK_FS_OFFSET] = GDT_KERNELDATASEGMENT;
-	task->context.registers[TASK_GS_OFFSET] = GDT_KERNELDATASEGMENT;
-	task->context.registers[TASK_SS_OFFSET] = GDT_KERNELDATASEGMENT;
+	if (task->flags & TASK_FLAGS_USER) {
+		task->context.registers[TASK_INDEX_CS] = GDT_OFFSET_USERCODESEGMENT | SELECTOR_RPL3;
+		task->context.registers[TASK_INDEX_DS] = GDT_OFFSET_USERDATASEGMENT | SELECTOR_RPL3;
+		task->context.registers[TASK_INDEX_ES] = GDT_OFFSET_USERDATASEGMENT | SELECTOR_RPL3;
+		task->context.registers[TASK_INDEX_FS] = GDT_OFFSET_USERDATASEGMENT | SELECTOR_RPL3;
+		task->context.registers[TASK_INDEX_GS] = GDT_OFFSET_USERDATASEGMENT | SELECTOR_RPL3;
+		task->context.registers[TASK_INDEX_SS] = GDT_OFFSET_USERDATASEGMENT | SELECTOR_RPL3;
+
+	} else {
+		task->context.registers[TASK_INDEX_CS] = GDT_OFFSET_KERNELCODESEGMENT | SELECTOR_RPL0;
+		task->context.registers[TASK_INDEX_DS] = GDT_OFFSET_KERNELDATASEGMENT | SELECTOR_RPL0;
+		task->context.registers[TASK_INDEX_ES] = GDT_OFFSET_KERNELDATASEGMENT | SELECTOR_RPL0;
+		task->context.registers[TASK_INDEX_FS] = GDT_OFFSET_KERNELDATASEGMENT | SELECTOR_RPL0;
+		task->context.registers[TASK_INDEX_GS] = GDT_OFFSET_KERNELDATASEGMENT | SELECTOR_RPL0;
+		task->context.registers[TASK_INDEX_SS] = GDT_OFFSET_KERNELDATASEGMENT | SELECTOR_RPL0;
+	}
 	
-	// set RIP, RFLAGS.
-	task->context.registers[TASK_RIP_OFFSET] = entryPointAddr;
-	task->context.registers[TASK_RFLAGS_OFFSET] |= 0x0200; // set IF(bit 9) of RFLAGS to 1, and enable interrupt.
+	// set RIP
+	task->context.registers[TASK_INDEX_RIP] = entryPointAddr;
+
+	// set RFLAGS
+	// - set IF (bit 9) to 1 in order to enable interrupt.
+	// - set IOPL (bit 12~13) to 3 (Ring 3) in oder to allow user applications to access IO port.
+	//   [Ref] IOPL: input/output privilege level
+	task->context.registers[TASK_INDEX_RFLAGS] |= 0x3200;
 	
+
 	// set etc
 	task->stackAddr = stackAddr;
 	task->stackSize = stackSize;
@@ -700,10 +722,6 @@ bool k_endTask(qword taskId) {
 	
 	// If it's a running task, set end task flag, and switch task
 	if (target->link.id == taskId) {
-		if (target->flags & TASK_FLAGS_GUI) {
-			k_deleteWindowsByTask(target->link.id);
-		}
-
 		target->flags |= TASK_FLAGS_END;
 		SETTASKPRIORITY(target->flags, TASK_FLAGS_ENDPRIORITY);
 		
@@ -728,10 +746,6 @@ bool k_endTask(qword taskId) {
 	if (target == null) {
 		target = k_getTaskFromPool(GETTASKOFFSET(taskId));
 		if (target != null) {
-			if (target->flags & TASK_FLAGS_GUI) {
-				k_deleteWindowsByTask(target->link.id);
-			}
-
 			target->flags |= TASK_FLAGS_END;
 			SETTASKPRIORITY(target->flags, TASK_FLAGS_ENDPRIORITY);
 		}
@@ -741,10 +755,6 @@ bool k_endTask(qword taskId) {
 		return true;
 	}
 	
-	if (target->flags & TASK_FLAGS_GUI) {
-		k_deleteWindowsByTask(target->link.id);
-	}
-
 	target->flags |= TASK_FLAGS_END;
 	SETTASKPRIORITY(target->flags, TASK_FLAGS_ENDPRIORITY);
 	k_addListToTail(&(g_schedulers[apicId].endList), target);
@@ -1012,7 +1022,7 @@ void k_idleTask(void) {
 				                 (Totally end means to free memory of tasks in end list.)
 				  [REF] free memory of process: free code/data area, task, stack.
 				        free memory of thread: free task, stack.
-				 */
+				*/
 				if (task->flags & TASK_FLAGS_PROCESS) {
 					count = k_getListCount(&(task->childThreadList));
 					for (i = 0; i < count; i++) {
@@ -1057,7 +1067,7 @@ void k_idleTask(void) {
 				/**
 				  [Code Block 2] If end task is thread, remove it from child thread list of process with thread in it,
 				                 and completely end thread itself.
-				 */
+				*/
 				} else if (task->flags & TASK_FLAGS_THREAD) {
 					process = k_getProcessByThread(task);
 					if (process != null) {
@@ -1068,9 +1078,17 @@ void k_idleTask(void) {
 					}
 				}
 				
+				/* free resources of end task */
+				if (task->flags & TASK_FLAGS_GUI) {
+					k_deleteWindowsByTask(task->link.id);
+				}
+
+				k_freeMem(task->stackAddr);
+
 				// free task of end task (If task is freed, then also stack is freed automatically.)
 				taskId = task->link.id;
 				k_freeTask(taskId);
+				
 				#if __DEBUG__
 				k_printf("[idle debug] Task (0x%q) has completely ended.\n", taskId);
 				#endif // __DEBUG__

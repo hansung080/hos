@@ -50,7 +50,7 @@ void k_main(void) {
 	
 	// load TSS.
 	k_printf("- load TSS...................................");
-	k_loadTss(GDT_TSSSEGMENT);
+	k_loadTss(GDT_OFFSET_TSSSEGMENT);
 	k_printf("pass\n");
 	
 	// initialize and load IDT.
@@ -156,7 +156,7 @@ void k_mainForAp(void) {
 	k_loadGdt(GDTR_STARTADDRESS);
 	
 	// load TSS.
-	k_loadTss(GDT_TSSSEGMENT + (k_getApicId() * sizeof(GdtEntry16)));
+	k_loadTss(GDT_OFFSET_TSSSEGMENT + (k_getApicId() * sizeof(GdtEntry16)));
 	
 	// load IDT.
 	k_loadIdt(IDTR_STARTADDRESS);

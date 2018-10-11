@@ -81,22 +81,38 @@ void k_processLoadBalancing(int irq) {
 }
 
 void k_commonExceptionHandler(int vector, qword errorCode) {
-	char buffer[5] = {0, };
-	
-	// set vector number (2 digits integer).
-	buffer[0] = '0' + vector / 10;
-	buffer[1] = '0' + vector % 10;
-	
+	char buffer[100];
+	byte apicId;
+	Task* task;
+
+	apicId = k_getApicId();
+	task = k_getRunningTask(apicId);
+		
 	k_printStrXy(0, 0, "--------------------------------------------------");
-	k_printStrXy(0, 1, "|              Exception Occur                   |");
-	k_printStrXy(0, 2, "|           vector:        core:                 |");
-	k_printStrXy(20, 2, buffer);
-	k_memset(buffer, 0, sizeof(buffer));
-	k_sprintf(buffer, "%d", k_getApicId());
-	k_printStrXy(33, 2, buffer);
-	k_printStrXy(0, 3, "--------------------------------------------------");
-	
-	while (true);
+	k_printStrXy(0, 1, "               Exception Occur !!                 ");
+	k_sprintf(buffer,  "               - vector : %d                      ", vector);
+	k_printStrXy(0, 2, buffer);
+	k_sprintf(buffer,  "               - error  : 0x%q                    ", errorCode);
+	k_printStrXy(0, 3, buffer);
+	k_sprintf(buffer,  "               - core   : %d                      ", apicId);
+	k_printStrXy(0, 4, buffer);
+	k_sprintf(buffer,  "               - task   : 0x%q                    ", task->link.id);
+	k_printStrXy(0, 5, buffer);
+	k_printStrXy(0, 6, "--------------------------------------------------");
+
+	if (task->flags & TASK_FLAGS_USER) {
+		k_endTask(task->link.id);
+
+		// This infinite loop is not executed, because k_endTask processes task switching.
+		while (true) {
+			;
+		}
+
+	} else {
+		while (true) {
+			;
+		}
+	}
 }
 
 void k_deviceNotAvailableHandler(int vector) {
@@ -111,12 +127,12 @@ void k_deviceNotAvailableHandler(int vector) {
 	static int fpuExceptionCount = 0;
 	
 	// set vector number (2 digits number).
-	buffer[5] = '0' + vector / 10;
-	buffer[6] = '0' + vector % 10;
+	buffer[5] = (vector / 10) + '0';
+	buffer[6] = (vector % 10) + '0';
 	
 	// set interrupt-occurred count (1 digit integer).
 	fpuExceptionCount = (fpuExceptionCount + 1) % 10;
-	buffer[8] = '0' + fpuExceptionCount;
+	buffer[8] = fpuExceptionCount + '0';
 	
 	// print in the first position of the first line.
 	k_printStrXy(0, 0, buffer);
@@ -165,12 +181,12 @@ void k_commonInterruptHandler(int vector) {
 	static int commonInterruptCount = 0;
 
 	// set vector number (2 digits integer).
-	buffer[5] = '0' + vector / 10;
-	buffer[6] = '0' + vector % 10;
+	buffer[5] = (vector / 10) + '0';
+	buffer[6] = (vector % 10) + '0';
 	
 	// set interrupt-occurred count (1 digit integer).
 	commonInterruptCount = (commonInterruptCount + 1) % 10;
-	buffer[8] = '0' + commonInterruptCount;
+	buffer[8] = commonInterruptCount + '0';
 	
 	// print in the last position of the first line.
 	k_printStrXy(70, 0, buffer);
@@ -195,12 +211,12 @@ void k_timerHandler(int vector) {
 	static int timerInterruptCount = 0;
 
 	// set vector number (2 digits integer).
-	buffer[5] = '0' + vector / 10;
-	buffer[6] = '0' + vector % 10;
+	buffer[5] = (vector / 10) + '0';
+	buffer[6] = (vector % 10) + '0';
 	
 	// set interrupt-occurred count (1 digit integer).
 	timerInterruptCount = (timerInterruptCount + 1) % 10;
-	buffer[8] = '0' + timerInterruptCount;
+	buffer[8] = timerInterruptCount + '0';
 	
 	// print in the last position of the first line.
 	k_printStrXy(70, 0, buffer);
@@ -235,12 +251,12 @@ void k_keyboardHandler(int vector) {
 	static int keyboardInterruptCount = 0;
 
 	// set vector number (2 digits integer).
-	buffer[5] = '0' + vector / 10;
-	buffer[6] = '0' + vector % 10;
+	buffer[5] = (vector / 10) + '0';
+	buffer[6] = (vector % 10) + '0';
 	
 	// set interrupt-occurred count (1 digit integer).
 	keyboardInterruptCount = (keyboardInterruptCount + 1) % 10;
-	buffer[8] = '0' + keyboardInterruptCount;
+	buffer[8] = keyboardInterruptCount + '0';
 	
 	// print in the first position of the first line.
 	k_printStrXy(0, 0, buffer);
@@ -283,12 +299,12 @@ void k_mouseHandler(int vector) {
 	static int mouseInterruptCount = 0;
 
 	// set vector number (2 digits integer).
-	buffer[5] = '0' + vector / 10;
-	buffer[6] = '0' + vector % 10;
+	buffer[5] = (vector / 10) + '0';
+	buffer[6] = (vector % 10) + '0';
 	
 	// set interrupt-occurred count (1 digit integer).
 	mouseInterruptCount = (mouseInterruptCount + 1) % 10;
-	buffer[8] = '0' + mouseInterruptCount;
+	buffer[8] = mouseInterruptCount + '0';
 	
 	// print in the first position of the first line.
 	k_printStrXy(0, 0, buffer);
@@ -330,12 +346,12 @@ void k_hddHandler(int vector) {
 	static int hddInterruptCount = 0;
 		
 	// set vector number (2 digits integer).
-	buffer[5] = '0' + vector / 10;
-	buffer[6] = '0' + vector % 10;
+	buffer[5] = (vector / 10) + '0';
+	buffer[6] = (vector % 10) + '0';
 	
 	// set interrupt-occurred count (1 digit integer).
 	hddInterruptCount = (hddInterruptCount + 1) % 10;
-	buffer[8] = '0' + hddInterruptCount;
+	buffer[8] = hddInterruptCount + '0';
 	
 	// print in the second position of the first line.
 	k_printStrXy(10, 0, buffer);

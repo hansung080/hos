@@ -688,13 +688,13 @@ static int jpeg_decode_yuv(Jpeg* jpeg, int h, int v, Color* imageBuffer) {
 			V = pv[k];
 			
 			R = 128 + ((Y * 0x1000 + V * 0x166E) / 4096) * 1300 / 1000;
-			R = (R & 0xffffff00) ? (R >> 24) ^ 0xff : R;
+			R = (R & 0xFFFFFF00) ? (R >> 24) ^ 0xFF : R;
 			
 			G = 128 + ((Y * 0x1000 - V * 0x0B6C) / 4096) * 1300 / 1000;
-			G = (G & 0xffffff00) ? (G >> 24) ^ 0xff : G;
+			G = (G & 0xFFFFFF00) ? (G >> 24) ^ 0xFF : G;
 			
 			B = 128 + ((Y * 0x1000 - V * 4 + U * 0x1C59) / 4096) * 1300 / 1000;
-			B = (B & 0xffffff00) ? (B >> 24) ^ 0xff : B;
+			B = (B & 0xFFFFFF00) ? (B >> 24) ^ 0xFF : B;
 			
 			// RGB888 -> RGB565 conversion
 			imageBuffer[(y0 + y) * w + (x0 + x)] = RGB(R, G, B);

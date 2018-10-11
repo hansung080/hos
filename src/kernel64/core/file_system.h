@@ -113,17 +113,17 @@ typedef struct k_Mbr {
 
 typedef struct k_DirEntry {
 	char fileName[FS_MAXFILENAMELENGTH]; // [byte 0~23]  : file name (including file extension and last null character)
-	dword fileSize;                      // [byte 24~27] : file size (byte unit)
+	dword fileSize;                      // [byte 24~27] : file size (byte-level)
 	dword startClusterIndex;             // [byte 28~31] : start cluster index (0x00:free directory entry)
 } DirEntry; // 32 bytes-sized
 
 typedef struct k_FileHandle {
 	int dirEntryOffset;        // directory entry offset (directory entry index matching file name)
-	dword fileSize;            // file size (byte unit)
+	dword fileSize;            // file size (byte-level)
 	dword startClusterIndex;   // start cluster index
 	dword currentClusterIndex; // current cluster index (cluster index which current I/O is working)
 	dword prevClusterIndex;    // previous cluster index
-	dword currentOffset;       // current file pointer offset (byte unit)
+	dword currentOffset;       // current file pointer offset (byte-level)
 } FileHandle;
 
 typedef struct k_DirHandle {
@@ -142,9 +142,9 @@ typedef struct k_FileDirHandle {
 typedef struct k_FileSystemManager {
 	bool mounted;                             // file system mount flag
 	dword reservedSectorCount;                // sector count of reserved area
-	dword clusterLinkAreaStartAddr;           // start address of cluster link table area (sector unit)
+	dword clusterLinkAreaStartAddr;           // start address of cluster link table area (sector-level)
 	dword clusterLinkAreaSize;                // size of cluster link table area (sector count)
-	dword dataAreaStartAddr;                  // start address of general data area (sector unit)
+	dword dataAreaStartAddr;                  // start address of general data area (sector-level)
 	dword totalClusterCount;                  // total cluster count of general data area
 	dword lastAllocedClusterLinkSectorOffset; // sector offset of last allocated cluster link table
 	Mutex mutex;                              // mutex: synchronization object

@@ -1,5 +1,11 @@
-#ifndef __CORE_TYPES_H__
-#define __CORE_TYPES_H__
+#ifndef __TYPES_H__
+#define __TYPES_H__
+
+/**
+  [NOTE] __CORE_TYPES_H__ has been renamed to __TYPES_H__,
+         in order to avoid redefinition and conflicting types compile errors
+         occurred in src/kernel32/page.h.
+*/
 
 #define byte  unsigned char
 #define word  unsigned short
@@ -28,4 +34,4 @@ typedef struct k_Char {
 
 #pragma pack(pop)
 
-#endif // __CORE_TYPES_H__
+#endif // __TYPES_H__

@@ -223,6 +223,7 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 	k_initQueue(&window->eventQueue, window->eventBuffer, sizeof(Event), EVENTQUEUE_WINDOW_MAXCOUNT);
 
 	task = k_getRunningTask(k_getApicId());
+	task->flags |= TASK_FLAGS_GUI;
 	window->taskId = task->link.id;
 
 	window->flags = flags;
@@ -557,7 +558,7 @@ static void k_copyWindowBufferToVideoMem(const Window* window, ScreenBitmap* bit
 		currentWindowBuffer = window->buffer + (copyArea.y1 - window->area.y1 + copyY) * windowWidth + (copyArea.x1 - window->area.x1);
 
 		for (copyX = 0; copyX < copyWidth; ) {
-			/* copy memory and set bitmap by byte unit */
+			/* copy memory and set bitmap by byte-level */
 			if ((bitmap->bitmap[byteOffset] == 0xFF) && (bitOffset == 0) && ((copyWidth - copyX) >= 8)) {
 				// [REF] remaining bit count in a line of copy area: copy width - copy x
 				for (byteCount = 0; byteCount < ((copyWidth - copyX) >> 3); byteCount++) {
@@ -575,7 +576,7 @@ static void k_copyWindowBufferToVideoMem(const Window* window, ScreenBitmap* bit
 				byteOffset += byteCount;
 				bitOffset = 0;
 
-			/* skip memory and bitmap by byte unit */
+			/* skip memory and bitmap by byte-level */
 			} else if ((bitmap->bitmap[byteOffset] == 0x00) && (bitOffset == 0) && ((copyWidth - copyX) >= 8)) {
 				for (byteCount = 0; byteCount < ((copyWidth - copyX) >> 3); byteCount++) {
 					if (bitmap->bitmap[byteOffset + byteCount] != 0x00) {
@@ -590,7 +591,7 @@ static void k_copyWindowBufferToVideoMem(const Window* window, ScreenBitmap* bit
 				byteOffset += byteCount;
 				bitOffset = 0;
 
-			/* copy memory and set bitmap by bit unit */	
+			/* copy memory and set bitmap by bit-level */	
 			} else {
 				data = bitmap->bitmap[byteOffset];
 
@@ -687,7 +688,7 @@ static bool k_fillScreenBitmap(const ScreenBitmap* bitmap, const Rect* area, boo
 		}
 
 		for (fillX = 0; fillX < fillWidth; ) {
-			/* set bitmap by byte unit */
+			/* set bitmap by byte-level */
 			if ((bitOffset == 0) && ((fillWidth - fillX) >= 8)) {
 				// [REF] remaining bit count in a line of fill area: fill width - fill x
 				byteCount = (fillWidth - fillX) >> 3; // byte count = (fill width - fill x) / 8
@@ -703,7 +704,7 @@ static bool k_fillScreenBitmap(const ScreenBitmap* bitmap, const Rect* area, boo
 				byteOffset += byteCount;
 				bitOffset = 0;
 
-			/* set bitmap by bit unit */
+			/* set bitmap by bit-level */
 			} else {
 				lastBitOffset = MIN(8, bitOffset + fillWidth - fillX);
 

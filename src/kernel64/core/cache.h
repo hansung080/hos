@@ -15,7 +15,7 @@
 #pragma pack(push, 1)
 
 typedef struct k_CacheBuffer {
-	dword tag;        // tag: the offset of cluster link table area (512B sector unit) or data area (4KB cluster unit) corresponding to cache buffer.
+	dword tag;        // tag: the offset of cluster link table area (512B sector-level) or data area (4KB cluster-level) corresponding to cache buffer.
 	dword accessTime; // access time: the time which accesses to cache buffer.
 	bool changed;     // changed flag: It indicates whether data changed or not.
 	byte* buffer;     // data buffer: the address of cache buffer.

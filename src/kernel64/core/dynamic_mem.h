@@ -5,13 +5,54 @@
 #include "task.h"
 #include "sync.h"
 
-// dynamic memory area start address (0x1100000, 17MB)
-// - aligned with 1MB unit (set it to the multiple of 1MB, rounding up)
-// - It's 17MB if task size <= 1KB.
-#define DMEM_START_ADDRESS ((TASK_STACKPOOLADDRESS + (TASK_STACKSIZE * TASK_MAXCOUNT) + 0xfffff) & 0xfffffffffff00000)
+/**
+  < Useful Bit Operations >
+  - dividend: 30, divisor: 8
 
-// smallest block size (1KB)
-#define DMEM_MIN_SIZE (1 * 1024)
+  @ arithmetic operations
+  1. quotient  : 30 / 8 = 3
+  2. remainder : 30 % 8 = 6
+  3. multiple of divisor less than dividend    : (30 / 8) * 8 = 24
+  4. multiple of divisor greater than dividend : ((30 + 7) / 8) * 8 = 32
+
+  @ bit operations: only in the case that divisor is multiplier of 2, such as 1, 2, 4, 8, 16, ...
+  1. quotient : 30 >> 3 = 3
+         11110
+	   >>)     3 
+	   ---------
+	       00011
+
+  2. remainder : 30 & 0x7 = 6
+         11110
+      &) 00111
+      --------
+         00110
+
+  3. multiple of divisor less than dividend : 30 & 0xFFFFFFF8 = 24 (in the case that dividend is 4 bytes integer)
+         11110
+      &) 11000
+      --------
+         11000
+
+  4. multiple of divisor greater than dividend : (30 + 0x7) & 0xFFFFFFF8 = 32 (in the case that dividend is 4 bytes integer)
+         11110
+      +) 00111
+      --------
+        100101
+     &) 111000
+     ---------
+        100000
+*/
+
+// dynamic memory start address (0xA00000, 10 MB)
+// - aligned with 2 MB-level (multiple of 2 MB, rounding up, 2 MB == page size)
+// - It's 10 MB if task pool size <= 2 MB (sizeof(Task) <= 2 KB).
+// - Below 10 MB is kernel area, and above 10 MB is user area.
+// - Kernel area is used by only kernel task, and user area is used by kernel task and user task.
+#define DMEM_STARTADDRESS ((TASK_TASKPOOLENDADDRESS + 0x1FFFFF) & 0xFFFFFFFFFFE00000)
+
+// smallest block size (1 KB)
+#define DMEM_MINSIZE 1024
 
 // bitmap flag
 #define DMEM_EXIST 0x01 // block EXIST: block can be allocated.

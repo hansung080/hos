@@ -19,11 +19,13 @@ void k_initGdtAndTss(void) {
 	// set TSS address.
 	tss = (Tss*)((qword)entry + GDT_TABLESIZE);
 	
-	// create GDT (null/code/data/TSS segment descriptor).
+	// create GDT (null, kernel code, kernel data, user data, user code, and TSS segment descriptors).
 	k_setGdtEntry8(&(entry[0]), 0, 0, 0, 0, 0);
 	k_setGdtEntry8(&(entry[1]), 0x00000000, 0xFFFFF, GDT_FLAGS_UPPER_CODE, GDT_FLAGS_LOWER_KERNELCODE, GDT_TYPE_CODE);
 	k_setGdtEntry8(&(entry[2]), 0x00000000, 0xFFFFF, GDT_FLAGS_UPPER_DATA, GDT_FLAGS_LOWER_KERNELDATA, GDT_TYPE_DATA);
-	for (i = 0; i < MAXPROCESSORCOUNT; i++) { // create TSS segment descriptors as many as max processor count.
+	k_setGdtEntry8(&(entry[3]), 0x00000000, 0xFFFFF, GDT_FLAGS_UPPER_DATA, GDT_FLAGS_LOWER_USERDATA, GDT_TYPE_DATA);
+	k_setGdtEntry8(&(entry[4]), 0x00000000, 0xFFFFF, GDT_FLAGS_UPPER_CODE, GDT_FLAGS_LOWER_USERCODE, GDT_TYPE_CODE);
+	for (i = 0; i < MAXPROCESSORCOUNT; i++) { 
 		k_setGdtEntry16((GdtEntry16*)&(entry[GDT_MAXENTRY8COUNT + (i * 2)]), (qword)tss + (i * sizeof(Tss)), sizeof(Tss) - 1, GDT_FLAGS_UPPER_TSS, GDT_FLAGS_LOWER_TSS, GDT_TYPE_TSS);
 	}
 	
@@ -108,49 +110,49 @@ void k_initIdt(void) {
 	
 	// create IDT (100 IDT gate descriptors): put ISR to 0 ~ 99 vectors of IDT.
 	// Exception Handling ISR (21): #0 ~ #19, #20 ~ #31
-	k_setIdtEntry(&(entry[0]),  k_isrDivideError,               GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[1]),  k_isrDebug,                     GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[2]),  k_isrNmi,                       GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[3]),  k_isrBreakPoint,                GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[4]),  k_isrOverflow,                  GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[5]),  k_isrBoundRangeExceeded,        GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[6]),  k_isrInvalidOpcode,             GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[7]),  k_isrDeviceNotAvailable,        GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[8]),  k_isrDoubleFault,               GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[9]),  k_isrCoprocessorSegmentOverrun, GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[10]), k_isrInvalidTss,                GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[11]), k_isrSegmentNotPresent,         GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[12]), k_isrStackSegmentFault,         GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[13]), k_isrGeneralProtection,         GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[14]), k_isrPageFault,                 GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[15]), k_isr15,                        GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[16]), k_isrFpuError,                  GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[17]), k_isrAlignmentCheck,            GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[18]), k_isrMachineCheck,              GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[19]), k_isrSimdError,                 GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[0]),  k_isrDivideError,               GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[1]),  k_isrDebug,                     GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[2]),  k_isrNmi,                       GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[3]),  k_isrBreakPoint,                GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[4]),  k_isrOverflow,                  GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[5]),  k_isrBoundRangeExceeded,        GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[6]),  k_isrInvalidOpcode,             GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[7]),  k_isrDeviceNotAvailable,        GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[8]),  k_isrDoubleFault,               GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[9]),  k_isrCoprocessorSegmentOverrun, GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[10]), k_isrInvalidTss,                GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[11]), k_isrSegmentNotPresent,         GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[12]), k_isrStackSegmentFault,         GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[13]), k_isrGeneralProtection,         GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[14]), k_isrPageFault,                 GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[15]), k_isr15,                        GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[16]), k_isrFpuError,                  GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[17]), k_isrAlignmentCheck,            GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[18]), k_isrMachineCheck,              GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[19]), k_isrSimdError,                 GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 	for (i = 20; i < 32; i++) {
-		k_setIdtEntry(&(entry[i]), k_isrEtcException,           GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+		k_setIdtEntry(&(entry[i]), k_isrEtcException,           GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 	}
 	
 	// Interrupt Handling ISR (17): #32 ~ #47, #48 ~ #99
-	k_setIdtEntry(&(entry[32]), k_isrTimer,                     GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[33]), k_isrKeyboard,                  GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[34]), k_isrSlavePic,                  GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[35]), k_isrSerialPort2,               GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[36]), k_isrSerialPort1,               GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[37]), k_isrParallelPort2,             GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[38]), k_isrFloppyDisk,                GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[39]), k_isrParallelPort1,             GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[40]), k_isrRtc,                       GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[41]), k_isrReserved,                  GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[42]), k_isrNotUsed1,                  GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[43]), k_isrNotUsed2,                  GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[44]), k_isrMouse,                     GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[45]), k_isrCoprocessor,               GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[46]), k_isrHdd1,                      GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	k_setIdtEntry(&(entry[47]), k_isrHdd2,                      GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[32]), k_isrTimer,                     GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[33]), k_isrKeyboard,                  GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[34]), k_isrSlavePic,                  GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[35]), k_isrSerialPort2,               GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[36]), k_isrSerialPort1,               GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[37]), k_isrParallelPort2,             GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[38]), k_isrFloppyDisk,                GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[39]), k_isrParallelPort1,             GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[40]), k_isrRtc,                       GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[41]), k_isrReserved,                  GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[42]), k_isrNotUsed1,                  GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[43]), k_isrNotUsed2,                  GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[44]), k_isrMouse,                     GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[45]), k_isrCoprocessor,               GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[46]), k_isrHdd1,                      GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	k_setIdtEntry(&(entry[47]), k_isrHdd2,                      GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 	for (i = 48; i < IDT_MAXENTRYCOUNT; i++) {
-		k_setIdtEntry(&(entry[i]), k_isrEtcInterrupt,           GDT_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+		k_setIdtEntry(&(entry[i]), k_isrEtcInterrupt,           GDT_OFFSET_KERNELCODESEGMENT, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 	}
 }
 

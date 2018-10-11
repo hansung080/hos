@@ -8,7 +8,7 @@
 
 // MP floating pointer searching
 #define MP_SEARCH1_EBDA_ADDRESS         (*(word*)0x040E) * 16   // extended BIOS data area address: Physical address was multiplied by 16, because it's segment start address in the address <0x040E>.
-#define MP_SEARCH2_SYSEMBASEMEMORY      (*(word*)0x0413) * 1024 // system base memory size: Physical address was multiplied by 1024, because it's KByte unit in the address <0x0413>.
+#define MP_SEARCH2_SYSEMBASEMEMORY      (*(word*)0x0413) * 1024 // system base memory size: Physical address was multiplied by 1024, because it's KByte-level in the address <0x0413>.
 #define MP_SEARCH3_BIOSROM_STARTADDRESS 0x0F0000                // BIOS ROM area start address
 #define MP_SEARCH3_BIOSROM_ENDADDRESS   0x0FFFFF                // BIOS ROM area end address
 
