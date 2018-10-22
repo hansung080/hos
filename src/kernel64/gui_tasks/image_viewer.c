@@ -253,7 +253,7 @@ static bool k_showImage(qword mainWindowId, const char* fileName) {
 	k_memcpy(window->buffer + (windowWidth * WINDOW_TITLEBAR_HEIGHT), imageBuffer, sizeof(Color) * jpeg->width * jpeg->height);
 	k_unlock(&window->mutex);
 
-	// backup image width, image height before freeing jpeg.
+	// back up image width, image height before freeing jpeg.
 	imageWidth = jpeg->width;
 	imageHeight = jpeg->height;
 

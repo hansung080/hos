@@ -21,6 +21,7 @@
 #include "window.h"
 #include "../gui_tasks/shell.h"
 #include "window_manager.h"
+#include "syscall.h"
 
 static ShellCommandEntry g_commandTable[] = {
 		{"help", "show help", k_help},
@@ -74,6 +75,7 @@ static ShellCommandEntry g_commandTable[] = {
 		{"sttlb", "start task load balancing", k_startTaskLoadBalancing},
 		{"stmp", "start multiprocessor or multi-core processor mode", k_startMultiprocessorMode},
 		{"testsup", "test screen update performance, usage) testsup <option>", k_testScreenUpdatePerformance},
+		{"testsc", "test system call", k_testSyscall},
 		#endif // __DEBUG__
 };
 
@@ -665,7 +667,7 @@ static void k_matrixProcess(void) {
 			break;
 		}
 		
-		k_sleep(k_random() % 5 + 5);
+		k_sleep(k_rand() % 5 + 5);
 	}
 	
 	k_printf("%d threads have been created.\n", i);
@@ -679,12 +681,12 @@ static void k_charDropThread(void) {
 	int i;
 	char text[2] = {0, };
 	
-	x = k_random() % CONSOLE_WIDTH;
+	x = k_rand() % CONSOLE_WIDTH;
 	
 	while (true) {
-		k_sleep(k_random() % 20);
+		k_sleep(k_rand() % 20);
 		
-		if ((k_random() % 20) < 15) {
+		if ((k_rand() % 20) < 15) {
 			text[0] = ' ';
 			for (i = 0; i < CONSOLE_HEIGHT - 1; i++) {
 				k_printStrXy(x, i, text);
@@ -693,7 +695,7 @@ static void k_charDropThread(void) {
 			
 		} else {
 			for (i = 0; i < CONSOLE_HEIGHT - 1; i++) {
-				text[0] = (i + k_random()) % 128;
+				text[0] = (i + k_rand()) % 128;
 				k_printStrXy(x, i, text);
 				k_sleep(50);
 			}
@@ -1911,13 +1913,13 @@ static void k_fpuTestTask(void) {
 		
 		// calculate 2 times for test.
 		for (i = 0; i < 10; i++) {
-			randomValue = k_random();
+			randomValue = k_rand();
 			value1 *= (double)randomValue;
 			value2 *= (double)randomValue;
 			
 			k_sleep(1);
 			
-			randomValue = k_random();
+			randomValue = k_rand();
 			value1 /= (double)randomValue;
 			value2 /= (double)randomValue;
 		}
@@ -2043,7 +2045,7 @@ static void k_randomAllocTask(void) {
 	for (j = 0; j < 10; j++) {
 		// allocate 1KB ~ 32MB size of memory.
 		do {
-			memSize = ((k_random() % (32 * 1024)) + 1) * 1024;
+			memSize = ((k_rand() % (32 * 1024)) + 1) * 1024;
 			allocBuffer = (byte*)k_allocMem(memSize);
 			
 			// If memory allocation fails, wait for a while, because other tasks could be using memory.
@@ -2062,7 +2064,7 @@ static void k_randomAllocTask(void) {
 		k_printStrXy(20, y, buffer);
 		
 		for (i = 0; i < (memSize / 2); i++) {
-			allocBuffer[i] = k_random() & 0xFF;
+			allocBuffer[i] = k_rand() & 0xFF;
 			allocBuffer[i+(memSize/2)] = allocBuffer[i];
 		}
 		
@@ -2384,8 +2386,8 @@ static void k_testFileIo(const char* paramBuffer) {
 	
 	// write the same data to both file and buffer.
 	for (i = 0; i < 100; i++) {
-		byteCount = (k_random() % (sizeof(tempBuffer) - 1)) + 1;
-		randomOffset = k_random() % (maxFileSize - byteCount);
+		byteCount = (k_rand() % (sizeof(tempBuffer) - 1)) + 1;
+		randomOffset = k_rand() % (maxFileSize - byteCount);
 		
 		// write data in the random position of file.
 		fseek(file, randomOffset, SEEK_SET);
@@ -2417,8 +2419,8 @@ static void k_testFileIo(const char* paramBuffer) {
 	
 	// read data from the random position of file and buffer, verify data.
 	for (i = 0; i < 100; i++) {
-		byteCount = (k_random() % (sizeof(tempBuffer) - 1)) + 1;
-		randomOffset = k_random() % (maxFileSize - byteCount);
+		byteCount = (k_rand() % (sizeof(tempBuffer) - 1)) + 1;
+		randomOffset = k_rand() % (maxFileSize - byteCount);
 		
 		// read data from the random position of file.
 		fseek(file, randomOffset, SEEK_SET);
@@ -2753,6 +2755,19 @@ static void k_testScreenUpdatePerformance(const char* paramBuffer) {
 	} else {
 		k_printf("window manager task min loop count: %d\n", g_winMgrMinLoopCount);
 	}
+}
+
+static void k_testSyscall(const char* paramBuffer) {
+	byte* taskMem;
+
+	taskMem = (byte*)k_allocMem(0x1000); // 4 KB
+	if (taskMem == null) {
+		return;
+	}
+
+	k_memcpy(taskMem, k_syscallTestTask, 0x1000);
+
+	k_createTask(TASK_FLAGS_PROCESS | TASK_FLAGS_USER, taskMem, 0x1000, (qword)taskMem, TASK_AFFINITY_LOADBALANCING);
 }
 
 #endif // __DEBUG__

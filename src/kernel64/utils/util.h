@@ -34,7 +34,7 @@ qword k_getTickCount(void);
 void k_sleep(qword millisecond);
 
 /* Math Functions */
-qword k_random(void);
+qword k_rand(void);
 
 /* ETC Functions */
 bool k_setInterruptFlag(bool interruptFlag);

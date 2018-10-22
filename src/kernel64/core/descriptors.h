@@ -31,7 +31,7 @@
 
 /**
   [NOTE] GDT_OFFSET_USERDATASEGMENT is positioned before GDT_OFFSET_USERCODESEGMENT,
-         because SYSCALL, SYSRET command have to be switched fast between user-level (Ring 3) and kernel-level (Ring 0).
+         because IA32_STAR MSR (bit 48 ~ 63: offset for SYSRET) requires that position order.
 */
 
 // segment descriptor offset from GDT base address

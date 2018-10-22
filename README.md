@@ -35,6 +35,9 @@ on your computer or QEMU.
 - file system: use cache and provide C standard in/out functions.
 - serial port driver
 - multi-core processing: process interrupt load balancing and task load balancing.
+- GUI system: consist of 2D graphics libraries, mouse driver, window, window manager, event queue
+- GUI tasks: base, event-monitor, app-panel, system-monitor, shell, image-viewer
+- system call and user libraries
 
 < Shorthands >
 - ID: IDentification
@@ -93,6 +96,7 @@ on your computer or QEMU.
 - VBE: Vesa Bios Extention
 - GUI: Graphic User Interface
 - JPEG: Joint Photographic Experts Group
+- MSR: Model-Specific Register
 
 < Abbreviation >
 - init: initialize
@@ -127,6 +131,8 @@ on your computer or QEMU.
 - eng: english
 - over: overlapped
 - app: application
+- syscall: system call
+- rand: random
 
 < Comment >
 - [NOTE]: important comment

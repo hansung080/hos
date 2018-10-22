@@ -34,6 +34,8 @@
   ------------     ------------------------------------------     -------------------------------------     ------------------     ----------------------     --------------
 */
 
+#pragma pack(push, 1)
+
 // huffman table
 typedef struct k_Huff {
 	int elem; // element count
@@ -91,6 +93,8 @@ typedef struct k_Jpeg {
 	unsigned long bit_buff;
 	int bit_remain;
 } Jpeg;
+
+#pragma pack(pop)
 
 bool k_initJpeg(Jpeg* jpeg, const byte* fileBuffer, dword fileSize);
 bool k_decodeJpeg(Jpeg* jpeg, Color* imageBuffer);

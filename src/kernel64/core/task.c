@@ -1061,7 +1061,10 @@ void k_idleTask(void) {
 						
 					// If all child threads are completely ended, end process itself completely.
 					} else {
-						// [TODO] free code/data area of end process.
+						// free code/data area of user process.
+						if (task->flags & TASK_FLAGS_USER) {
+							k_freeMem(task->memAddr);
+						}
 					}
 					
 				/**

@@ -68,7 +68,7 @@
 #define TASK_FLAGS_USER    0x0200000000000000 // user task flag
 
 // affinity
-#define TASK_AFFINITY_LOADBALANCING 0xFF // no affinity
+#define TASK_AFFINITY_LOADBALANCING 0xFF // load balancing (no affinity)
 
 /* macro functions */
 #define GETTASKOFFSET(taskId)            ((taskId) & 0xFFFFFFFF)                                 // get low 32 bits of task.link.id (64 bits)
@@ -97,8 +97,8 @@ typedef struct k_Task {
 	                         //             bit 59  : idle task flag
 							 //             bit 58  : GUI task flag
 							 //             bit 57  : user task flag
-	void* memAddr;           // start address of process memory area (code, data area)
-	qword memSize;           // size of process memory area (code, data area)
+	void* memAddr;           // start address of process memory area (code/data area)
+	qword memSize;           // size of process memory area (code/data area)
 	
 	//--------------------------------------------------
 	// Thread-related Fields

@@ -11,8 +11,10 @@ global k_halt, k_pause
 global k_testAndSet
 global k_initFpu, k_saveFpuContext, k_loadFpuContext, k_setTs, k_clearTs
 global k_enableGlobalLocalApic
+global k_readMsr, k_writeMsr
 
-; ========== [ Calling Convention - from C to assembly, IA-32e mode ] ==========
+; ====================================================================================================
+; < Calling Convention - from C to assembly, IA-32e mode >
 ; -------------------------------------------
 ; Parameter  Integer    Float
 ; -------------------------------------------
@@ -35,10 +37,10 @@ global k_enableGlobalLocalApic
 ;    -       RAX(1)     XMM0(1.1)
 ;    -       RDX        XMM1
 ; -------------------------------------------
-; ==============================================================================
+; ====================================================================================================
 
-; - param  : word port(RDI)
-; - return : byte data(RAX)
+; - param  : word port (RDI)
+; - return : byte data (RAX)
 k_inPortByte:
 	push rdx
 	
@@ -50,14 +52,14 @@ k_inPortByte:
 	pop rdx
 	ret
 
-; - param  : word port(RDI), byte data(RSI)
+; - param  : word port (RDI), byte data (RSI)
 ; - return : void
 k_outPortByte:
 	push rdx
 	push rax
 	
 	mov rdx, rdi ; port
-	mov rax, rsi ; bData
+	mov rax, rsi ; data
     ; write data (1 byte) saved in AL to a port number saved in DX.
 	out dx, al
 	
@@ -65,8 +67,8 @@ k_outPortByte:
 	pop rdx
 	ret
 
-; - param  : word port(RDI)
-; - return : word data(RAX)
+; - param  : word port (RDI)
+; - return : word data (RAX)
 k_inPortWord:
 	push rdx
 	
@@ -78,7 +80,7 @@ k_inPortWord:
 	pop rdx
 	ret
 
-; - param  : word port(RDI), word data(RSI)
+; - param  : word port (RDI), word data (RSI)
 ; - return : void
 k_outPortWord:
 	push rdx
@@ -93,21 +95,21 @@ k_outPortWord:
 	pop rdx
 	ret
 
-; - param  : qword gdtrAddr(RDI)
+; - param  : qword gdtrAddr (RDI)
 ; - return : void
 k_loadGdt:
 	; set the address of GDTR structure to GDTR register, and load GDT table on processor.
 	lgdt [rdi]
 	ret
 
-; - param  : word tssSegmentOffset(DI)
+; - param  : word tssOffset (DI)
 ; - return : void
 k_loadTss:
 	; set the offset of TSS segment descriptor to TR register, and load TSS segment on processor.
 	ltr di
 	ret
 
-; - param  : qword idtrAddr(RDI)
+; - param  : qword idtrAddr (RDI)
 ; - return : void
 k_loadIdt:
 	; set the address of IDTR structure to IDTR register, and load IDT table on processor.
@@ -127,14 +129,14 @@ k_disableInterrupt:
 	ret
 
 ; - param  : void
-; - return : qword data(RAX)
+; - return : qword data (RAX)
 k_readRflags:
 	pushfq  ; push RFLAGS register to stack.
 	pop rax ; pop RFLAGS register from stack, save it to RAX (RAX will be used as a return value.)
 	ret
 
 ; - param  : void
-; - return : qword data(RAX)
+; - return : qword data (RAX)
 k_readTsc:
 	push rdx
 	
@@ -200,7 +202,7 @@ k_readTsc:
 	pop rbp
 %endmacro
 
-; - param  : Context* currentContext(RDI), Context* nextContext(RSI)
+; - param  : Context* currentContext (RDI), Context* nextContext (RSI)
 ; - return : void
 k_switchContext:
 	push rbp
@@ -269,8 +271,8 @@ k_pause:
 	pause
 	ret
 
-; - param  : volatile byte* dest(RDI), byte cmp(RSI), byte src(RDX)
-; - return : bool ret(RAX)
+; - param  : volatile byte* dest (RDI), byte cmp (RSI), byte src (RDX)
+; - return : bool ret (RAX)
 ; - desc   : atomic operation for compare and set, same as <AX==cmp, A==*dest, B==src>
 ;            -> If cmp == *dest, set src to *dest, return true(1).
 ;            -> If cmp != *dest, return false(0)
@@ -299,13 +301,13 @@ k_initFpu:
 	finit ; initialize FPU
 	ret
 
-; - param  : void* fpuContext(RDI)
+; - param  : void* fpuContext (RDI)
 ; - return : void
 k_saveFpuContext:
 	fxsave [rdi] ; save FPU register (512 bytes) to fpuContext.
 	ret
 
-; - param  : void* fpuContext(RDI)
+; - param  : void* fpuContext (RDI)
 ; - return : void
 k_loadFpuContext:
 	fxrstor [rdi] ; restore FPU register (512 bytes) from fpuContext.
@@ -334,21 +336,63 @@ k_clearTs:
 ; - param  : void
 ; - return : void
 k_enableGlobalLocalApic:
-	push rax
 	push rcx
 	push rdx
+	push rax
 	
-	; set local APIC global enable/disable field (bit 11) of IA32_APIC_BASE MSR register (address 27, size 64 bits) to [1:all local APICs enable].
-	; MSR register command (rdmsr, wrmsr): Read/Write Model Specific Register
-	;   - ECX: MSR register address
-	;   - EDX: high 32 bits of in/out register
-	;   - EAX: low 32 bits of in/out register
+	; IA32_APIC_BASE MSR (address 27, size 64 bits)
+	; - local APIC global enable/disable field (bit 11) = [1: all local APICs enable]
 	mov rcx, 27
 	rdmsr
 	or eax, 0x0800
 	wrmsr
-	
+
+	pop rax
 	pop rdx
 	pop rcx
+	ret
+
+; ====================================================================================================
+; < Parameters of MSR Commands (rdmsr, wrmsr) >
+;   - ECX: MSR address
+;   - EDX: high 32 bits of MSR (64 bits)
+;   - EAX: low 32 bits of MSR (64 bits)
+; ====================================================================================================
+
+; - param  : qword addr (RDI), qword* high32bits (RSI), qword* low32bits (RDX)
+; - return : void
+k_readMsr:
+	push rcx
+	push rdx
+	push rax
+	push rbx
+
+	mov rbx, rdx ; back up low32bits (RDX) to RBX.
+
+	mov rcx, rdi
+	rdmsr
+	mov qword [rsi], rdx
+	mov qword [rbx], rax
+
+	pop rbx
 	pop rax
+	pop rdx
+	pop rcx
+	ret
+
+; - param  : qword addr (RDI), qword high32bits (RSI), qword low32bits (RDX)
+; - return : void
+k_writeMsr:
+	push rcx
+	push rdx
+	push rax
+	
+	mov rcx, rdi
+	mov rax, rdx
+	mov rdx, rsi
+	wrmsr
+
+	pop rax
+	pop rdx
+	pop rcx
 	ret

@@ -21,6 +21,7 @@
 #include "interrupt_handlers.h"
 #include "io_apic.h"
 #include "window_manager.h"
+#include "syscall.h"
 
 void k_mainForAp(void);
 bool k_switchToMultiprocessorMode(void);
@@ -139,6 +140,11 @@ void k_main(void) {
 		k_printf("fail\n");
 	}
 
+	// initialize system call.
+	k_printf("- initialize system call.....................");
+	k_initSyscall();
+	k_printf("pass\n");
+
 	// If it's text mode, run shell task.
 	if (k_isGraphicMode() == false) {
 		k_shellTask();
@@ -169,6 +175,9 @@ void k_mainForAp(void) {
 	k_setInterruptPriority(0);
 	k_initLocalVectorTable();
 	k_enableInterrupt();
+
+	// initialize system call.
+	k_initSyscall();
 	
 	//k_printf("AP (%d) has been activated.\n", k_getApicId());
 	

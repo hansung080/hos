@@ -69,38 +69,6 @@ bool k_initFileSystem(void) {
 	return true;
 }
 
-bool k_mount(void) {
-	Mbr* mbr;
-	
-	k_lock(&(g_fileSystemManager.mutex));
-	
-	// read MBR area(LBA 0, 1 sector-sized)
-	if (g_readHddSector(true, true, 0, 1, g_tempBuffer) == false) {
-		k_unlock(&(g_fileSystemManager.mutex));
-		return false;
-	}
-	
-	// check file system signature.
-	mbr = (Mbr*)g_tempBuffer;
-	if (mbr->signature != FS_SIGNATURE) {
-		k_unlock(&(g_fileSystemManager.mutex));
-		return false;
-	}
-	
-	// recognize file system successfully.
-	g_fileSystemManager.mounted = true;
-	
-	// set start LBA address and sector count of each areas.
-	g_fileSystemManager.reservedSectorCount = mbr->reservedSectorCount;
-	g_fileSystemManager.clusterLinkAreaStartAddr = 1 + mbr->reservedSectorCount;
-	g_fileSystemManager.clusterLinkAreaSize = mbr->clusterLinkSectorCount;
-	g_fileSystemManager.dataAreaStartAddr = 1 + mbr->reservedSectorCount + mbr->clusterLinkSectorCount;
-	g_fileSystemManager.totalClusterCount = mbr->totalClusterCount;
-	
-	k_unlock(&(g_fileSystemManager.mutex));
-	return true;
-}
-
 bool k_format(void) {
 	HddInfo* hddInfo;
 	Mbr* mbr;
@@ -198,6 +166,38 @@ bool k_format(void) {
 	return true;
 }
 
+bool k_mount(void) {
+	Mbr* mbr;
+	
+	k_lock(&(g_fileSystemManager.mutex));
+	
+	// read MBR area(LBA 0, 1 sector-sized)
+	if (g_readHddSector(true, true, 0, 1, g_tempBuffer) == false) {
+		k_unlock(&(g_fileSystemManager.mutex));
+		return false;
+	}
+	
+	// check file system signature.
+	mbr = (Mbr*)g_tempBuffer;
+	if (mbr->signature != FS_SIGNATURE) {
+		k_unlock(&(g_fileSystemManager.mutex));
+		return false;
+	}
+	
+	// recognize file system successfully.
+	g_fileSystemManager.mounted = true;
+	
+	// set start LBA address and sector count of each areas.
+	g_fileSystemManager.reservedSectorCount = mbr->reservedSectorCount;
+	g_fileSystemManager.clusterLinkAreaStartAddr = 1 + mbr->reservedSectorCount;
+	g_fileSystemManager.clusterLinkAreaSize = mbr->clusterLinkSectorCount;
+	g_fileSystemManager.dataAreaStartAddr = 1 + mbr->reservedSectorCount + mbr->clusterLinkSectorCount;
+	g_fileSystemManager.totalClusterCount = mbr->totalClusterCount;
+	
+	k_unlock(&(g_fileSystemManager.mutex));
+	return true;
+}
+
 bool k_getHddInfo(HddInfo* info) {
 	bool result;
 	
@@ -208,50 +208,6 @@ bool k_getHddInfo(HddInfo* info) {
 	k_unlock(&(g_fileSystemManager.mutex));
 	
 	return result;
-}
-
-static bool k_readClusterLinkTable(dword offset, byte* buffer) {
-	if (g_fileSystemManager.cacheEnabled == false) {
-		k_readClusterLinkTableWithoutCache(offset, buffer);
-		
-	} else {
-		k_readClusterLinkTableWithCache(offset, buffer);
-	}
-}
-
-static bool k_readClusterLinkTableWithoutCache(dword offset, byte* buffer) {
-	return g_readHddSector(true, true, g_fileSystemManager.clusterLinkAreaStartAddr + offset, 1, buffer);
-}
-
-static bool k_readClusterLinkTableWithCache(dword offset, byte* buffer) {
-	CacheBuffer* cacheBuffer;
-	
-	// search cache buffer matching offset
-	cacheBuffer = k_findCacheBuffer(CACHE_CLUSTERLINKTABLEAREA, offset);
-	
-	// If cache buffer exists, read it.
-	if (cacheBuffer != null) {
-		k_memcpy(buffer, cacheBuffer->buffer, 512);
-		return true;
-	}
-	
-	// If cache buffer dosen't exist, read from hard disk.
-	if (k_readClusterLinkTableWithoutCache(offset, buffer) == false) {
-		return false;
-	}
-	
-	// allocate cache buffer.
-	cacheBuffer = k_allocCacheBufferWithFlush(CACHE_CLUSTERLINKTABLEAREA);
-	if (cacheBuffer == null) {
-		return false;
-	}
-	
-	// write data from hard dist to the allocated cache buffer.
-	k_memcpy(cacheBuffer->buffer, buffer, 512);
-	cacheBuffer->tag = offset;
-	cacheBuffer->changed = false;
-	
-	return true;
 }
 
 static CacheBuffer* k_allocCacheBufferWithFlush(int cacheTableIndex) {
@@ -299,6 +255,50 @@ static CacheBuffer* k_allocCacheBufferWithFlush(int cacheTableIndex) {
 	}
 	
 	return cacheBuffer;
+}
+
+static bool k_readClusterLinkTable(dword offset, byte* buffer) {
+	if (g_fileSystemManager.cacheEnabled == false) {
+		k_readClusterLinkTableWithoutCache(offset, buffer);
+		
+	} else {
+		k_readClusterLinkTableWithCache(offset, buffer);
+	}
+}
+
+static bool k_readClusterLinkTableWithoutCache(dword offset, byte* buffer) {
+	return g_readHddSector(true, true, g_fileSystemManager.clusterLinkAreaStartAddr + offset, 1, buffer);
+}
+
+static bool k_readClusterLinkTableWithCache(dword offset, byte* buffer) {
+	CacheBuffer* cacheBuffer;
+	
+	// search cache buffer matching offset
+	cacheBuffer = k_findCacheBuffer(CACHE_CLUSTERLINKTABLEAREA, offset);
+	
+	// If cache buffer exists, read it.
+	if (cacheBuffer != null) {
+		k_memcpy(buffer, cacheBuffer->buffer, 512);
+		return true;
+	}
+	
+	// If cache buffer dosen't exist, read from hard disk.
+	if (k_readClusterLinkTableWithoutCache(offset, buffer) == false) {
+		return false;
+	}
+	
+	// allocate cache buffer.
+	cacheBuffer = k_allocCacheBufferWithFlush(CACHE_CLUSTERLINKTABLEAREA);
+	if (cacheBuffer == null) {
+		return false;
+	}
+	
+	// write data from hard dist to the allocated cache buffer.
+	k_memcpy(cacheBuffer->buffer, buffer, 512);
+	cacheBuffer->tag = offset;
+	cacheBuffer->changed = false;
+	
+	return true;
 }
 
 static bool k_writeClusterLinkTable(dword offset, byte* buffer) {
@@ -709,6 +709,26 @@ static bool k_freeClusterUntilEnd(dword clusterIndex) {
 	return true;
 }
 
+static bool k_updateDirEntry(FileHandle* fileHandle) {
+	DirEntry entry;
+	
+	// get directory entry.
+	if ((fileHandle == null) || (k_getDirEntryData(fileHandle->dirEntryOffset, &entry) == false)) {
+		return false;
+	}
+	
+	// update file size, start cluster index.
+	entry.fileSize = fileHandle->fileSize;
+	entry.startClusterIndex = fileHandle->startClusterIndex;
+	
+	// set directory entry.
+	if (k_setDirEntryData(fileHandle->dirEntryOffset, &entry) == false) {
+		return false;
+	}
+	
+	return true;
+}
+
 /**
   ====================================================================================================
    < k_openFile Function's File Open Mode (mode) >
@@ -910,26 +930,6 @@ dword k_readFile(void* buffer, dword size, dword count, File* file) {
 	return readCount;
 }
 
-static bool k_updateDirEntry(FileHandle* fileHandle) {
-	DirEntry entry;
-	
-	// get directory entry.
-	if ((fileHandle == null) || (k_getDirEntryData(fileHandle->dirEntryOffset, &entry) == false)) {
-		return false;
-	}
-	
-	// update file size, start cluster index.
-	entry.fileSize = fileHandle->fileSize;
-	entry.startClusterIndex = fileHandle->startClusterIndex;
-	
-	// set directory entry.
-	if (k_setDirEntryData(fileHandle->dirEntryOffset, &entry) == false) {
-		return false;
-	}
-	
-	return true;
-}
-
 dword k_writeFile(const void* buffer, dword size, dword count, File* file) {
 	dword totalCount;          // total byte count
 	dword writeCount;          // write byte count
@@ -1043,40 +1043,6 @@ dword k_writeFile(const void* buffer, dword size, dword count, File* file) {
 	
 	// return write byte count.
 	return writeCount;
-}
-
-bool k_writeZero(File* file, dword count) {
-	byte* buffer;
-	dword remainCount;
-	dword writeCount;
-	
-	if (file == null) {
-		return false;
-	}
-	
-	// allocate memory and write by cluster-level in order to improve speed.
-	buffer = (byte*)k_allocMem(FS_CLUSTERSIZE);
-	if (buffer == null) {
-		return false;
-	}
-	
-	// put 0 to buffer.
-	k_memset(buffer, 0, FS_CLUSTERSIZE);
-	
-	// write by cluster-level.
-	remainCount = count;
-	while (remainCount != 0) {
-		writeCount = MIN(remainCount, FS_CLUSTERSIZE);
-		if (k_writeFile(buffer, 1, writeCount, file) != writeCount) {
-			k_freeMem(buffer);
-			return false;
-		}
-		
-		remainCount -= writeCount;
-	}
-	
-	k_freeMem(buffer);
-	return true;
 }
 
 int k_seekFile(File* file, int offset, int origin) {
@@ -1225,21 +1191,6 @@ int k_closeFile(File* file) {
 	// free file handle.
 	k_freeFileDirHandle(file);
 	return 0;
-}
-
-bool k_isFileOpen(const DirEntry* entry) {
-	int i;
-	File* file;
-	
-	// search open file from start address to end address of handle pool.
-	file = g_fileSystemManager.handlePool;
-	for (i = 0; i < FS_HANDLE_MAXCOUNT; i++) {
-		if ((file[i].type == FS_TYPE_FILE) && (file[i].fileHandle.startClusterIndex == entry->startClusterIndex)) {
-			return true;
-		}
-	}
-	
-	return false;
 }
 
 int k_removeFile(const char* fileName) {
@@ -1398,6 +1349,55 @@ int k_closeDir(Dir* dir) {
 	k_unlock(&(g_fileSystemManager.mutex));
 	
 	return 0;
+}
+
+bool k_isFileOpen(const DirEntry* entry) {
+	int i;
+	File* file;
+	
+	// search open file from start address to end address of handle pool.
+	file = g_fileSystemManager.handlePool;
+	for (i = 0; i < FS_HANDLE_MAXCOUNT; i++) {
+		if ((file[i].type == FS_TYPE_FILE) && (file[i].fileHandle.startClusterIndex == entry->startClusterIndex)) {
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+bool k_writeZero(File* file, dword count) {
+	byte* buffer;
+	dword remainCount;
+	dword writeCount;
+	
+	if (file == null) {
+		return false;
+	}
+	
+	// allocate memory and write by cluster-level in order to improve speed.
+	buffer = (byte*)k_allocMem(FS_CLUSTERSIZE);
+	if (buffer == null) {
+		return false;
+	}
+	
+	// put 0 to buffer.
+	k_memset(buffer, 0, FS_CLUSTERSIZE);
+	
+	// write by cluster-level.
+	remainCount = count;
+	while (remainCount != 0) {
+		writeCount = MIN(remainCount, FS_CLUSTERSIZE);
+		if (k_writeFile(buffer, 1, writeCount, file) != writeCount) {
+			k_freeMem(buffer);
+			return false;
+		}
+		
+		remainCount -= writeCount;
+	}
+	
+	k_freeMem(buffer);
+	return true;
 }
 
 bool k_flushFileSystemCache(void) {

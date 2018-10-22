@@ -53,16 +53,21 @@ k_switchToKernel64:
 	mov eax, 0x100000
 	mov cr3, eax
 	
-	; IA32_EFER MSR register (0xC0000080): LME(bit 8)=1
-	; use ECX (register address), EDX (high 32 bits of register value), EAX (low 32 bits of register value) as parameters in rdmsr, wrmsr command.
+	; ==================================================
+	; < Parameters of MSR Commands (rdmsr, wrmsr) >
+	;   - ECX: MSR address
+	;   - EDX: high 32 bits of MSR (64 bits)
+	;   - EAX: low 32 bits of MSR (64 bits)
+	; ==================================================
+	; IA32_EFER MSR (address 0xC0000080, size 64 bits): LME(bit 8)=1, SCE(bit 0)=1
 	mov ecx, 0xC0000080
 	rdmsr
-	or eax, 0x0100
+	or eax, 0x0101
 	wrmsr
 	
 	; CR0 control register: PG(bit 31)=1, CD(bit 30)=0, NW(bit 29)=0, TS(bit 3)=1, EM(bit 2)=0, MP(bit 1)=1
-	; -> enable paging, cache, FPU
-	; -> NW(bit 29)=0: [NOTE] NW must be set to 1 to use the write back policy.
+	; - enable paging, cache, FPU
+	; - NW(bit 29)=0: [NOTE] NW must be set to 1 to use the write back policy.
 	mov eax, cr0
 	or eax, 0xE000000E
 	xor eax, 0x60000004

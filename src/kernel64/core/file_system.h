@@ -6,7 +6,7 @@
 #include "hdd.h"
 #include "cache.h"
 
-// file system macros
+// file system-related macros
 #define FS_SIGNATURE              0x7E38CF10 // HansFS signature.
 #define FS_SECTORSPERCLUSTER      8          // sector count per cluster (8)
 #define FS_LASTCLUSTER            0xFFFFFFFF // last cluster
@@ -16,23 +16,23 @@
 #define FS_HANDLE_MAXCOUNT        3072 // max handle count(max file count, max directory count): 3072 = 1024 (max task count) * 3
 #define FS_MAXFILENAMELENGTH      24   // max file name length (including file extension and last null character)
 
-// handle types
+// handle type
 #define FS_TYPE_FREE      0 // free handle
 #define FS_TYPE_FILE      1 // file handle
 #define FS_TYPE_DIRECTORY 2 // directory handle
 
-// SEEK options
-#define FS_SEEK_SET 0 // the start of file
+// SEEK option
+#define FS_SEEK_SET 0 // start of file
 #define FS_SEEK_CUR 1 // current file pointer offset
-#define FS_SEEK_END 2 // the end of file
+#define FS_SEEK_END 2 // end of file
 
 // function pointers related with hard disk and ram disk control
 typedef bool (* ReadHddInfo)(bool primary, bool master, HddInfo* hddInfo);
 typedef int (* ReadHddSector)(bool primary, bool master, dword lba, int sectorCount, char* buffer);
 typedef int (* WriteHddSector)(bool primary, bool master, dword lba, int sectorCount, char* buffer);
 
-/* macros redefined as C standard in/out names  */
-// redefine HansFS function names as C standard in/out function names.
+/* macros redefined as C standard I/O names  */
+// redefine HansFS function names as C standard I/O function names.
 #define fopen     k_openFile
 #define fread     k_readFile
 #define fwrite    k_writeFile
@@ -43,13 +43,14 @@ typedef int (* WriteHddSector)(bool primary, bool master, dword lba, int sectorC
 #define readdir   k_readDir
 #define rewinddir k_rewindDir
 #define closedir  k_closeDir
+#define isfopen   k_isFileOpen
 
-// redefine HansFS macro names as C standard in/out macro names.
+// redefine HansFS macro names as C standard I/O macro names.
 #define SEEK_SET FS_SEEK_SET
 #define SEEK_CUR FS_SEEK_CUR
 #define SEEK_END FS_SEEK_END
 
-// redefine HansFS type names as C standard in/out type names.
+// redefine HansFS type names as C standard I/O type names.
 #define size_t dword
 #define dirent DirEntry
 #define d_name fileName
@@ -160,7 +161,7 @@ bool k_format(void);
 bool k_mount(void);
 bool k_getHddInfo(HddInfo* info);
 
-/* Low Level Functions */
+/* Low-Level Functions */
 static bool k_readClusterLinkTable(dword offset, byte* buffer);
 static bool k_writeClusterLinkTable(dword offset, byte* buffer);
 static bool k_readCluster(dword offset, byte* buffer);
@@ -174,7 +175,12 @@ static bool k_getDirEntryData(int index, DirEntry* entry);
 static int k_findDirEntry(const char* fileName, DirEntry* entry);
 void k_getFileSystemInfo(FileSystemManager* manager);
 
-/* High Level Functions */
+/* High-Level Functions */
+static void* k_allocFileDirHandle(void);
+static void k_freeFileDirHandle(File* file);
+static bool k_createFile(const char* fileName, DirEntry* entry, int* dirEntryIndex);
+static bool k_freeClusterUntilEnd(dword clusterIndex);
+static bool k_updateDirEntry(FileHandle* fileHandle);
 File* k_openFile(const char* fileName, const char* mode);
 dword k_readFile(void* buffer, dword size, dword count, File* file);
 dword k_writeFile(const void* buffer, dword size, dword count, File* file);
@@ -185,15 +191,11 @@ Dir* k_openDir(const char* dirName);
 DirEntry* k_readDir(Dir* dir);
 void k_rewindDir(Dir* dir);
 int k_closeDir(Dir* dir);
-bool k_writeZero(File* file, dword count);
 bool k_isFileOpen(const DirEntry* entry);
-static void* k_allocFileDirHandle(void);
-static void k_freeFileDirHandle(File* file);
-static bool k_createFile(const char* fileName, DirEntry* entry, int* dirEntryIndex);
-static bool k_freeClusterUntilEnd(dword clusterIndex);
-static bool k_updateDirEntry(FileHandle* fileHandle);
+bool k_writeZero(File* file, dword count);
 
-/* Cache-related Functions */
+/* Cache Functions */
+static CacheBuffer* k_allocCacheBufferWithFlush(int cacheTableIndex);
 static bool k_readClusterLinkTableWithoutCache(dword offset, byte* buffer);
 static bool k_readClusterLinkTableWithCache(dword offset, byte* buffer);
 static bool k_writeClusterLinkTableWithoutCache(dword offset, byte* buffer);
@@ -202,7 +204,6 @@ static bool k_readClusterWithoutCache(dword offset, byte* buffer);
 static bool k_readClusterWithCache(dword offset, byte* buffer);
 static bool k_writeClusterWithoutCache(dword offset, byte* buffer);
 static bool k_writeClusterWithCache(dword offset, byte* buffer);
-static CacheBuffer* k_allocCacheBufferWithFlush(int cacheTableIndex);
 bool k_flushFileSystemCache(void);
 
 #endif // __CORE_FILESYSTEM_H__

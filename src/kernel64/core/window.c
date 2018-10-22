@@ -1851,7 +1851,7 @@ void k_moveMouseCursor(int x, int y) {
 
 	k_lock(&g_windowManager.mutex);
 
-	// backup previous mouse position.
+	// back up previous mouse position.
 	k_setRect(&prevArea, g_windowManager.mouseX, g_windowManager.mouseY, g_windowManager.mouseX + MOUSE_CURSOR_WIDTH - 1, g_windowManager.mouseY + MOUSE_CURSOR_HEIGHT - 1);
 
 	// save current mouse position.

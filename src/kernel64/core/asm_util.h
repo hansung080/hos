@@ -9,7 +9,7 @@ void k_outPortByte(word port, byte data);
 word k_inPortWord(word port);
 void k_outPortWord(word port, word data);
 void k_loadGdt(qword gdtrAddr);
-void k_loadTss(word tssSegmentOffset);
+void k_loadTss(word tssOffset);
 void k_loadIdt(qword idtrAddr);
 void k_enableInterrupt(void);
 void k_disableInterrupt(void);
@@ -25,5 +25,7 @@ void k_loadFpuContext(void* fpuContext);
 void k_setTs(void);
 void k_clearTs(void);
 void k_enableGlobalLocalApic(void);
+void k_readMsr(qword addr, qword* high32bits, qword* low32bits);
+void k_writeMsr(qword addr, qword high32bits, qword low32bits);
 
 #endif // __CORE_ASMUTIL_H__

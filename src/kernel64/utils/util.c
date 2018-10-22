@@ -458,7 +458,7 @@ void k_sleep(qword millisecond) {
 
 static volatile qword g_randomValue = 0;
 
-qword k_random(void) {
+qword k_rand(void) {
 	g_randomValue = (g_randomValue * 412153 + 5571031) >> 16;
 	return g_randomValue;
 }
