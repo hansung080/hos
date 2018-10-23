@@ -485,6 +485,17 @@ int vsprintf(char* str, const char* format, va_list ap) {
 	return index;
 }
 
+static volatile qword g_randomValue = 0;
+
+qword srand(qword seed) {
+	g_randomValue = seed;
+}
+
+qword rand(void) {
+	g_randomValue = (g_randomValue * 412153 + 5571031) >> 16;
+	return g_randomValue;
+}
+
 void printf(const char* format, ...) {
 	va_list ap;
 	char str[1024];
@@ -499,15 +510,10 @@ void printf(const char* format, ...) {
 	setCursor(nextPrintOffset % CONSOLE_WIDTH, nextPrintOffset / CONSOLE_WIDTH);
 }
 
-static volatile qword g_randomValue = 0;
-
-qword srand(qword seed) {
-	g_randomValue = seed;
-}
-
-qword rand(void) {
-	g_randomValue = (g_randomValue * 412153 + 5571031) >> 16;
-	return g_randomValue;
+void initMutex(Mutex* mutex) {
+	mutex->lockFlag = false;
+	mutex->lockCount = 0;
+	mutex->taskId = TASK_INVALIDID;
 }
 
 void setRect(Rect* rect, int x1, int y1, int x2, int y2) {

@@ -43,6 +43,10 @@ bool existTask(qword taskId);
 qword getProcessorLoad(byte apicId);
 bool changeTaskAffinity(qword taskId, byte affinity);
 
+/*** Syscall from sync.h ***/
+void lock(Mutex* mutex);
+void unlock(Mutex* mutex);
+
 /*** Syscall from dynamic_mem.h ***/
 void* malloc(qword size);
 bool free(void* addr);

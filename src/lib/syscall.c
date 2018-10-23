@@ -125,6 +125,22 @@ bool changeTaskAffinity(qword taskId, byte affinity) {
 	return (bool)executeSyscall(SYSCALL_CHANGETASKAFFINITY, &paramTable);
 }
 
+void lock(Mutex* mutex) {
+	ParamTable paramTable;
+
+	PARAM(0) = (qword)mutex;
+
+	executeSyscall(SYSCALL_LOCK, &paramTable);
+}
+
+void unlock(Mutex* mutex) {
+	ParamTable paramTable;
+
+	PARAM(0) = (qword)mutex;
+
+	executeSyscall(SYSCALL_UNLOCK, &paramTable);
+}
+
 void* malloc(qword size) {
 	ParamTable paramTable;
 

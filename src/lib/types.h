@@ -242,6 +242,16 @@ typedef struct __Key {
 } Key;
 
 //----------------------------------------------------------------------------------------------------
+// Struct from sync.h
+//----------------------------------------------------------------------------------------------------
+typedef struct __Mutex {
+	volatile qword taskId;    // lock-executing task ID
+	volatile dword lockCount; // lock count: Mutex allows duplicated lock.
+	volatile bool lockFlag;   // lock flag
+	byte padding[3];          // padding bytes: align structure size with 8 bytes.
+} Mutex;
+
+//----------------------------------------------------------------------------------------------------
 // Struct from file_system.h
 //----------------------------------------------------------------------------------------------------
 

@@ -111,6 +111,15 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 	case SYSCALL_CHANGETASKAFFINITY:
 		return (qword)k_changeTaskAffinity(PARAM(0), (byte)PARAM(1));
 
+	/*** Syscall from sync.h ***/
+	case SYSCALL_LOCK:
+		k_lock((Mutex*)PARAM(0));
+		return (qword)true;
+
+	case SYSCALL_UNLOCK:
+		k_unlock((Mutex*)PARAM(0));
+		return (qword)true;
+
 	/*** Syscall from dynamic_mem.h ***/
 	case SYSCALL_MALLOC:
 		return (qword)k_allocMem(PARAM(0));

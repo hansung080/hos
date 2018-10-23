@@ -27,12 +27,15 @@ int ltoa16(qword value, char* str);
 int sprintf(char* str, const char* format, ...);
 int vsprintf(char* str, const char* format, va_list ap);
 
-/* Console Functions */
-void printf(const char* format, ...);
-
 /* Math Functions */
 qword srand(qword seed);
 qword rand(void);
+
+/* Console Functions */
+void printf(const char* format, ...);
+
+/* Synchronization Functions */
+void k_initMutex(Mutex* mutex);
 
 /* 2D Graphics Functions */
 void setRect(Rect* rect, int x1, int y1, int x2, int y2);
