@@ -49,7 +49,7 @@ internal-dep:
 	$(GCC32) -MM $(C_SRCS) > dependency.dep
 
 %.o: $(SRC_DIR_FROM_OUT)/%.c
-	$(GCC32) -o $@ -c $<
+	$(GCC32) -c -o $@ $<
 
 %.o: $(SRC_DIR_FROM_OUT)/%.asm
 	$(NASM32) -o $@ $<

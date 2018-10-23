@@ -1,4 +1,5 @@
 #include "syscall.h"
+#include "syscall_numbers.h"
 
 void setCursor(int x, int y) {
 	ParamTable paramTable;
@@ -88,8 +89,12 @@ bool endTask(qword taskId) {
 	return (bool)executeSyscall(SYSCALL_ENDTASK, &paramTable);
 }
 
-void exit(void) {
-	executeSyscall(SYSCALL_EXIT, null);
+void exit(int status) {
+	ParamTable paramTable;
+
+	PARAM(0) = (qword)status;
+
+	executeSyscall(SYSCALL_EXIT, &paramTable);
 }
 
 int getTaskCount(byte apicId) {
@@ -368,7 +373,7 @@ bool existWindow(qword windowId) {
 }
 
 qword getTopWindowId(void) {
-	return executeSyscall(SYSCALL_GETTOPWINDOWID, &paramTable);
+	return executeSyscall(SYSCALL_GETTOPWINDOWID, null);
 }
 
 bool moveWindowToTop(qword windowId) {
@@ -457,7 +462,7 @@ bool updateScreenById(qword windowId) {
 bool updateScreenByWindowArea(qword windowId, const Rect* area) {
 	ParamTable paramTable;
 
-	PARAM(0) = windowId
+	PARAM(0) = windowId;
 	PARAM(1) = (qword)area;
 
 	return (bool)executeSyscall(SYSCALL_UPDATESCREENBYWINDOWAREA, &paramTable);

@@ -10,20 +10,13 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <unistd.h>
+#include "defines.h"
 
 // argument
 #define ARG_TARGET argv[1]
 #define ARG_SRC1   argv[2]
 #define ARG_SRC2   argv[3]
 #define ARG_SRC3   argv[4]
-
-// Unix-based OS such as linux, macOS has no difference between binary file and text file.
-// Thus, O_BINARY option can be ignored on those OS.
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
-#define BYTES_OF_SECTOR 512
 
 int copyFile(int srcfd, int targetfd);
 int adjustBySectorSize(int fd, int srcSize);

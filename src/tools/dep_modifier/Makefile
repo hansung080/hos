@@ -3,8 +3,8 @@
 SRC_DIR=.
 OUT_DIR=../../../build/output/tools/dep_modifier
 
-SRC=$(SRC_DIR)/dep_modifier.c
-OBJ=$(OUT_DIR)/dep_modifier.o
+SRC=$(SRC_DIR)/main.c
+OBJ=$(OUT_DIR)/main.o
 
 TARGET=$(OUT_DIR)/dep-modifier
 TARGET_COPY=$(SRC_DIR)/dep-modifier
@@ -19,7 +19,7 @@ dep:
 	gcc -MM $(SRC) > $(DEPENDENCY)
 
 $(OBJ): $(SRC)
-	gcc -o $@ -c $^
+	gcc -c -o $@ $^
 
 $(TARGET): $(OBJ)
 	gcc -o $@ $^

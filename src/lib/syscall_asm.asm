@@ -2,8 +2,23 @@
 
 SECTION .text
 
-; export symbol
-global executeSyscall
+; import symbols
+extern main, exit
+
+; export symbols
+global _start, executeSyscall
+
+; - desc : entry point of applications
+_start:
+	call main
+
+	mov rdi, rax ; set RAX (return value of main) to RDI (first parameter of exit).
+	call exit
+
+	; This infinite loop below will be not executed, because task exits above.
+	jmp $
+
+	ret
 
 ; - param  : qword syscallNumber (RDI), const ParamTable* paramTable (RSI)
 ; - return : qword result (RAX)

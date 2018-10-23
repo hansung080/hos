@@ -6,7 +6,7 @@ TARGET_DEP=build/output/boot_loader/boot_loader.bin \
 
 TARGET=hans-os.img
 
-all: prepare tools boot-loader kernel32 kernel64 $(TARGET)
+all: prepare tools boot-loader kernel32 kernel64 $(TARGET) lib apps
 
 prepare:
 	mkdir -p build
@@ -51,8 +51,24 @@ $(TARGET): $(TARGET_DEP)
 	chmod 644 $@
 	
 	@echo image-maker end.
-	@echo 
 	@echo $(TARGET) has been created successfully.
+
+lib:
+	@echo
+	@echo lib build start.
+	
+	make -C src/lib
+	
+	@echo lib build end.
+
+apps:
+	@echo
+	@echo apps build start.
+	
+	make -C src/apps
+	
+	@echo apps build end.
+	@echo
 	@echo all builds complete.
 
 install:
@@ -60,11 +76,15 @@ install:
 	make -C src/boot_loader install
 	make -C src/kernel32 install
 	make -C src/kernel64 install
+	make -C src/lib install
+	make -C src/apps install
 
 clean:
 	make -C src/tools clean
 	make -C src/boot_loader clean
 	make -C src/kernel32 clean
 	make -C src/kernel64 clean
+	make -C src/lib clean
+	make -C src/apps clean
 	rm -rf build
 	rm -f $(TARGET)

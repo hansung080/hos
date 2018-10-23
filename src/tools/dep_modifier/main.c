@@ -1,11 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define bool unsigned char
-
-#define false 0
-#define true  1
+#include "defines.h"
 
 // argument
 #define ARG_FILE argv[1]

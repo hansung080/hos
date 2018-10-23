@@ -3,8 +3,8 @@
 SRC_DIR=.
 OUT_DIR=../../../build/output/tools/network_transfer
 
-SRC=$(SRC_DIR)/network_transfer.c
-OBJ=$(OUT_DIR)/network_transfer.o
+SRC=$(SRC_DIR)/main.c
+OBJ=$(OUT_DIR)/main.o
 
 TARGET=$(OUT_DIR)/network-transfer
 TARGET_COPY=$(SRC_DIR)/network-transfer
@@ -20,7 +20,7 @@ dep:
 	../../../build/output/tools/dep_modifier/dep-modifier $(DEPENDENCY) $(OUT_DIR)/
 
 $(OBJ): $(SRC)
-	gcc -o $@ -c $^
+	gcc -c -o $@ $^
 
 $(TARGET): $(OBJ)
 	gcc -o $@ $^

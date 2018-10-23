@@ -2,7 +2,6 @@
 #define __SYSCALL_H__
 
 #include "types.h"
-#include "syscall_numbers.h"
 
 #define SC_MAXPARAMCOUNT 10
 
@@ -37,7 +36,7 @@ qword createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr
 bool schedule(void);
 bool changeTaskPriority(qword taskId, byte priority);
 bool endTask(qword taskId);
-void exit(void);
+void exit(int status);
 int getTaskCount(byte apicId);
 bool existTask(qword taskId);
 qword getProcessorLoad(byte apicId);

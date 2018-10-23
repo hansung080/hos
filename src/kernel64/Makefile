@@ -68,22 +68,22 @@ $(EP_OBJ): $(EP_SRC)
 	$(NASM64) -o $@ $<
 
 core/%.o: $(SRC_DIR_FROM_OUT)/core/%.c
-	$(GCC64) -o $@ -c $<
+	$(GCC64) -c -o $@ $<
 
 core/%.o: $(SRC_DIR_FROM_OUT)/core/%.asm
 	$(NASM64) -o $@ $<
 
 utils/%.o: $(SRC_DIR_FROM_OUT)/utils/%.c
-	$(GCC64) -o $@ -c $<
+	$(GCC64) -c -o $@ $<
 
 fonts/%.o: $(SRC_DIR_FROM_OUT)/fonts/%.c
-	$(GCC64) -o $@ -c $<
+	$(GCC64) -c -o $@ $<
 
 images/%.o: $(SRC_DIR_FROM_OUT)/images/%.c
-	$(GCC64) -o $@ -c $<
+	$(GCC64) -c -o $@ $<
 
 gui_tasks/%.o: $(SRC_DIR_FROM_OUT)/gui_tasks/%.c
-	$(GCC64) -o $@ -c $<
+	$(GCC64) -c -o $@ $<
 
 kernel64.elf: $(EP_OBJ) $(CORE_C_OBJS) $(CORE_ASM_OBJS) $(UTILS_C_OBJS) $(FONTS_C_OBJS) $(IMAGES_C_OBJS) $(GUITASKS_C_OBJS)
 	$(LD64) -o $@ $^

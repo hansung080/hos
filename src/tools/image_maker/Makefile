@@ -3,8 +3,8 @@
 SRC_DIR=.
 OUT_DIR=../../../build/output/tools/image_maker
 
-SRC=$(SRC_DIR)/image_maker.c
-OBJ=$(OUT_DIR)/image_maker.o
+SRC=$(SRC_DIR)/main.c
+OBJ=$(OUT_DIR)/main.o
 
 TARGET=$(OUT_DIR)/image-maker
 TARGET_COPY=$(SRC_DIR)/image-maker
@@ -20,7 +20,7 @@ dep:
 	../../../build/output/tools/dep_modifier/dep-modifier $(DEPENDENCY) $(OUT_DIR)/
 
 $(OBJ): $(SRC)
-	gcc -o $@ -c $^
+	gcc -c -o $@ $^
 
 $(TARGET): $(OBJ)
 	gcc -o $@ $^
