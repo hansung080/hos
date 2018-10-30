@@ -1,6 +1,42 @@
 #include "userlib.h"
 #include "syscall.h"
 
+void initArgs(ArgList* list, const char* args) {
+	list->args = args;
+	list->len = strlen(args);
+	list->currentIndex = 0;
+}
+
+int getNextArg(ArgList* list, char* arg) {
+	int spaceIndex;
+	int len;
+
+	if (list->currentIndex >= list->len) {
+		return 0;
+	}
+
+	// get space index (argument length).
+	for (spaceIndex = list->currentIndex; spaceIndex < list->len; spaceIndex++) {
+		if (list->args[spaceIndex] == ' ') {
+			break;
+		}
+	}
+
+	// copy argument and update current index.
+	memcpy(arg, list->args + list->currentIndex, spaceIndex);
+	len = spaceIndex - list->currentIndex;
+	arg[len] = '\0';
+	list->currentIndex += len + 1;
+
+	if (len >= ARG_MAXLENGTH) {
+		printf("too long argument length: Argument length must be less than %d\n", ARG_MAXLENGTH - 1);
+		return ARG_ERROR_TOOLONGARGLENGTH;
+	}
+
+	// return current argument length.
+	return len;
+}
+
 void memset(void* dest, byte data, int size) {
 	int i;
 	qword qwdata;

@@ -49,19 +49,19 @@ k_syscallEntryPoint:
 ; - param  : void
 ; - return : void
 k_syscallTestTask:
-	mov rdi, 0xFFFFFFFF ; syscall number  : SYSCALL_TEST (0xFFFFFFFF)
-	mov rsi, 0x00       ; parameter table : null (0x00)
+	mov rdi, 0xFFFFFFFFFFFFFFFF ; syscall number  : SYSCALL_TEST (0xFFFFFFFFFFFFFFFF)
+	mov rsi, 0x00               ; parameter table : null (0x00)
 	syscall
 
-	mov rdi, 0xFFFFFFFF ; syscall number  : SYSCALL_TEST (0xFFFFFFFF)
-	mov rsi, 0x00       ; parameter table : null (0x00)
+	mov rdi, 0xFFFFFFFFFFFFFFFF ; syscall number  : SYSCALL_TEST (0xFFFFFFFFFFFFFFFF)
+	mov rsi, 0x00               ; parameter table : null (0x00)
 	syscall
 
-	mov rdi, 0xFFFFFFFF ; syscall number  : SYSCALL_TEST (0xFFFFFFFF)
-	mov rsi, 0x00       ; parameter table : null (0x00)
+	mov rdi, 0xFFFFFFFFFFFFFFFF ; syscall number  : SYSCALL_TEST (0xFFFFFFFFFFFFFFFF)
+	mov rsi, 0x00               ; parameter table : null (0x00)
 	syscall
 
-	mov rdi, 12   ; syscall number  : SYSCALL_EXIT (12)
+	mov rdi, 304   ; syscall number  : SYSCALL_EXIT (304)
 	mov rsi, 0x00 ; parameter table : null (0x00)
 	syscall
 	jmp $

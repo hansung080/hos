@@ -22,6 +22,7 @@
 #include "../gui_tasks/shell.h"
 #include "window_manager.h"
 #include "syscall.h"
+#include "loader.h"
 
 static ShellCommandEntry g_commandTable[] = {
 		{"help", "show help", k_help},
@@ -43,17 +44,18 @@ static ShellCommandEntry g_commandTable[] = {
 		{"fs", "show file system info", k_showFileSystemInfo},
 		{"ls", "show directory", k_showRootDir},
 		{"ll", "show directory", k_showRootDir},
-		{"create", "create file, usage) create <fname>", k_createFileInRootDir},
-		{"delete", "delete file, usage) delete <fname>", k_deleteFileInRootDir},
-		{"write", "write file, usage) write <fname>", k_writeDataToFile},
-		{"read", "read file, usage) read <fname>", k_readDataFromFile},
+		{"create", "create file, usage) create <file>", k_createFileInRootDir},
+		{"delete", "delete file, usage) delete <file>", k_deleteFileInRootDir},
+		{"write", "write file, usage) write <file>", k_writeDataToFile},
+		{"read", "read file, usage) read <file>", k_readDataFromFile},
 		{"flush", "flush file system cache", k_flushCache},
-		{"download", "download file using serial port, usage) download <fname>", k_downloadFile},
+		{"download", "download file using serial port, usage) download <file>", k_downloadFile},
 		{"mpconf", "show MP configuration table info", k_showMpConfigTable},
 		{"irqmap", "show IRQ to INTIN Map", k_showIrqToIntinMap},
 		{"intcnt", "show interrupt count by core * IRQ, usage) intcnt <irq>", k_showInterruptCounts},
 		{"chaf" ,"change task affinity, usage) chaf <taskId> <affinity>", k_changeAffinity},
 		{"vbe", "show VBE mode info", k_showVbeModeInfo},
+		{"run", "run application (.elf) usage) run <app> <arg1> <arg2> ...", k_runApp},
 		{"exit", "exit shell", k_exitShell},
 		#if __DEBUG__
 		{"teststod", "test string to decimal/hex conversion, usage) teststod <decimal> <hex> ...", k_testStrToDecimalHex},
@@ -155,6 +157,14 @@ void k_executeCommand(const char* commandBuffer) {
 		trimmedBuffer[j++] = commandBuffer[i];
 	}
 	
+	if (trimmedBuffer[j - 1] == ' ') {
+		trimmedBuffer[j - 1] = '\0';
+		j--;
+
+	} else {
+		trimmedBuffer[j] = '\0';
+	}
+
 	// If trimmed buffer length (j) <= 0, return.
 	if (j <= 0) {
 		return;
@@ -209,7 +219,7 @@ int k_getNextParam(ParamList* list, char* param) {
 		}
 	}
 	
-	// copy parameter and update position.
+	// copy parameter and update current index.
 	k_memcpy(param, list->buffer + list->currentIndex, spaceIndex);
 	len = spaceIndex - list->currentIndex;
 	param[len] = '\0';
@@ -894,11 +904,11 @@ static void k_createFileInRootDir(const char* paramBuffer) {
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
 	
-	// get No.1 parameter: fname
+	// get No.1 parameter: file
 	if ((len = k_getNextParam(&list, fileName)) <= 0) {
-		k_printf("Usage) create <fname>\n");
-		k_printf("  - fname: file name\n");
-		k_printf("  - example: create a.txt");
+		k_printf("Usage) create <file>\n");
+		k_printf("  - file: file name\n");
+		k_printf("  - example: create a.txt\n");
 		return;
 	}
 	
@@ -928,10 +938,10 @@ static void k_deleteFileInRootDir(const char* paramBuffer) {
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
 	
-	// get No.1 parameter: fname
+	// get No.1 parameter: file
 	if ((len = k_getNextParam(&list, fileName)) <= 0) {
-		k_printf("Usage) delete <fname>\n");
-		k_printf("  - fname: file name\n");
+		k_printf("Usage) delete <file>\n");
+		k_printf("  - file: file name\n");
 		k_printf("  - example: delete a.txt\n");
 		return;
 	}
@@ -961,10 +971,10 @@ static void k_writeDataToFile(const char* paramBuffer) {
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
 	
-	// get No.1 parameter: fname
+	// get No.1 parameter: file
 	if ((len = k_getNextParam(&list, fileName)) <= 0) {
-		k_printf("Usage) write <fname>\n");
-		k_printf("  - fname: file name\n");
+		k_printf("Usage) write <file>\n");
+		k_printf("  - file: file name\n");
 		k_printf("  - example: write a.txt\n");
 		return;
 	}
@@ -1023,10 +1033,10 @@ static void k_readDataFromFile(const char* paramBuffer) {
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
 	
-	// get No.1 parameter: fname
+	// get No.1 parameter: file
 	if ((len = k_getNextParam(&list, fileName)) <= 0) {
-		k_printf("Usage) read <fname>\n");
-		k_printf("  - fname:  file name\n");
+		k_printf("Usage) read <file>\n");
+		k_printf("  - file:  file name\n");
 		k_printf("  - example: read a.txt\n");
 		return;
 	}
@@ -1109,10 +1119,10 @@ static void k_downloadFile(const char* paramBuffer) {
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
 	
-	// get No.1 parameter: fname
+	// get No.1 parameter: file
 	if ((fileNameLen = k_getNextParam(&list, fileName)) <= 0) {
-		k_printf("Usage) download <fname>\n");
-		k_printf("  - fname: file name\n");
+		k_printf("Usage) download <file>\n");
+		k_printf("  - file: file name\n");
 		k_printf("  - example: download a.txt\n");
 		return;
 	}
@@ -1453,6 +1463,36 @@ static void k_showVbeModeInfo(const char* paramBuffer) {
 	k_printf("- linear green field position : bit %d, mask size: %d bits\n", vbeMode->linearGreenFieldPos, vbeMode->linearGreenMaskSize);
 	k_printf("- linear blue field position  : bit %d, mask size: %d bits\n", vbeMode->linearBlueFieldPos, vbeMode->linearBlueMaskSize);
 }
+
+static void k_runApp(const char* paramBuffer) {
+	ParamList list;
+	char fileName[SHELL_MAXPARAMETERLENGTH] = {'\0', };
+	char args[LOADER_MAXARGSLENGTH + 1] = {'\0', };
+	int fileNameLen;
+	int argsLen;
+
+	// initialize parameter.
+	k_initParam(&list, paramBuffer);
+
+	// get No.1 parameter: app
+	fileNameLen = k_getNextParam(&list, fileName);
+
+	if (fileNameLen <= 0) {
+		k_printf("Usage) run <app> <arg1> <arg2> ...\n");
+		k_printf("  - app: application name (.elf)\n");
+		k_printf("  - args: argument string (max %d)\n", LOADER_MAXARGSLENGTH);
+		k_printf("  - example: run a.elf arg1 arg2 ...\n");
+		return;
+	}
+
+	// get No.2 ~ N parameter: args
+	argsLen = k_strlen(paramBuffer) - (fileNameLen + 1);
+	k_memcpy(args, paramBuffer + fileNameLen + 1, argsLen);
+	args[argsLen] = '\0';
+
+	k_executeApp(fileName, args, TASK_AFFINITY_LOADBALANCING);
+}
+
 
 static void k_exitShell(const char* paramBuffer) {
 	if (k_isGraphicMode() == false) {

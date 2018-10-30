@@ -130,6 +130,17 @@ bool changeTaskAffinity(qword taskId, byte affinity) {
 	return (bool)executeSyscall(SYSCALL_CHANGETASKAFFINITY, &paramTable);
 }
 
+qword createThread(qword entryPointAddr, qword arg, byte affinity) {
+	ParamTable paramTable;
+
+	PARAM(0) = entryPointAddr;
+	PARAM(1) = arg;
+	PARAM(2) = (qword)affinity;
+	PARAM(3) = (qword)exit;
+
+	return executeSyscall(SYSCALL_CREATETHREAD, &paramTable);
+}
+
 void lock(Mutex* mutex) {
 	ParamTable paramTable;
 
@@ -648,4 +659,14 @@ void sleep(qword millisecond) {
 
 bool isGraphicMode(void) {
 	return (bool)executeSyscall(SYSCALL_ISGRAPHICMODE, null);
+}
+
+qword executeApp(const char* fileName, const char* args, byte affinity) {
+	ParamTable paramTable;
+
+	PARAM(0) = (qword)fileName;
+	PARAM(1) = (qword)args;
+	PARAM(2) = (qword)affinity;
+
+	return executeSyscall(SYSCALL_EXECUTEAPP, &paramTable);
 }

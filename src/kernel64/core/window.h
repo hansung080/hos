@@ -201,7 +201,7 @@ typedef struct k_Window {
 	dword flags;        // window flags: bit 0 : show flag
 	                    //               bit 1 : draw frame flag
 	                    //               bit 2 : draw title bar flag
-						//               bit 3 : resizable flag
+	                    //               bit 3 : resizable flag
 	Queue eventQueue;   // event queue for mouse, window, key, user event
 	Event* eventBuffer; // event buffer
 	char title[WINDOW_MAXTITLELENGTH + 1]; // window title: include last null character

@@ -97,6 +97,7 @@ on your computer or QEMU.
 - GUI: Graphic User Interface
 - JPEG: Joint Photographic Experts Group
 - MSR: Model-Specific Register
+- ELF: Executable and Linkable Format
 
 < Abbreviation >
 - init: initialize
@@ -109,6 +110,7 @@ on your computer or QEMU.
 - attr: attribute
 - addr: address
 - func: function
+- arg: argument
 - param: parameter
 - pos: position
 - mem: memory

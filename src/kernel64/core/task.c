@@ -1126,3 +1126,20 @@ qword k_getLastFpuUsedTaskId(byte apicId) {
 void k_setLastFpuUsedTaskId(byte apicId, qword taskId) {
 	g_schedulers[apicId].lastFpuUsedTaskId = taskId;
 }
+
+qword k_createThread(qword entryPointAddr, qword arg, byte affinity, qword exitFunc) {
+	Task* task;
+
+	task = k_createTask(TASK_FLAGS_THREAD | TASK_FLAGS_USER, null, 0, entryPointAddr, affinity);
+	if (task == null) {
+		return TASK_INVALIDID;
+	}
+
+	// replace k_exitTask to exitFunc in stack.
+	*(qword*)task->context.registers[TASK_INDEX_RSP] = exitFunc;
+
+	// set argument to RDI (first parameter).
+	task->context.registers[TASK_INDEX_RDI] = arg;
+
+	return task->link.id;
+}

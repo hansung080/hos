@@ -37,7 +37,7 @@
 #pragma pack(push, 1)
 
 // huffman table
-typedef struct k_Huff {
+typedef struct {
 	int elem; // element count
 	unsigned short code[256];
 	unsigned char size[256];
@@ -45,7 +45,7 @@ typedef struct k_Huff {
 } Huff;
 
 // JPEG struct
-typedef struct k_Jpeg {
+typedef struct {
 	// SOF: start of frame
 	int width;
 	int height;

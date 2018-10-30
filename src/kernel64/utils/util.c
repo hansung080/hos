@@ -207,7 +207,7 @@ bool k_equalStr(const char* str1, const char* str2) {
 	len1 = k_strlen(str1);
 	len2 = k_strlen(str2);
 	
-	if ((len1 == len2) && (k_memcmp(str1, str2, len1) == 0)) {
+	if ((len1 == len2) && (k_memcmp(str1, str2, len2) == 0)) {
 		return true;
 	}
 	

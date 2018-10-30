@@ -4,6 +4,24 @@
 #include <stdarg.h>
 #include "types.h"
 
+// argument-related macros
+#define ARG_MAXLENGTH              30 // It's including the last null character, so the max argument length user can input is 29.
+#define ARG_ERROR_TOOLONGARGLENGTH -1 // too long argument length error
+
+#pragma pack(push, 1)
+
+typedef struct __ArgList {
+	const char* args; // argument string
+	int len;          // argument string length
+	int currentIndex; // current index in argument string
+} ArgList;
+
+#pragma pack(pop)
+
+/* Argument Functions */
+void initArgs(ArgList* list, const char* args);
+int getNextArg(ArgList* list, char* arg);
+
 /* Memory Functions */
 void memset(void* dest, byte data, int size);
 int memcpy(void* dest, const void* src, int size);

@@ -11,6 +11,7 @@
 #include "window.h"
 #include "../utils/jpeg.h"
 #include "../utils/util.h"
+#include "loader.h"
 
 /**
   < SYSCALL/SYSRET Initialization Registers >
@@ -110,6 +111,9 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 
 	case SYSCALL_CHANGETASKAFFINITY:
 		return (qword)k_changeTaskAffinity(PARAM(0), (byte)PARAM(1));
+
+	case SYSCALL_CREATETHREAD:
+		return k_createThread(PARAM(0), PARAM(1), (byte)PARAM(2), PARAM(3));
 
 	/*** Syscall from sync.h ***/
 	case SYSCALL_LOCK:
@@ -302,13 +306,17 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 	case SYSCALL_ISGRAPHICMODE:
 		return (qword)k_isGraphicMode();
 
+	/*** Syscall from loader.h ***/
+	case SYSCALL_EXECUTEAPP:
+		return k_executeApp((char*)PARAM(0), (char*)PARAM(1), (byte)PARAM(2));
+
 	/*** Syscall - test ***/
 	case SYSCALL_TEST:
 		k_printf("syscall test...success\n");
-		return true;
+		return (qword)true;
 
 	default:
 		k_printf("syscall error: invalid syscall number: %d\n", syscallNumber);		
-		return false;
+		return (qword)false;
 	}	
 }

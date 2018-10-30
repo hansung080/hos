@@ -41,6 +41,7 @@ int getTaskCount(byte apicId);
 bool existTask(qword taskId);
 qword getProcessorLoad(byte apicId);
 bool changeTaskAffinity(qword taskId, byte affinity);
+qword createThread(qword entryPointAddr, qword arg, byte affinity);
 
 /*** Syscall from sync.h ***/
 void lock(Mutex* mutex);
@@ -115,5 +116,8 @@ qword getTotalRamSize(void);
 qword getTickCount(void);
 void sleep(qword millisecond);
 bool isGraphicMode(void);
+
+/*** Syscall from loader.h ***/
+qword executeApp(const char* fileName, const char* args, byte affinity);
 
 #endif // __SYSCALL_H__

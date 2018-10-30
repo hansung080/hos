@@ -192,4 +192,7 @@ void k_haltProcessorByLoad(byte apicId);
 qword k_getLastFpuUsedTaskId(byte apicId);
 void k_setLastFpuUsedTaskId(byte apicId, qword taskId);
 
+/* Application Functions */
+qword k_createThread(qword entryPointAddr, qword arg, byte affinity, qword exitFunc);
+
 #endif // __CORE_TASK_H__

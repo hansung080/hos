@@ -65,6 +65,7 @@ static void k_showIrqToIntinMap(const char* paramBuffer);
 static void k_showInterruptCounts(const char* paramBuffer);
 static void k_changeAffinity(const char* paramBuffer);
 static void k_showVbeModeInfo(const char* paramBuffer);
+static void k_runApp(const char* paramBuffer);
 static void k_exitShell(const char* paramBuffer);
 #if __DEBUG__
 static void k_testStrToDecimalHex(const char* paramBuffer);
