@@ -144,5 +144,5 @@ on your computer or QEMU.
 
 < Task Log >
 - [task name info]: info message
-- [task name error]: error message
 - [task name debug]: debug message
+- [task name error]: error message

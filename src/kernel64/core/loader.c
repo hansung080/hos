@@ -61,14 +61,18 @@ qword k_executeApp(const char* fileName, const char* args, byte affinity) {
 
 	fclose(file);
 
-	/* load application and relocate section */
-	if (k_loadApp(fileBuffer, &appMemAddr, &appMemSize, &entryPointAddr) == false) {
-		k_printf("loader error: application loading failure\n");
+	/* load and relocate sections */
+	if (k_loadSections(fileBuffer, &appMemAddr, &appMemSize, &entryPointAddr) == false) {
+		k_printf("loader error: sections loading or relocation failure\n");
 		k_freeMem(fileBuffer);
 		return TASK_INVALIDID;
 	}
 
 	k_freeMem(fileBuffer);
+
+	#if __DEBUG__
+	k_printf("loader debug: execute '%s' with args: '%s'\n", fileName, args);
+	#endif // __DEBUG__
 
 	/* create task and add argument string to task */
 	task = k_createTask(TASK_FLAGS_PROCESS | TASK_FLAGS_USER, (void*)appMemAddr, appMemSize, entryPointAddr, affinity);
@@ -83,7 +87,7 @@ qword k_executeApp(const char* fileName, const char* args, byte affinity) {
 	return task->link.id;
 }
 
-static bool k_loadApp(const byte* fileBuffer, qword* appMemAddr, qword* appMemSize, qword* entryPointAddr) {
+static bool k_loadSections(const byte* fileBuffer, qword* appMemAddr, qword* appMemSize, qword* entryPointAddr) {
 	Elf64_Ehdr* eh;           // ELF header
 	Elf64_Shdr* sh;           // section header
 	//Elf64_Shdr* shstr_sh;     // section name table section header
@@ -98,7 +102,8 @@ static bool k_loadApp(const byte* fileBuffer, qword* appMemAddr, qword* appMemSi
 	sh = (Elf64_Shdr*)(fileBuffer + eh->e_shoff);
 	//shstr_sh = sh + eh->e_shstrndx;
 
-	k_printf("*** ELF Header ***\n");
+	#if 0
+	k_printf("*** ELF Header Info ***\n");
 	k_printf("- magic number          : 0x%x %c%c%c\n", eh->e_ident[0], eh->e_ident[1], eh->e_ident[2], eh->e_ident[3]);
 	k_printf("- file type             : %d\n", eh->e_type);
 	k_printf("- program header offset : 0x%q\n", eh->e_phoff);
@@ -108,6 +113,7 @@ static bool k_loadApp(const byte* fileBuffer, qword* appMemAddr, qword* appMemSi
 	k_printf("- section header size   : 0x%x\n", eh->e_shentsize);
 	k_printf("- section header count  : %d\n", eh->e_shnum);
 	k_printf("- section name table section header index : %d\n", eh->e_shstrndx);
+	#endif
 
 	if ((eh->e_ident[EI_MAG0] != ELFMAG0) ||
 		(eh->e_ident[EI_MAG1] != ELFMAG1) ||
@@ -138,11 +144,13 @@ static bool k_loadApp(const byte* fileBuffer, qword* appMemAddr, qword* appMemSi
 		return false;
 	}
 
+	#if 0
 	k_printf("\n*** Application Memory Info ***\n");
 	k_printf("- last section address       : 0x%q\n", last_sh_addr);
 	k_printf("- last section size          : 0x%q\n", last_sh_size);
 	k_printf("- application memory address : 0x%q\n", memAddr);
 	k_printf("- application memory size    : 0x%q\n\n", memSize);
+	#endif
 	
 	/* load sections */
 	for (i = 1; i < eh->e_shnum; i++) { // skip index 0 (null section header)
@@ -159,19 +167,19 @@ static bool k_loadApp(const byte* fileBuffer, qword* appMemAddr, qword* appMemSi
 			k_memcpy((void*)sh[i].sh_addr, fileBuffer + sh[i].sh_offset, sh[i].sh_size);
 		}
 
-		k_printf("section %d loading: from file 0x%q to memory 0x%q, size 0x%q\n", i, sh[i].sh_offset, sh[i].sh_addr, sh[i].sh_size);
+		//k_printf("loader info: section %d loading: from file 0x%q to memory 0x%q, size 0x%q\n", i, sh[i].sh_offset, sh[i].sh_addr, sh[i].sh_size);
 	}
 
-	k_printf("section loading success\n");
+	//k_printf("loader info: sections loading success\n");
 
 	/* relocate sections */
-	if (k_relocateSection(fileBuffer) == false) {
-		k_printf("loader error: section relocation failure\n");
+	if (k_relocateSections(fileBuffer) == false) {
+		k_printf("loader error: sections relocation failure\n");
 		k_freeMem(memAddr);	
 		return false;
 	}
 
-	k_printf("\nsection relocation success\n");
+	//k_printf("loader info: sections relocation success\n");
 
 	/* copy results */
 	*appMemAddr = (qword)memAddr;
@@ -181,7 +189,7 @@ static bool k_loadApp(const byte* fileBuffer, qword* appMemAddr, qword* appMemSi
 	return true;
 }
 
-static bool k_relocateSection(const byte* fileBuffer) {
+static bool k_relocateSections(const byte* fileBuffer) {
 	Elf64_Ehdr* eh;        // ELF header
 	Elf64_Shdr* sh;        // section header
 	int i;                 // relocation section header index
@@ -233,7 +241,7 @@ static bool k_relocateSection(const byte* fileBuffer) {
 				r_info = rela->r_info;
 				r_addend = rela->r_addend;
 
-				j += sizeof(Elf64_Rel);
+				j += sizeof(Elf64_Rela);
 			}
 
 			symdef_shndx = sym[REL_SYMBOLINDEX(r_info)].st_shndx;

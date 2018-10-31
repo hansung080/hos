@@ -9,10 +9,12 @@ bool k_findMpFloatingPointerAddr(qword* addr) {
 	qword ebdaAddr;      // extended BIOD data area address
 	qword systemBaseMem; // system base memory size
 	
-	//k_printf("*** MP Floating Point Searching ***\n");
-	//k_printf("1> extended BIOS data area: 0x%x\n", MP_SEARCH1_EBDA_ADDRESS);
-	//k_printf("2> system base memory     : 0x%x\n", MP_SEARCH2_SYSEMBASEMEMORY);
-	//k_printf("3> BIOS ROM area          : 0x%x~0x%x\n", MP_SEARCH3_BIOSROM_STARTADDRESS, MP_SEARCH3_BIOSROM_ENDADDRESS);
+	#if 0
+	k_printf("*** MP Floating Point Searching ***\n");
+	k_printf("1> extended BIOS data area: 0x%x\n", MP_SEARCH1_EBDA_ADDRESS);
+	k_printf("2> system base memory     : 0x%x\n", MP_SEARCH2_SYSEMBASEMEMORY);
+	k_printf("3> BIOS ROM area          : 0x%x~0x%x\n", MP_SEARCH3_BIOSROM_STARTADDRESS, MP_SEARCH3_BIOSROM_ENDADDRESS);
+	#endif
 	
 	/* 1. search MP floating pointer: search it in the starting 1KB-sized range of extended BIOS data area */
 	ebdaAddr = MP_SEARCH1_EBDA_ADDRESS;

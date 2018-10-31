@@ -70,12 +70,12 @@ int main(const char* args) {
 	}
 
 	/* draw argument string */
-	y = WINDOW_TITLEBAR_HEIGHT + 10;
-	sprintf(tempBuffer, "@ args: %s", args);
+	y = WINDOW_TITLEBAR_HEIGHT + 5;
+	sprintf(tempBuffer, "# args: '%s'", args);
 	drawText(windowId, 20, y, RGB(0, 0, 0), RGB(255, 255, 255), tempBuffer, strlen(tempBuffer));
 
 	/* draw GUI event info area */
-	y += 20;
+	y += 25;
 	drawRect(windowId, 10, y + 8, windowWidth - 10, y + 70, RGB(0, 0, 0), false);
 	sprintf(tempBuffer, "GUI Event Info (window ID: 0x%q)", windowId);
 	drawText(windowId, 20, y, RGB(0, 0, 0), RGB(255, 255, 255), tempBuffer, strlen(tempBuffer));
