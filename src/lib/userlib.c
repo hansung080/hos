@@ -122,6 +122,8 @@ int strcpy(char* dest, const char* src) {
 		dest[i] = src[i];
 	}
 
+	dest[i] = '\0';
+
 	return i;
 }
 
@@ -143,6 +145,8 @@ int strncpy(char* dest, const char* src, int size) {
 	for (i = 0; (i < size) && (src[i] != '\0'); i++) {
 		dest[i] = src[i];
 	}
+
+	dest[i] = '\0';
 
 	return i;	
 }
@@ -519,6 +523,36 @@ int vsprintf(char* str, const char* format, va_list ap) {
 	
 	// return length of printed string.
 	return index;
+}
+
+int findChar(const char* str, char ch) {
+	int i;
+
+	for (i = 0; str[i] != '\0'; i++) {
+		if (str[i] == ch) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+bool addFileExtension(char* fileName, const char* extension) {
+	int i, j;
+
+	if (findChar(fileName, '.') >= 0) {
+		return false;
+	}
+
+	j = strlen(fileName);
+	fileName[j++] = '.';
+	for (i = 0; extension[i] != '\0'; i++) {
+		fileName[j++] = extension[i];
+	}
+
+	fileName[j] = '\0';
+
+	return true;
 }
 
 static volatile qword g_randomValue = 0;

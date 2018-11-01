@@ -1479,7 +1479,7 @@ static void k_runApp(const char* paramBuffer) {
 
 	if (fileNameLen <= 0) {
 		k_printf("Usage) run <app> <arg1> <arg2> ...\n");
-		k_printf("  - app: application name (.elf)\n");
+		k_printf("  - app: application name (.elf can be omitted)\n");
 		k_printf("  - args: argument string (max %d)\n", LOADER_MAXARGSLENGTH);
 		k_printf("  - example: run a.elf arg1 arg2 ...\n");
 		return;
@@ -1489,6 +1489,8 @@ static void k_runApp(const char* paramBuffer) {
 	argsLen = k_strlen(paramBuffer) - (fileNameLen + 1);
 	k_memcpy(args, paramBuffer + fileNameLen + 1, argsLen);
 	args[argsLen] = '\0';
+
+	k_addFileExtension(fileName, "elf");
 
 	k_executeApp(fileName, args, TASK_AFFINITY_LOADBALANCING);
 }
@@ -2329,7 +2331,7 @@ static void k_testFileIo(const char* paramBuffer) {
 	//----------------------------------------------------------------------------------------------------
 	// 1. File Opening Failure Test
 	//----------------------------------------------------------------------------------------------------
-	k_printf("1> file openning failure test..................................");
+	k_printf("1> file opening failure test..................................");
 	
 	// Read mode (r) dosen't create file and return null when the file dosen't exist.
 	file = fopen("testfile.tmp", "r");

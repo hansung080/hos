@@ -44,6 +44,8 @@ int ltoa10(long value, char* str);
 int ltoa16(qword value, char* str);
 int sprintf(char* str, const char* format, ...);
 int vsprintf(char* str, const char* format, va_list ap);
+int findChar(const char* str, char ch);
+bool addFileExtension(char* fileName, const char* extension);
 
 /* Math Functions */
 qword srand(qword seed);

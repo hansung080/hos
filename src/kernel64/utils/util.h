@@ -28,6 +28,8 @@ int k_ltoa10(long value, char* str);
 int k_ltoa16(qword value, char* str);
 int k_sprintf(char* str, const char* format, ...);
 int k_vsprintf(char* str, const char* format, va_list ap);
+int k_findChar(const char* str, char ch);
+bool k_addFileExtension(char* fileName, const char* extension);
 
 /* Time Functions */
 qword k_getTickCount(void);

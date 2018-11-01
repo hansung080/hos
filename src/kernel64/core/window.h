@@ -250,6 +250,7 @@ void k_getScreenArea(Rect* screenArea);
 qword k_createWindow(int x, int y, int width, int height, dword flags, const char* title);
 bool k_deleteWindow(qword windowId);
 bool k_deleteWindowsByTask(qword taskId);
+bool k_closeWindowsByTask(qword taskId);
 Window* k_getWindow(qword windowId);
 Window* k_getWindowWithLock(qword windowId);
 bool k_showWindow(qword windowId, bool show);

@@ -8,7 +8,7 @@
 #define ARG_PATH argv[2]
 
 void getChangedFileName(const char* oldName, const char* prefix, char* newName);
-int findChar(const char* str, char keyword);
+int findChar(const char* str, char ch);
 
 int main(int argc, const char** argv) {
 	FILE* orgFile;
@@ -100,11 +100,11 @@ void getChangedFileName(const char* oldName, const char* prefix, char* newName) 
 	newName[oldNameLen + prefixLen] = '\0';
 }
 
-int findChar(const char* str, char keyword) {
+int findChar(const char* str, char ch) {
 	int i;
 
 	for (i = 0; str[i] != '\0'; i++) {
-		if (str[i] == keyword) {
+		if (str[i] == ch) {
 			return i;
 		}
 	}

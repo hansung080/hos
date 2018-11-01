@@ -342,6 +342,27 @@ bool k_deleteWindowsByTask(qword taskId) {
 	k_unlock(&g_windowManager.mutex);	
 }
 
+bool k_closeWindowsByTask(qword taskId) {
+	Window* window;
+	Window* nextWindow;
+
+	k_lock(&g_windowManager.mutex);
+
+	window = k_getHeadFromList(&g_windowManager.windowList);
+	while (window != null) {
+		// Getting the next window must be before closing the current window.
+		nextWindow = k_getNextFromList(&g_windowManager.windowList, window);
+
+		if ((window->link.id != g_windowManager.backgroundWindowId) && (window->taskId == taskId)) {
+			k_sendWindowEventToWindow(window->link.id, EVENT_WINDOW_CLOSE);
+		}
+
+		window = nextWindow;
+	}
+
+	k_unlock(&g_windowManager.mutex);	
+}
+
 Window* k_getWindow(qword windowId) {
 	Window* window;
 

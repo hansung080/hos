@@ -439,6 +439,36 @@ int k_vsprintf(char* str, const char* format, va_list ap) {
 	return index;
 }
 
+int k_findChar(const char* str, char ch) {
+	int i;
+
+	for (i = 0; str[i] != '\0'; i++) {
+		if (str[i] == ch) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+bool k_addFileExtension(char* fileName, const char* extension) {
+	int i, j;
+
+	if (k_findChar(fileName, '.') >= 0) {
+		return false;
+	}
+
+	j = k_strlen(fileName);
+	fileName[j++] = '.';
+	for (i = 0; extension[i] != '\0'; i++) {
+		fileName[j++] = extension[i];
+	}
+
+	fileName[j] = '\0';
+
+	return true;
+}
+
 // interrupt-occurring count by Timer(IRQ 0, PIT Controller)
 volatile qword g_tickCount = 0;
 

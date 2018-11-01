@@ -38,19 +38,18 @@ int main(const char* args) {
 	/* check graphic mode */
 	if (isGraphicMode() == false) {
 		printf("[event monitor error] not graphic mode\n");
-		return 0;
+		return -1;
 	}
 
 	/* print argument string */
 	#if __DEBUG__
 	ArgList argList;
 	char arg[ARG_MAXLENGTH] = {'\0', };
-	int argLen;
 
 	initArgs(&argList, args);
-	printf("[event monitor info] args: ");
+	printf("[event monitor debug] args: ");
 	while (true) {
-		if (getNextArg(&argList, arg) == 0) {
+		if (getNextArg(&argList, arg) <= 0) {
 			break;
 		}
 
@@ -66,7 +65,7 @@ int main(const char* args) {
 	sprintf(tempBuffer, "Event Monitor %d", ++windowCount);
 	windowId = createWindow(mouseX - 10, mouseY - WINDOW_TITLEBAR_HEIGHT / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT, tempBuffer);
 	if (windowId == WINDOW_INVALIDID) {
-		return 0;
+		return -1;
 	}
 
 	/* draw argument string */
