@@ -93,6 +93,9 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 	case SYSCALL_CHANGETASKPRIORITY:
 		return (qword)k_changeTaskPriority(PARAM(0), (byte)PARAM(1));
 
+	case SYSCALL_CHANGETASKAFFINITY:
+		return (qword)k_changeTaskAffinity(PARAM(0), (byte)PARAM(1));
+		
 	case SYSCALL_ENDTASK:
 		return (qword)k_endTask(PARAM(0));
 
@@ -108,9 +111,6 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 
 	case SYSCALL_GETPROCESSORLOAD:
 		return k_getProcessorLoad((byte)PARAM(0));
-
-	case SYSCALL_CHANGETASKAFFINITY:
-		return (qword)k_changeTaskAffinity(PARAM(0), (byte)PARAM(1));
 
 	case SYSCALL_CREATETHREAD:
 		return k_createThread(PARAM(0), PARAM(1), (byte)PARAM(2), PARAM(3));

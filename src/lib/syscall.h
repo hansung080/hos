@@ -35,12 +35,12 @@ void readRtcDate(word* year, byte* month, byte* dayOfMonth, byte* dayOfWeek);
 qword createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr, byte affinity);
 bool schedule(void);
 bool changeTaskPriority(qword taskId, byte priority);
+bool changeTaskAffinity(qword taskId, byte affinity);
 bool endTask(qword taskId);
 void exit(int status);
 int getTaskCount(byte apicId);
 bool existTask(qword taskId);
 qword getProcessorLoad(byte apicId);
-bool changeTaskAffinity(qword taskId, byte affinity);
 qword createThread(qword entryPointAddr, qword arg, byte affinity);
 
 /*** Syscall from sync.h ***/

@@ -51,21 +51,23 @@
 #define TASK_MAXREADYLISTCOUNT 5
 
 // task priority (low 8 bits of task flags)
-#define TASK_FLAGS_HIGHEST     0x00 // highest
-#define TASK_FLAGS_HIGH        0x01 // high
-#define TASK_FLAGS_MEDIUM      0x02 // medium
-#define TASK_FLAGS_LOW         0x03 // low
-#define TASK_FLAGS_LOWEST      0x04 // lowest
-#define TASK_FLAGS_ENDPRIORITY 0xFF // end task priority
+#define TASK_FLAGS_HIGHEST      0x00 // highest
+#define TASK_FLAGS_HIGH         0x01 // high
+#define TASK_FLAGS_MEDIUM       0x02 // medium
+#define TASK_FLAGS_LOW          0x03 // low
+#define TASK_FLAGS_LOWEST       0x04 // lowest
+#define TASK_FLAGS_WAITPRIORITY 0xFE // wait task priority
+#define TASK_FLAGS_ENDPRIORITY  0xFF // end task priority
 
 // task flags
-#define TASK_FLAGS_END     0x8000000000000000 // end task flag
-#define TASK_FLAGS_SYSTEM  0x4000000000000000 // system task flag
-#define TASK_FLAGS_PROCESS 0x2000000000000000 // processor flag
-#define TASK_FLAGS_THREAD  0x1000000000000000 // thread flag
-#define TASK_FLAGS_IDLE    0x0800000000000000 // idle task flag
-#define TASK_FLAGS_GUI     0x0400000000000000 // GUI task flag: set in k_createWindow.
-#define TASK_FLAGS_USER    0x0200000000000000 // user task flag
+#define TASK_FLAGS_WAIT    0x8000000000000000 // wait task flag
+#define TASK_FLAGS_END     0x4000000000000000 // end task flag
+#define TASK_FLAGS_SYSTEM  0x2000000000000000 // system task flag
+#define TASK_FLAGS_PROCESS 0x1000000000000000 // processor flag
+#define TASK_FLAGS_THREAD  0x0800000000000000 // thread flag
+#define TASK_FLAGS_IDLE    0x0400000000000000 // idle task flag
+#define TASK_FLAGS_GUI     0x0200000000000000 // GUI task flag: set in k_createWindow.
+#define TASK_FLAGS_USER    0x0100000000000000 // user task flag
 
 // affinity
 #define TASK_AFFINITY_LOADBALANCING 0xFF // load balancing (no affinity)
@@ -90,13 +92,14 @@ typedef struct k_Task {
 	                         //                 task ID consists of allocated task count (high 32 bits) and task offset (low 32 bits).
 	                         //                 [NOTE] ListLink must be the first field.
 	qword flags;             // task flags: bit 0~7 : task priority
-							 //             bit 63  : end task flag
-	                         //             bit 62  : system task flag
-	                         //             bit 61  : processor flag
-	                         //             bit 60  : thread flag
-	                         //             bit 59  : idle task flag
-							 //             bit 58  : GUI task flag
-							 //             bit 57  : user task flag
+	                         //             bit 63  : wait task flag
+							 //             bit 62  : end task flag
+	                         //             bit 61  : system task flag
+	                         //             bit 60  : processor flag
+	                         //             bit 59  : thread flag
+	                         //             bit 58  : idle task flag
+							 //             bit 57  : GUI task flag
+							 //             bit 56  : user task flag
 	void* memAddr;           // start address of process memory area (code/data area)
 	qword memSize;           // size of process memory area (code/data area)
 	
@@ -164,13 +167,17 @@ void k_setRunningTask(byte apicId, Task* task);
 Task* k_getRunningTask(byte apicId);
 static Task* k_getNextTaskToRun(byte apicId); // get next running task from ready list.
 static bool k_addTaskToReadyList(byte apicId, Task* task); // add task to ready list.
+static Task* k_removeTaskFromReadyList(byte apicId, qword taskId); // remove task from ready list.
+static Task* k_getProcessByThread(Task* thread); // get process by thread: process returns itself, and thread returns parent process.
+static bool k_findSchedulerByTaskWithLock(qword taskId, byte* apicId);
+static byte k_findSchedulerByMinTaskCount(const Task* task);
+static void k_addTaskToSchedulerWithLoadBalancing(Task* task);
 bool k_schedule(void); // task switching in task.
 bool k_scheduleInInterrupt(void); // task switching in interrupt handler.
 void k_decreaseProcessorTime(byte apicId);
 bool k_isProcessorTimeExpired(byte apicId);
-static Task* k_removeTaskFromReadyList(byte apicId, qword taskId); // remove task from ready list.
-static bool k_findSchedulerByTaskWithLock(qword taskId, byte* apicId);
 bool k_changeTaskPriority(qword taskId, byte priority); // change task priority.
+bool k_changeTaskAffinity(qword taskId, byte affinity); // change task affinity.
 bool k_endTask(qword taskId); // end task.
 void k_exitTask(void); // end task by itself.
 int k_getReadyTaskCount(byte apicId); // get ready task count.
@@ -178,11 +185,7 @@ int k_getTaskCount(byte apicId); // get total task count. (total task count = re
 Task* k_getTaskFromPool(int offset);
 bool k_existTask(qword taskId);
 qword k_getProcessorLoad(byte apicId);
-static Task* k_getProcessByThread(Task* thread); // get process by thread: process returns itself, and thread returns parent process.
-void k_addTaskToSchedulerWithLoadBalancing(Task* task);
-static byte k_findSchedulerByMinTaskCount(const Task* task);
 void k_setTaskLoadBalancing(byte apicId, bool loadBalancing);
-bool k_changeTaskAffinity(qword taskId, byte affinity);
 
 /* Idle Task Functions */
 void k_idleTask(void);

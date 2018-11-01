@@ -81,6 +81,15 @@ bool changeTaskPriority(qword taskId, byte priority) {
 	return (bool)executeSyscall(SYSCALL_CHANGETASKPRIORITY, &paramTable);
 }
 
+bool changeTaskAffinity(qword taskId, byte affinity) {
+	ParamTable paramTable;
+
+	PARAM(0) = taskId;
+	PARAM(1) = (qword)affinity;
+
+	return (bool)executeSyscall(SYSCALL_CHANGETASKAFFINITY, &paramTable);
+}
+
 bool endTask(qword taskId) {
 	ParamTable paramTable;
 
@@ -119,15 +128,6 @@ qword getProcessorLoad(byte apicId) {
 	PARAM(0) = (qword)apicId;
 
 	return executeSyscall(SYSCALL_GETPROCESSORLOAD, &paramTable);
-}
-
-bool changeTaskAffinity(qword taskId, byte affinity) {
-	ParamTable paramTable;
-
-	PARAM(0) = taskId;
-	PARAM(1) = (qword)affinity;
-
-	return (bool)executeSyscall(SYSCALL_CHANGETASKAFFINITY, &paramTable);
 }
 
 qword createThread(qword entryPointAddr, qword arg, byte affinity) {

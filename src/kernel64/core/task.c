@@ -392,6 +392,23 @@ static Task* k_removeTaskFromReadyList(byte apicId, qword taskId) {
 	return target;
 }
 
+static Task* k_getProcessByThread(Task* thread) {
+	Task* process;
+	
+	// If parameter is process, return process itself.
+	if (thread->flags & TASK_FLAGS_PROCESS) {
+		return thread;
+	}
+	
+	// If parameter is thread, return parent process.
+	process = k_getTaskFromPool(GETTASKOFFSET(thread->parentProcessId));
+	if ((process == null) || (process->link.id != thread->parentProcessId)) {
+		return null;
+	}
+	
+	return process;
+}
+
 static bool k_findSchedulerByTaskWithLock(qword taskId, byte* apicId) {
 	Task* target;
 	byte targetApicId;
@@ -423,46 +440,82 @@ static bool k_findSchedulerByTaskWithLock(qword taskId, byte* apicId) {
 	return true;
 }
 
-bool k_changeTaskPriority(qword taskId, byte priority) {
-	Task* target;
-	byte apicId;
+static byte k_findSchedulerByMinTaskCount(const Task* task) {
+	byte priority;
+	byte i;
+	int currentTaskCount;
+	int minTaskCount;
+	byte minCoreIndex;
+	int tempTaskCount;
+	int coreCount;
 	
-	if (priority >= TASK_MAXREADYLISTCOUNT) {
-		return false;
+	coreCount = k_getProcessorCount();
+	if (coreCount == 1) {
+		return task->apicId;
 	}
 	
-	if (k_findSchedulerByTaskWithLock(taskId, &apicId) == false) {
-		return false;
-	}
+	priority = GETTASKPRIORITY(task->flags);
+	currentTaskCount = k_getListCount(&(g_schedulers[task->apicId].readyLists[priority]));
 	
-	target = g_schedulers[apicId].runningTask;
-	
-	// If it's a running task, only change priority.
-	// It's because the task will move to ready list with the changed priority, when timer interrupt (IRQ 0) causes task switching.
-	if (target->link.id == taskId) {
-		SETTASKPRIORITY(target->flags, priority);
+	/**
+	  find scheduler with minimum task count out of schedulers whose task count is '2 or more' less than current task count.
+	  (task count is only from ready list with the same priority.)
+	*/
+	minTaskCount = TASK_MAXCOUNT;
+	minCoreIndex = task->apicId;
+	for (i = 0; i < coreCount; i++) {
+		if (i == task->apicId) {
+			continue;
+		}
 		
-	// If it's not a running task, remove it from ready list, change priority, and move it to ready list with the changed priority.
-	} else {
-		target = k_removeTaskFromReadyList(apicId, taskId);
-		
-		// If the task dosen't exist in ready list, change priority in searching it from task pool.
-		if (target == null) {
-			target = k_getTaskFromPool(GETTASKOFFSET(taskId));
-			if (target != null) {
-				SETTASKPRIORITY(target->flags, priority);
-			}
-			
-		// If the task exists in ready list, change priority and move it to ready list with the changed priority.
-		} else {
-			SETTASKPRIORITY(target->flags, priority);
-			k_addTaskToReadyList(apicId, target);
+		tempTaskCount = k_getListCount(&(g_schedulers[i].readyLists[priority]));
+		if ((tempTaskCount + 2 <= currentTaskCount) && (tempTaskCount < minTaskCount)) {
+			minCoreIndex = i;
+			minTaskCount = tempTaskCount;
 		}
 	}
 	
-	k_unlockSpin(&(g_schedulers[apicId].spinlock));
+	return minCoreIndex;
+}
+
+static void k_addTaskToSchedulerWithLoadBalancing(Task* task) {
+	byte currentApicId;
+	byte targetApicId;
 	
-	return true;
+	currentApicId = task->apicId;
+	
+	/* find target scheduler */
+	if ((g_schedulers[currentApicId].loadBalancing == true) && (task->affinity == TASK_AFFINITY_LOADBALANCING)) {
+		targetApicId = k_findSchedulerByMinTaskCount(task);
+		
+	} else if ((task->affinity != currentApicId) && (task->affinity != TASK_AFFINITY_LOADBALANCING)) {
+		targetApicId = task->affinity;
+		
+	} else {
+		targetApicId = currentApicId;
+	}
+	
+	/* save FPU context if it requires */
+	k_lockSpin(&(g_schedulers[currentApicId].spinlock));
+	
+	// save FPU context to memory if task moves to another scheduler and it's the last FPU-used task.
+	if ((currentApicId != targetApicId) && (task->link.id == g_schedulers[currentApicId].lastFpuUsedTaskId)) {
+		// clear TS in order not to cause exception 7 (Device Not Available).
+		// Otherwise, exception 7 occurs when FPU operation or FPU command (fxsave) is being executed, with TS being set to 1.
+		k_clearTs();
+		k_saveFpuContext(task->fpuContext);
+		g_schedulers[currentApicId].lastFpuUsedTaskId = TASK_INVALIDID;
+	}
+	
+	k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
+	
+	/* add task to target scheduler */
+	k_lockSpin(&(g_schedulers[targetApicId].spinlock));
+	
+	task->apicId = targetApicId;
+	k_addTaskToReadyList(targetApicId, task);
+	
+	k_unlockSpin(&(g_schedulers[targetApicId].spinlock));
 }
 
 /**
@@ -588,7 +641,7 @@ bool k_schedule(void) {
 	g_schedulers[currentApicId].runningTask = nextTask;
 	
 	// If it's switched from idle task, increase processor time used by idle task.
-	if ((runningTask->flags & TASK_FLAGS_IDLE) == TASK_FLAGS_IDLE) {
+	if (runningTask->flags & TASK_FLAGS_IDLE) {
 		g_schedulers[currentApicId].processorTimeInIdleTask += (TASK_PROCESSORTIME - g_schedulers[currentApicId].processorTime);
 	}
 	
@@ -607,7 +660,7 @@ bool k_schedule(void) {
 	 */
 	
 	// If it's switched from end task, move end task to end list, switch task.
-	if ((runningTask->flags & TASK_FLAGS_END) == TASK_FLAGS_END) {
+	if (runningTask->flags & TASK_FLAGS_END) {
 		k_addListToTail(&(g_schedulers[currentApicId].endList), runningTask);
 		k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
 		// restore next task context from task pool to registers.
@@ -654,7 +707,7 @@ bool k_scheduleInInterrupt(void) {
 	g_schedulers[currentApicId].runningTask = nextTask;
 	
 	// If it's switched from idle task, increase processor time used by idle task.
-	if ((runningTask->flags & TASK_FLAGS_IDLE) == TASK_FLAGS_IDLE) {
+	if (runningTask->flags & TASK_FLAGS_IDLE) {
 		g_schedulers[currentApicId].processorTimeInIdleTask += TASK_PROCESSORTIME;
 	}
 	
@@ -665,7 +718,7 @@ bool k_scheduleInInterrupt(void) {
 	 */
 	
 	// If it's switched from end task, move end task to end list, switch task.
-	if ((runningTask->flags & TASK_FLAGS_END) == TASK_FLAGS_END) {
+	if (runningTask->flags & TASK_FLAGS_END) {
 		k_addListToTail(&(g_schedulers[currentApicId].endList), runningTask);
 		
 	// If it's switched from normal task, move normal task to ready list, switch task.
@@ -707,6 +760,89 @@ bool k_isProcessorTimeExpired(byte apicId) {
 	}
 	
 	return false;
+}
+
+bool k_changeTaskPriority(qword taskId, byte priority) {
+	Task* target;
+	byte apicId;
+	
+	if (priority >= TASK_MAXREADYLISTCOUNT) {
+		return false;
+	}
+	
+	if (k_findSchedulerByTaskWithLock(taskId, &apicId) == false) {
+		return false;
+	}
+	
+	target = g_schedulers[apicId].runningTask;
+	
+	// If it's a running task, only change priority.
+	// It's because the task will move to ready list with the changed priority, when timer interrupt (IRQ 0) causes task switching.
+	if (target->link.id == taskId) {
+		SETTASKPRIORITY(target->flags, priority);
+		
+	// If it's not a running task, remove it from ready list, change priority, and move it to ready list with the changed priority.
+	} else {
+		target = k_removeTaskFromReadyList(apicId, taskId);
+		
+		// If the task dosen't exist in ready list, change priority in searching it from task pool.
+		if (target == null) {
+			target = k_getTaskFromPool(GETTASKOFFSET(taskId));
+			if (target != null) {
+				SETTASKPRIORITY(target->flags, priority);
+			}
+			
+		// If the task exists in ready list, change priority and move it to ready list with the changed priority.
+		} else {
+			SETTASKPRIORITY(target->flags, priority);
+			k_addTaskToReadyList(apicId, target);
+		}
+	}
+	
+	k_unlockSpin(&(g_schedulers[apicId].spinlock));
+	
+	return true;
+}
+
+bool k_changeTaskAffinity(qword taskId, byte affinity) {
+	Task* target;
+	byte apicId;
+	
+	if (k_findSchedulerByTaskWithLock(taskId, &apicId) == false) {
+		return false;
+	}
+	
+	target = g_schedulers[apicId].runningTask;
+	
+	// If it's a running task, only change affinity.
+	// It's because the task will move to scheduler with the changed affinity, when timer interrupt (IRQ 0) causes task switching.
+	if (target->link.id == taskId) {
+		target->affinity = affinity;
+		k_unlockSpin(&(g_schedulers[apicId].spinlock));
+		
+	// If it's not a running task, remove it from ready list, change affinity, and move it to scheduler with the changed affinity.
+	} else {
+		target = k_removeTaskFromReadyList(apicId, taskId);
+		
+		// If the task dosen't exist in ready list, change affinity in searching it from task pool.
+		if (target == null) {
+			target = k_getTaskFromPool(GETTASKOFFSET(taskId));
+			if (target != null) {
+				target->affinity = affinity;
+			}
+			
+		// If the task exists in ready list, change affinity.
+		} else {
+			target->affinity = affinity;
+		}
+		
+		k_unlockSpin(&(g_schedulers[apicId].spinlock));
+		
+		// move the task to scheduler with the changed affinity.
+		k_addTaskToSchedulerWithLoadBalancing(target);
+	}
+	
+	return true;
 }
 
 bool k_endTask(qword taskId) {
@@ -821,144 +957,8 @@ qword k_getProcessorLoad(byte apicId) {
 	return g_schedulers[apicId].processorLoad;
 }
 
-static Task* k_getProcessByThread(Task* thread) {
-	Task* process;
-	
-	// If parameter is process, return process itself.
-	if (thread->flags & TASK_FLAGS_PROCESS) {
-		return thread;
-	}
-	
-	// If parameter is thread, return parent process.
-	process = k_getTaskFromPool(GETTASKOFFSET(thread->parentProcessId));
-	if ((process == null) || (process->link.id != thread->parentProcessId)) {
-		return null;
-	}
-	
-	return process;
-}
-
-void k_addTaskToSchedulerWithLoadBalancing(Task* task) {
-	byte currentApicId;
-	byte targetApicId;
-	
-	currentApicId = task->apicId;
-	
-	/* find target scheduler */
-	if ((g_schedulers[currentApicId].loadBalancing == true) && (task->affinity == TASK_AFFINITY_LOADBALANCING)) {
-		targetApicId = k_findSchedulerByMinTaskCount(task);
-		
-	} else if ((task->affinity != currentApicId) && (task->affinity != TASK_AFFINITY_LOADBALANCING)) {
-		targetApicId = task->affinity;
-		
-	} else {
-		targetApicId = currentApicId;
-	}
-	
-	/* save FPU context if it requires */
-	k_lockSpin(&(g_schedulers[currentApicId].spinlock));
-	
-	// save FPU context to memory if task moves to another scheduler and it's the last FPU-used task.
-	if ((currentApicId != targetApicId) && (task->link.id == g_schedulers[currentApicId].lastFpuUsedTaskId)) {
-		// clear TS in order not to cause exception 7 (Device Not Available).
-		// Otherwise, exception 7 occurs when FPU operation or FPU command (fxsave) is being executed, with TS being set to 1.
-		k_clearTs();
-		k_saveFpuContext(task->fpuContext);
-		g_schedulers[currentApicId].lastFpuUsedTaskId = TASK_INVALIDID;
-	}
-	
-	k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
-	
-	/* add task to target scheduler */
-	k_lockSpin(&(g_schedulers[targetApicId].spinlock));
-	
-	task->apicId = targetApicId;
-	k_addTaskToReadyList(targetApicId, task);
-	
-	k_unlockSpin(&(g_schedulers[targetApicId].spinlock));
-}
-
-static byte k_findSchedulerByMinTaskCount(const Task* task) {
-	byte priority;
-	byte i;
-	int currentTaskCount;
-	int minTaskCount;
-	byte minCoreIndex;
-	int tempTaskCount;
-	int coreCount;
-	
-	coreCount = k_getProcessorCount();
-	if (coreCount == 1) {
-		return task->apicId;
-	}
-	
-	priority = GETTASKPRIORITY(task->flags);
-	currentTaskCount = k_getListCount(&(g_schedulers[task->apicId].readyLists[priority]));
-	
-	/**
-	  find scheduler with minimum task count out of schedulers whose task count is '2 or more' less than current task count.
-	  (task count is only from ready list with the same priority.)
-	*/
-	minTaskCount = TASK_MAXCOUNT;
-	minCoreIndex = task->apicId;
-	for (i = 0; i < coreCount; i++) {
-		if (i == task->apicId) {
-			continue;
-		}
-		
-		tempTaskCount = k_getListCount(&(g_schedulers[i].readyLists[priority]));
-		if ((tempTaskCount + 2 <= currentTaskCount) && (tempTaskCount < minTaskCount)) {
-			minCoreIndex = i;
-			minTaskCount = tempTaskCount;
-		}
-	}
-	
-	return minCoreIndex;
-}
-
 void k_setTaskLoadBalancing(byte apicId, bool loadBalancing) {
 	g_schedulers[apicId].loadBalancing = loadBalancing;
-}
-
-bool k_changeTaskAffinity(qword taskId, byte affinity) {
-	Task* target;
-	byte apicId;
-	
-	if (k_findSchedulerByTaskWithLock(taskId, &apicId) == false) {
-		return false;
-	}
-	
-	target = g_schedulers[apicId].runningTask;
-	
-	// If it's a running task, only change affinity.
-	// It's because the task will move to scheduler with the changed affinity, when timer interrupt (IRQ 0) causes task switching.
-	if (target->link.id == taskId) {
-		target->affinity = affinity;
-		k_unlockSpin(&(g_schedulers[apicId].spinlock));
-		
-	// If it's not a running task, remove it from ready list, change affinity, and move it to scheduler with the changed affinity.
-	} else {
-		target = k_removeTaskFromReadyList(apicId, taskId);
-		
-		// If the task dosen't exist in ready list, change affinity in searching it from task pool.
-		if (target == null) {
-			target = k_getTaskFromPool(GETTASKOFFSET(taskId));
-			if (target != null) {
-				target->affinity = affinity;
-			}
-			
-		// If the task exists in ready list, change affinity.
-		} else {
-			target->affinity = affinity;
-		}
-		
-		k_unlockSpin(&(g_schedulers[apicId].spinlock));
-		
-		// move the task to scheduler with the changed affinity.
-		k_addTaskToSchedulerWithLoadBalancing(target);
-	}
-	
-	return true;
 }
 
 void k_idleTask(void) {

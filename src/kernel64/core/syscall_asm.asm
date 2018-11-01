@@ -61,7 +61,7 @@ k_syscallTestTask:
 	mov rsi, 0x00               ; parameter table : null (0x00)
 	syscall
 
-	mov rdi, 304   ; syscall number  : SYSCALL_EXIT (304)
+	mov rdi, 305   ; syscall number  : SYSCALL_EXIT (305)
 	mov rsi, 0x00 ; parameter table : null (0x00)
 	syscall
 	jmp $
