@@ -97,6 +97,11 @@ static void k_startTaskLoadBalancing(const char* paramBuffer);
 static void k_startMultiprocessorMode(const char* paramBuffer);
 static void k_testScreenUpdatePerformance(const char* paramBuffer);
 static void k_testSyscall(const char* paramBuffer);
+static void k_testWaitTask(const char* paramBuffer);
+static void k_testBlockingQueue(void);
+static void k_blockingTask(void);
+static void k_testNonblockingQueue(void);
+static void k_nonblockingTask(void);
 #endif // __DEBUG__
 
 #endif // __CORE_SHELL_H__

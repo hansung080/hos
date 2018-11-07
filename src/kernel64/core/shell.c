@@ -23,6 +23,7 @@
 #include "window_manager.h"
 #include "syscall.h"
 #include "loader.h"
+#include "../utils/queue.h"
 
 static ShellCommandEntry g_commandTable[] = {
 		{"help", "show help", k_help},
@@ -78,6 +79,7 @@ static ShellCommandEntry g_commandTable[] = {
 		{"stmp", "start multiprocessor or multi-core processor mode", k_startMultiprocessorMode},
 		{"testsup", "test screen update performance, usage) testsup <option>", k_testScreenUpdatePerformance},
 		{"testsc", "test system call", k_testSyscall},
+		{"testwait", "test wait task, usage) testwait <option> <taskId>", k_testWaitTask},
 		#endif // __DEBUG__
 };
 
@@ -189,7 +191,7 @@ void k_executeCommand(const char* commandBuffer) {
 		}
 	}
 	
-	// print error if the command dosen't exist in the command table.
+	// print error if the command doesn't exist in the command table.
 	if (i >= count) {
 		char command[spaceIndex + 1];
 		k_memset(command, 0, spaceIndex + 1);
@@ -468,7 +470,7 @@ static void k_showTaskStatus(const char* paramBuffer) {
 	}
 	
 	/* print task info */
-	k_printf("No  TID  PPID  Child  S  P/T  G  Priority  MemAddr  MemSize  Affinity  Core\n");
+	k_printf("No  TID  PPID  Child  Flags  Priority  MemAddr  MemSize  Affinity  Core\n");
 	
 	for (i = 0; i < TASK_MAXCOUNT; i++) {
 		task = k_getTaskFromPool(i);
@@ -487,15 +489,19 @@ static void k_showTaskStatus(const char* paramBuffer) {
 				k_printf("\n");
 			}
 			
-			k_printf("%d> 0x%q  0x%q  %d  %s  %s%s  %s  %d  0x%q  0x%q  %d  %d\n"
+			k_printf("%d> 0x%q  0x%q  %d  %s%s%s%s%s%s%s%s  %d  0x%q  0x%q  %d  %d\n"
 					,1 + count++
 					,task->link.id
 					,task->parentProcessId
 					,k_getListCount(&(task->childThreadList))
-					,(task->flags & TASK_FLAGS_SYSTEM) ? "S" : "-"
+					,(task->flags & TASK_FLAGS_WAIT) ? "W" : ""
+					,(task->flags & TASK_FLAGS_END) ? "E" : ""
+					,(task->flags & TASK_FLAGS_SYSTEM) ? "S" : ""
 					,(task->flags & TASK_FLAGS_PROCESS) ? "P" : ""
 					,(task->flags & TASK_FLAGS_THREAD) ? "T" : ""
-					,(task->flags & TASK_FLAGS_GUI) ? "G" : "-"
+					,(task->flags & TASK_FLAGS_IDLE) ? "I" : ""
+					,(task->flags & TASK_FLAGS_GUI) ? "G" : ""
+					,(task->flags & TASK_FLAGS_USER) ? "U" : ""
 					,GETTASKPRIORITY(task->flags)
 					,task->memAddr
 					,task->memSize
@@ -655,7 +661,7 @@ static void k_showCpuLoad(const char* paramBuffer) {
 static void k_showMatrix(const char* paramBuffer) {
 	Task* process;
 	
-	process = k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void*)0xE00000, 0xE00000, (qword)k_matrixProcess, TASK_AFFINITY_LOADBALANCING);
+	process = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_PROCESS, (void*)0xE00000, 0xE00000, (qword)k_matrixProcess, TASK_AFFINITY_LOADBALANCING);
 	if (process != null) {
 		k_printf("Matrix process creation success: 0x%q\n", process->link.id);
 		
@@ -673,7 +679,7 @@ static void k_matrixProcess(void) {
 	int i;
 	
 	for (i = 0; i < 300; i++) {
-		if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_charDropThread, TASK_AFFINITY_LOADBALANCING) == null) {
+		if (k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_charDropThread, TASK_AFFINITY_LOADBALANCING) == null) {
 			break;
 		}
 		
@@ -1207,7 +1213,7 @@ static void k_downloadFile(const char* paramBuffer) {
 			
 			lastReceivedTickCount = k_getTickCount();
 			
-		// If the receive data dosen't exist, wait for a while.
+		// If the receive data doesn't exist, wait for a while.
 		} else {
 			k_sleep(0);
 			
@@ -1685,7 +1691,7 @@ static void k_createTestTask(const char* paramBuffer) {
 	switch (type) {
 	case 1: // test-task-1: border character
 		for (i = 0; i < count; i++) {
-			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask1, TASK_AFFINITY_LOADBALANCING) == null) {
+			if (k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask1, TASK_AFFINITY_LOADBALANCING) == null) {
 				break;
 			}
 			
@@ -1697,7 +1703,7 @@ static void k_createTestTask(const char* paramBuffer) {
 		
 	case 2: // test-task-2: rotating pinwheel
 		for (i = 0; i < count; i++) {
-			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask2, TASK_AFFINITY_LOADBALANCING) == null) {
+			if (k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask2, TASK_AFFINITY_LOADBALANCING) == null) {
 				break;
 			}
 			
@@ -1709,7 +1715,7 @@ static void k_createTestTask(const char* paramBuffer) {
 		
 	case 3: // test-task-3: core checker
 		for (i = 0; i < count; i++) {
-			if (k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask3, TASK_AFFINITY_LOADBALANCING) == null) {
+			if (k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask3, TASK_AFFINITY_LOADBALANCING) == null) {
 				break;
 			}
 			
@@ -1847,7 +1853,7 @@ static void k_testMutex(const char* paramBuffer) {
 	
 	// create 3 tasks for mutex test.
 	for (i = 0; i < 3; i++) {
-		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_numberPrintTask, k_getApicId());
+		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_numberPrintTask, k_getApicId());
 	}
 	
 	k_printf("wait for the mutex test until %d tasks end.\n", i);
@@ -1892,7 +1898,7 @@ static void k_testThread(const char* paramBuffer) {
 	Task* process;
 	
 	// create 1 process and 3 threads.
-	process = k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void*)0xEEEEEEEE, 0x1000, (qword)k_threadCreationTask, TASK_AFFINITY_LOADBALANCING);
+	process = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_PROCESS, (void*)0xEEEEEEEE, 0x1000, (qword)k_threadCreationTask, TASK_AFFINITY_LOADBALANCING);
 	
 	if (process != null) {
 		k_printf("thread test success: 1 process (0x%q) and 3 threads have been created.\n", process->link.id);
@@ -1906,7 +1912,7 @@ static void k_threadCreationTask(void) {
 	int i;
 	
 	for (i = 0; i < 3; i++) {
-		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask2, TASK_AFFINITY_LOADBALANCING);
+		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask2, TASK_AFFINITY_LOADBALANCING);
 	}
 	
 	while (true) {
@@ -1926,7 +1932,7 @@ static void k_testPi(const char* paramBuffer) {
 	
 	// create 100 tasks for calculating float numbers (rotating pinwheels).
 	for (i = 0; i < 100; i++) {
-		k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_fpuTestTask, TASK_AFFINITY_LOADBALANCING);
+		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_fpuTestTask, TASK_AFFINITY_LOADBALANCING);
 	}
 }
 
@@ -2069,7 +2075,7 @@ static void k_testRandomAlloc(void) {
 	k_printf("*** Dynamic Memory Random Allocation Test ***\n");
 	
 	for (i = 0; i < 1000; i++) {
-		k_createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD, null, 0, (qword)k_randomAllocTask, TASK_AFFINITY_LOADBALANCING);
+		k_createTask(TASK_PRIORITY_LOWEST | TASK_FLAGS_THREAD, null, 0, (qword)k_randomAllocTask, TASK_AFFINITY_LOADBALANCING);
 	}
 }
 
@@ -2333,7 +2339,7 @@ static void k_testFileIo(const char* paramBuffer) {
 	//----------------------------------------------------------------------------------------------------
 	k_printf("1> file opening failure test..................................");
 	
-	// Read mode (r) dosen't create file and return null when the file dosen't exist.
+	// Read mode (r) doesn't create file and return null when the file doesn't exist.
 	file = fopen("testfile.tmp", "r");
 	if (file == null) {
 		k_printf("pass\n");
@@ -2348,7 +2354,7 @@ static void k_testFileIo(const char* paramBuffer) {
 	//----------------------------------------------------------------------------------------------------
 	k_printf("2> file creation test..........................................");
 	
-	// Write mode (w) create file and return file handle when the file dosen't exist.
+	// Write mode (w) create file and return file handle when the file doesn't exist.
 	file = fopen("testfile.tmp", "w");
 	if (file != null) {
 		k_printf("pass\n");
@@ -2810,6 +2816,189 @@ static void k_testSyscall(const char* paramBuffer) {
 	k_memcpy(taskMem, k_syscallTestTask, 0x1000);
 
 	k_createTask(TASK_FLAGS_PROCESS | TASK_FLAGS_USER, taskMem, 0x1000, (qword)taskMem, TASK_AFFINITY_LOADBALANCING);
+}
+
+static void k_testWaitTask(const char* paramBuffer) {
+	ParamList list;
+	char option[SHELL_MAXPARAMETERLENGTH] = {'\0', };
+	char taskId_[SHELL_MAXPARAMETERLENGTH] = {'\0', };
+	qword taskId;
+
+	// initialize parameter.
+	k_initParam(&list, paramBuffer);
+
+	// get No.1 parameter: option
+	if ((k_getNextParam(&list, option) <= 0) || 
+		(k_equalStr(option, "-w") == false && 
+		 k_equalStr(option, "-n") == false && 
+		 k_equalStr(option, "-i") == false &&
+		 k_equalStr(option, "-b") == false &&
+		 k_equalStr(option, "-nb") == false)) {
+		k_printf("Usage) testwait <option> <taskId>\n");
+		k_printf("  - option: -w (wait)\n");
+		k_printf("  - option: -n (notify)\n");
+		k_printf("  - option: -i (info)\n");
+		k_printf("  - option: -b (blocking test)\n");
+		k_printf("  - option: -nb (non-blocking test)\n");
+		k_printf("  - example: testsup -w 0x300000002\n");
+		k_printf("  - example: testsup -n 0x300000002\n");
+		k_printf("  - example: testsup -i\n");
+		k_printf("  - example: testsup -b\n");
+		k_printf("  - example: testsup -nb\n");
+		return;
+	}
+
+	if (k_equalStr(option, "-w") == true || k_equalStr(option, "-n") == true) {
+		// get No.2 parameter: taskId
+		if (k_getNextParam(&list, taskId_) <= 0) {
+			k_printf("Usage) testwait <option> <taskId>\n");
+			k_printf("  - option: -w (wait)\n");
+			k_printf("  - option: -n (notify)\n");
+			k_printf("  - option: -i (info)\n");
+			k_printf("  - option: -b (blocking test)\n");
+			k_printf("  - option: -nb (non-blocking test)\n");
+			k_printf("  - example: testsup -w 0x300000002\n");
+			k_printf("  - example: testsup -n 0x300000002\n");
+			k_printf("  - example: testsup -i\n");
+			k_printf("  - example: testsup -b\n");
+			k_printf("  - example: testsup -nb\n");
+			return;
+		}
+
+		if (k_memcmp(taskId_, "0x", 2) == 0) {
+			taskId = k_atol16(taskId_ + 2);
+
+		} else {
+			taskId = k_atol10(taskId_);
+		}
+	}
+
+	if (k_equalStr(option, "-w") == true) {
+		k_waitTask(taskId);
+
+	} else if (k_equalStr(option, "-n") == true) {
+		k_notifyTask(taskId);
+
+	} else if (k_equalStr(option, "-i") == true) {
+		k_printWaitTaskInfo();
+
+	} else if (k_equalStr(option, "-b") == true) {
+		k_testBlockingQueue();
+
+	} else if (k_equalStr(option, "-nb") == true) {
+		k_testNonblockingQueue();
+	}
+}
+
+#define MAXWAITQUEUECOUNT 100
+
+static Mutex g_waitMutex;
+static Queue g_waitQueue;
+static int g_waitQueueBuffer[MAXWAITQUEUECOUNT];
+
+static void k_testBlockingQueue(void) {
+	int i;
+	int data;
+
+	k_initMutex(&g_waitMutex);
+	k_initQueue(&g_waitQueue, g_waitQueueBuffer, sizeof(int), MAXWAITQUEUECOUNT);
+
+	for (i = 0; i < 3; i++) {
+		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_blockingTask, TASK_AFFINITY_LOADBALANCING);
+	}
+
+	for (i = 0; i < 10; i++) {
+		k_sleep(1000); // sleep 1 second.
+		data = i + 1;
+		k_lock(&g_waitMutex);
+		k_putQueueBlocking(&g_waitQueue, &data);
+		k_unlock(&g_waitMutex);
+	}
+
+	data = 0x7FFFFFFF;
+
+	k_lock(&g_waitMutex);
+	for (i = 0; i < 3; i++) {
+		k_putQueueBlocking(&g_waitQueue, &data);
+	}
+	k_unlock(&g_waitMutex);
+}
+
+static void k_blockingTask(void) {
+	Task* task;
+	int data;
+
+	task = k_getRunningTask(k_getApicId());
+
+	while (true) {
+		k_lock(&g_waitMutex);
+
+		if (k_getQueueBlocking(&g_waitQueue, &data, &g_waitMutex) == true) {
+			k_unlock(&g_waitMutex);
+			k_printf("[blocking got data] core %d, task 0x%q, data: %d\n", task->apicId, task->link.id, data);
+
+		} else {
+			k_unlock(&g_waitMutex);
+			k_printf("[blocking no data]  core %d, task 0x%q, data: %d\n", task->apicId, task->link.id, 0);
+		}
+
+		if (data == 0x7FFFFFFF) {
+			break;
+		}
+	}
+}
+
+static void k_testNonblockingQueue(void) {
+	int i;
+	int data;
+
+	k_initMutex(&g_waitMutex);
+	k_initQueue(&g_waitQueue, g_waitQueueBuffer, sizeof(int), MAXWAITQUEUECOUNT);
+
+	for (i = 0; i < 3; i++) {
+		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_nonblockingTask, TASK_AFFINITY_LOADBALANCING);
+	}
+
+	for (i = 0; i < 10; i++) {
+		k_sleep(1000); // sleep 1 second.
+		data = i + 1;
+		k_lock(&g_waitMutex);
+		k_putQueue(&g_waitQueue, &data);
+		k_unlock(&g_waitMutex);
+	}
+
+	data = 0x7FFFFFFF;
+
+	k_lock(&g_waitMutex);
+	for (i = 0; i < 3; i++) {
+		k_putQueue(&g_waitQueue, &data);
+	}
+	k_unlock(&g_waitMutex);
+}
+
+static void k_nonblockingTask(void) {
+	Task* task;
+	int data;
+
+	task = k_getRunningTask(k_getApicId());
+
+	while (true) {
+		k_lock(&g_waitMutex);
+
+		if (k_getQueue(&g_waitQueue, &data) == true) {
+			k_unlock(&g_waitMutex);
+			k_printf("[blocking got data] core %d, task 0x%q, data: %d\n", task->apicId, task->link.id, data);
+
+		} else {
+			k_unlock(&g_waitMutex);
+			k_printf("[blocking no data]  core %d, task 0x%q, data: %d\n", task->apicId, task->link.id, 0);
+			k_sleep(250);
+		}
+
+		if (data == 0x7FFFFFFF) {
+			break;
+		}
+	}
 }
 
 #endif // __DEBUG__

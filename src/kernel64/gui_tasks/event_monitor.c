@@ -67,9 +67,12 @@ void k_eventMonitorTask(void) {
 	/* event processing loop */
 	while (true) {
 		if (k_recvEventFromWindow(&event, windowId) == false) {
-			k_sleep(0);
+			k_printf("[khs test] event false\n"); // KHS
+			k_sleep(0); // KHS
 			continue;
 		}
+
+		k_printf("[khs test] event true\n"); // KHS
 
 		// clear previous event info.
 		k_drawRect(windowId, 11, y + 20, windowWidth - 11, y + 69, WINDOW_COLOR_BACKGROUND, true);

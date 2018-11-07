@@ -455,7 +455,7 @@ bool k_convertScanCodeAndPutQueue(byte scanCode) {
 		k_lockSpin(&(g_keyboardManager.spinlock));
 		
 		// put data to key queue.
-		result = k_putQueue(&g_keyQueue, &key);
+		result = k_putQueueBlocking(&g_keyQueue, &key);
 		
 		k_unlockSpin(&(g_keyboardManager.spinlock));
 	}
@@ -465,15 +465,11 @@ bool k_convertScanCodeAndPutQueue(byte scanCode) {
 
 bool k_getKeyFromKeyQueue(Key* key) {
 	bool result = false;
-	
-	if (k_isQueueEmpty(&g_keyQueue) == true) {
-		return false;
-	}
-	
+		
 	k_lockSpin(&(g_keyboardManager.spinlock));
 	
 	// get data from key queue.
-	result = k_getQueue(&g_keyQueue, key);
+	result = k_getQueueBlocking(&g_keyQueue, key, &(g_keyboardManager.spinlock));
 	
 	k_unlockSpin(&(g_keyboardManager.spinlock));
 	

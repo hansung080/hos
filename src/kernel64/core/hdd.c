@@ -173,7 +173,7 @@ bool k_readHddInfo(bool primary, bool master, HddInfo* hddInfo) {
 	// wait until command processing finishes and interrupt occurs, or limit time expires
 	waitResult = k_waitHddInterrupt(primary);
 	
-	// If interrupt dosen't occur or error occurs in processing, return
+	// If interrupt doesn't occur or error occurs in processing, return
 	status = k_readHddStatus(primary);
 	if ((waitResult == false) || ((status & HDD_STATUS_ERROR) == HDD_STATUS_ERROR)) {
 		k_unlock(&(g_hddManager.mutex));
@@ -300,7 +300,7 @@ int k_readHddSector(bool primary, bool master, dword lba, int sectorCount, char*
 			
 			k_setHddInterruptFlag(primary, false);
 			
-			// If interrupt dosen't occurs, return.
+			// If interrupt doesn't occurs, return.
 			if (waitResult == false) {
 				k_printf("HDD error: Interrupt has not occured while reading HDD sector.\n");
 				k_unlock(&(g_hddManager.mutex));
@@ -433,7 +433,7 @@ int k_writeHddSector(bool primary, bool master, dword lba, int sectorCount, char
 			
 			k_setHddInterruptFlag(primary, false);
 			
-			// If interrupt dosen't occur, return.
+			// If interrupt doesn't occur, return.
 			if (waitResult == false) {
 				k_printf("HDD error: Interrupt has not occured while writing HDD sector.\n");
 				k_unlock(&(g_hddManager.mutex));

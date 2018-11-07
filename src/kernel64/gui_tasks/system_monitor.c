@@ -65,6 +65,7 @@ void k_systemMonitorTask(void) {
 
 	/* event processing loop */
 	while (true) {
+		// KHS create task
 		if (k_recvEventFromWindow(&event, windowId) == true) {
 			switch (event.type) {
 			case EVENT_WINDOW_CLOSE:

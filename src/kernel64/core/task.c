@@ -11,6 +11,7 @@
 
 static TaskPoolManager g_taskPoolManager;
 static Scheduler g_schedulers[MAXPROCESSORCOUNT];
+static CommonScheduler g_commonScheduler;
 
 static void k_initTaskPool(void) {
 	int i;
@@ -177,6 +178,7 @@ Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAd
 	task->fpuUsed = false;
 	task->apicId = currentApicId;
 	task->affinity = affinity;
+	task->waitGroupId = 0;
 	
 	// add task to scheduler with load balancing.
 	k_addTaskToSchedulerWithLoadBalancing(task);
@@ -269,15 +271,16 @@ void k_initScheduler(void) {
 	// They must not move to another core. Thus, their affinity is set to current APIC ID.
 	task->apicId = currentApicId;
 	task->affinity = currentApicId;
+	task->waitGroupId = 0;
 	
-	// If current core is BSP, the booting task will become the shell task.
+	// If current core is BSP, the booting task will become the shell task in text mode or the window manager task in graphic mode.
 	// (The idle task of BSP will be created in k_main function.)
 	if (currentApicId == APICID_BSP) {
-		task->flags = TASK_FLAGS_HIGHEST | TASK_FLAGS_PROCESS | TASK_FLAGS_SYSTEM;
+		task->flags = TASK_PRIORITY_HIGHEST | TASK_FLAGS_SYSTEM | TASK_FLAGS_PROCESS;
 		
 	// If current core is AP, the booting task will become the idle task.
 	} else {
-		task->flags = TASK_FLAGS_LOWEST | TASK_FLAGS_PROCESS | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE;
+		task->flags = TASK_PRIORITY_LOWEST | TASK_FLAGS_SYSTEM | TASK_FLAGS_PROCESS | TASK_FLAGS_IDLE;
 	}
 	
 	// set task itself ID to parent process ID, because the first task of kernel does not have parent process.
@@ -354,7 +357,11 @@ static bool k_addTaskToReadyList(byte apicId, Task* task) {
 	byte priority;
 	
 	priority = GETTASKPRIORITY(task->flags);
-	if (priority == TASK_FLAGS_ENDPRIORITY) {
+	if (task->flags & TASK_FLAGS_WAIT) {
+		k_addTaskToWaitList(task);
+		return true;
+
+	} else if (task->flags & TASK_FLAGS_END) {
 		k_addListToTail(&(g_schedulers[apicId].endList), task);
 		return true;
 		
@@ -518,6 +525,26 @@ static void k_addTaskToSchedulerWithLoadBalancing(Task* task) {
 	k_unlockSpin(&(g_schedulers[targetApicId].spinlock));
 }
 
+static void k_addTaskToWaitList(Task* task) {
+	k_lockSpin(&g_commonScheduler.spinlock);
+
+	k_addListToTail(&g_commonScheduler.waitList, task);
+
+	k_unlockSpin(&g_commonScheduler.spinlock);
+}
+
+static Task* k_removeTaskFromWaitList(qword taskId) {
+	Task* task;
+
+	k_lockSpin(&g_commonScheduler.spinlock);
+
+	task = k_removeListById(&g_commonScheduler.waitList, taskId);
+
+	k_unlockSpin(&g_commonScheduler.spinlock);
+
+	return task;
+}
+
 /**
   < Context Switching >
   [REF] - interrupt switching: context switching between task and interrupt handler.
@@ -659,14 +686,22 @@ bool k_schedule(void) {
 	  - restore context: next task -> registers (by k_switchContext)
 	 */
 	
-	// If it's switched from end task, move end task to end list, switch task.
-	if (runningTask->flags & TASK_FLAGS_END) {
+	// If it's switched from wait task, move the task to wait list, and switch context.
+	if (runningTask->flags & TASK_FLAGS_WAIT) {
+		k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
+		k_addTaskToWaitList(runningTask);
+		// save running task context from registers to task pool,
+		// and restore next task context from task pool to registers.
+		k_switchContext(&(runningTask->context), &(nextTask->context));
+
+	// If it's switched from end task, move the task to end list, and switch context.
+	} else if (runningTask->flags & TASK_FLAGS_END) {
 		k_addListToTail(&(g_schedulers[currentApicId].endList), runningTask);
 		k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
 		// restore next task context from task pool to registers.
 		k_switchContext(null, &(nextTask->context));
 		
-	// If it's switched from normal task, move normal task to ready list, switch task.
+	// If it's switched from normal task, move the task to ready list, and switch context.
 	} else {
 		k_addTaskToReadyList(currentApicId, runningTask);
 		k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
@@ -717,11 +752,17 @@ bool k_scheduleInInterrupt(void) {
 	  - restore context: next task -> IST (by k_memcpy) -> registers (by processor and ISR)
 	 */
 	
-	// If it's switched from end task, move end task to end list, switch task.
-	if (runningTask->flags & TASK_FLAGS_END) {
+	// If it's switched from wait task, move the task to wait list, and switch context.
+	if (runningTask->flags & TASK_FLAGS_WAIT) {
+		// save running task context from IST to task pool.
+		k_memcpy(&(runningTask->context), contextAddr, sizeof(Context));
+		k_addTaskToWaitList(runningTask);
+
+	// If it's switched from end task, move the task to end list, and switch context.
+	} else if (runningTask->flags & TASK_FLAGS_END) {
 		k_addListToTail(&(g_schedulers[currentApicId].endList), runningTask);
 		
-	// If it's switched from normal task, move normal task to ready list, switch task.
+	// If it's switched from normal task, move the task to ready list, and switch context.
 	} else {
 		// save running task context from IST to task pool.
 		k_memcpy(&(runningTask->context), contextAddr, sizeof(Context));
@@ -740,7 +781,8 @@ bool k_scheduleInInterrupt(void) {
 	// restore next task context from task pool to IST.
 	k_memcpy(contextAddr, &(nextTask->context), sizeof(Context));
 	
-	if ((runningTask->flags & TASK_FLAGS_END) != TASK_FLAGS_END) {
+	if (((runningTask->flags & TASK_FLAGS_WAIT) != TASK_FLAGS_WAIT) && 
+		((runningTask->flags & TASK_FLAGS_END) != TASK_FLAGS_END)) {
 		k_addTaskToSchedulerWithLoadBalancing(runningTask);
 	}
 	
@@ -763,8 +805,8 @@ bool k_isProcessorTimeExpired(byte apicId) {
 }
 
 bool k_changeTaskPriority(qword taskId, byte priority) {
-	Task* target;
 	byte apicId;
+	Task* target;
 	
 	if (priority >= TASK_MAXREADYLISTCOUNT) {
 		return false;
@@ -785,7 +827,7 @@ bool k_changeTaskPriority(qword taskId, byte priority) {
 	} else {
 		target = k_removeTaskFromReadyList(apicId, taskId);
 		
-		// If the task dosen't exist in ready list, change priority in searching it from task pool.
+		// If the task doesn't exist in ready list, change priority from task pool.
 		if (target == null) {
 			target = k_getTaskFromPool(GETTASKOFFSET(taskId));
 			if (target != null) {
@@ -805,8 +847,8 @@ bool k_changeTaskPriority(qword taskId, byte priority) {
 }
 
 bool k_changeTaskAffinity(qword taskId, byte affinity) {
-	Task* target;
 	byte apicId;
+	Task* target;
 	
 	if (k_findSchedulerByTaskWithLock(taskId, &apicId) == false) {
 		return false;
@@ -824,7 +866,7 @@ bool k_changeTaskAffinity(qword taskId, byte affinity) {
 	} else {
 		target = k_removeTaskFromReadyList(apicId, taskId);
 		
-		// If the task dosen't exist in ready list, change affinity in searching it from task pool.
+		// If the task doesn't exist in ready list, change affinity from task pool.
 		if (target == null) {
 			target = k_getTaskFromPool(GETTASKOFFSET(taskId));
 			if (target != null) {
@@ -845,9 +887,171 @@ bool k_changeTaskAffinity(qword taskId, byte affinity) {
 	return true;
 }
 
+bool k_waitTask(qword taskId) {
+	byte apicId;
+	Task* target;
+
+	if (k_findSchedulerByTaskWithLock(taskId, &apicId) == false) {
+		return false;
+	}
+	
+	target = g_schedulers[apicId].runningTask;
+	
+	// If it's a running task, set wait task flag, and switch task.
+	if (target->link.id == taskId) {
+		target->flags |= TASK_FLAGS_WAIT;
+		k_unlockSpin(&(g_schedulers[apicId].spinlock));
+		
+		// check if the task is running in current scheduler.
+		if (k_getApicId() == apicId) {
+			// switch task.
+			k_schedule();			
+		}
+		
+		return true;
+	}
+	
+	// If it's not a running task, remove it from ready list, set wait task flag, move it to wait list.
+	target = k_removeTaskFromReadyList(apicId, taskId);
+	if (target == null) {
+		target = k_getTaskFromPool(GETTASKOFFSET(taskId));
+		if (target != null) {
+			target->flags |= TASK_FLAGS_WAIT;
+		}
+		
+		k_unlockSpin(&(g_schedulers[apicId].spinlock));
+
+		return true;
+	}
+	
+	target->flags |= TASK_FLAGS_WAIT;
+	k_unlockSpin(&(g_schedulers[apicId].spinlock));
+	k_addTaskToWaitList(target);
+	
+	return true;
+}
+
+bool k_waitGroup(qword groupId, void* lock) {
+	Task* target;
+	bool result;
+
+	target = k_getRunningTask(k_getApicId());
+	target->waitGroupId = groupId;
+
+	if (lock != null) {
+		k_unlockAny(lock);
+	}		
+
+	result = k_waitTask(target->link.id);
+
+	if (lock != null) {
+		k_lockAny(lock);
+	}
+
+	return result;
+}
+
+bool k_notifyTask(qword taskId) {
+	byte apicId;
+	Task* target;
+
+	if (k_findSchedulerByTaskWithLock(taskId, &apicId) == false) {
+		return false;
+	}
+	
+	target = g_schedulers[apicId].runningTask;
+	
+	// If it's a running task, clear wait task flag.
+	if (target->link.id == taskId) {
+		target->flags &= ~TASK_FLAGS_WAIT;
+		k_unlockSpin(&(g_schedulers[apicId].spinlock));
+
+		return true;
+	}
+	
+	// If it's not a running task, remove it from wait list, clear wait task flag, move it to ready list.
+	target = k_removeTaskFromWaitList(taskId);
+	if (target == null) {
+		target = k_getTaskFromPool(GETTASKOFFSET(taskId));
+		if (target != null) {
+			target->flags &= ~TASK_FLAGS_WAIT;
+		}
+		
+		k_unlockSpin(&(g_schedulers[apicId].spinlock));
+		
+		return true;
+	}
+	
+	target->flags &= ~TASK_FLAGS_WAIT;
+	k_addTaskToReadyList(apicId, target);
+	k_unlockSpin(&(g_schedulers[apicId].spinlock));
+	
+	return true;
+}
+
+bool k_notifyOneInGroup(qword groupId) {
+	Task* task;
+	bool result = false;
+
+	k_lockSpin(&g_commonScheduler.spinlock);
+
+	task = k_getHeadFromList(&g_commonScheduler.waitList);
+	while (task != null) {
+		if (task->waitGroupId == groupId) {
+			result = k_notifyTask(task->link.id);
+			break;
+		}
+
+		task = k_getNextFromList(&g_commonScheduler.waitList, task);
+	} 
+
+	k_unlockSpin(&g_commonScheduler.spinlock);
+
+	return result;
+}
+
+bool k_notifyAllInGroup(qword groupId) {
+	Task* task;
+	bool result = false;
+
+	k_lockSpin(&g_commonScheduler.spinlock);
+
+	task = k_getHeadFromList(&g_commonScheduler.waitList);
+	while (task != null) {
+		if (task->waitGroupId == groupId) {
+			result = k_notifyTask(task->link.id);
+		}
+
+		task = k_getNextFromList(&g_commonScheduler.waitList, task);
+	} 
+
+	k_unlockSpin(&g_commonScheduler.spinlock);
+
+	return result;
+}
+
+void k_printWaitTaskInfo(void) {
+	Task* task;
+	int count = 0;
+	
+	k_printf("*** Wait Task Info ***\n");
+
+	k_lockSpin(&g_commonScheduler.spinlock);
+
+	task = k_getHeadFromList(&g_commonScheduler.waitList);
+	while (task != null) {
+		count++;
+		k_printf("[wait task %d] core %d, task 0x%q, group 0x%q\n", count, task->apicId, task->link.id, task->waitGroupId);
+		task = k_getNextFromList(&g_commonScheduler.waitList, task);
+	}
+
+	k_unlockSpin(&g_commonScheduler.spinlock);
+
+	k_printf("-> wait task count: %d\n", count);
+}
+
 bool k_endTask(qword taskId) {
 	Task* target;
-	byte priority;
 	byte apicId;
 
 	if (k_findSchedulerByTaskWithLock(taskId, &apicId) == false) {
@@ -856,19 +1060,18 @@ bool k_endTask(qword taskId) {
 	
 	target = g_schedulers[apicId].runningTask;
 	
-	// If it's a running task, set end task flag, and switch task
+	// If it's a running task, set end task flag, and switch task.
 	if (target->link.id == taskId) {
-		target->flags |= TASK_FLAGS_END;
-		SETTASKPRIORITY(target->flags, TASK_FLAGS_ENDPRIORITY);
-		
+		target->flags |= TASK_FLAGS_END;		
 		k_unlockSpin(&(g_schedulers[apicId].spinlock));
 		
-		// process below only If task is running in current scheduler.
+		// check if the task is running in current scheduler.
 		if (k_getApicId() == apicId) {
-			// switch task
+			// switch task.
 			k_schedule();
 			
-			// This code below will be never executed, because task switching has already done before.
+			// This infinite loop will be never executed, 
+			// because task switching has already done before and the task will be never running again.
 			while (true) {
 				;
 			}
@@ -877,13 +1080,16 @@ bool k_endTask(qword taskId) {
 		return true;
 	}
 	
-	// If it's not a running task, remove it from ready list, set end task flag, move it to end list.
+	// If it's not a running task, remove it from ready list or wait list, set end task flag, move it to end list.
 	target = k_removeTaskFromReadyList(apicId, taskId);
+	if (target == null) {
+		target = k_removeTaskFromWaitList(taskId);
+	}
+
 	if (target == null) {
 		target = k_getTaskFromPool(GETTASKOFFSET(taskId));
 		if (target != null) {
 			target->flags |= TASK_FLAGS_END;
-			SETTASKPRIORITY(target->flags, TASK_FLAGS_ENDPRIORITY);
 		}
 		
 		k_unlockSpin(&(g_schedulers[apicId].spinlock));
@@ -892,16 +1098,14 @@ bool k_endTask(qword taskId) {
 	}
 	
 	target->flags |= TASK_FLAGS_END;
-	SETTASKPRIORITY(target->flags, TASK_FLAGS_ENDPRIORITY);
 	k_addListToTail(&(g_schedulers[apicId].endList), target);
-	
 	k_unlockSpin(&(g_schedulers[apicId].spinlock));
 	
 	return true;
 }
 
 void k_exitTask(void) {
-	k_endTask(g_schedulers[k_getApicId()].runningTask->link.id);
+	k_endTask(k_getRunningTask(k_getApicId())->link.id);
 }
 
 int k_getReadyTaskCount(byte apicId) {

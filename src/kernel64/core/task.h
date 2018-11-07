@@ -51,13 +51,11 @@
 #define TASK_MAXREADYLISTCOUNT 5
 
 // task priority (low 8 bits of task flags)
-#define TASK_FLAGS_HIGHEST      0x00 // highest
-#define TASK_FLAGS_HIGH         0x01 // high
-#define TASK_FLAGS_MEDIUM       0x02 // medium
-#define TASK_FLAGS_LOW          0x03 // low
-#define TASK_FLAGS_LOWEST       0x04 // lowest
-#define TASK_FLAGS_WAITPRIORITY 0xFE // wait task priority
-#define TASK_FLAGS_ENDPRIORITY  0xFF // end task priority
+#define TASK_PRIORITY_HIGHEST 0x00 // highest
+#define TASK_PRIORITY_HIGH    0x01 // high
+#define TASK_PRIORITY_MEDIUM  0x02 // medium
+#define TASK_PRIORITY_LOW     0x03 // low
+#define TASK_PRIORITY_LOWEST  0x04 // lowest
 
 // task flags
 #define TASK_FLAGS_WAIT    0x8000000000000000 // wait task flag
@@ -73,10 +71,10 @@
 #define TASK_AFFINITY_LOADBALANCING 0xFF // load balancing (no affinity)
 
 /* macro functions */
-#define GETTASKOFFSET(taskId)            ((taskId) & 0xFFFFFFFF)                                 // get low 32 bits of task.link.id (64 bits)
-#define GETTASKPRIORITY(flags)           ((flags) & 0xFF)                                        // get low 8 bits of task.flags(64 bits)
-#define SETTASKPRIORITY(flags, priority) ((flags) = ((flags) & 0xFFFFFFFFFFFFFF00) | (priority)) // set low 8 bits of task.flags(64 bits)
-#define GETTASKFROMTHREADLINK(x)         (Task*)((qword)(x) - offsetof(Task, threadLink))        // get task address using task.threadLink address
+#define GETTASKOFFSET(taskId)            ((taskId) & 0xFFFFFFFF)                                 // get task offset (low 32 bits) of task.link.id (64 bits).
+#define GETTASKPRIORITY(flags)           ((flags) & 0xFF)                                        // get task priority (low 8 bits) of task.flags(64 bits).
+#define SETTASKPRIORITY(flags, priority) ((flags) = ((flags) & 0xFFFFFFFFFFFFFF00) | (priority)) // set task priority (low 8 bits) of task.flags(64 bits).
+#define GETTASKFROMTHREADLINK(x)         (Task*)((qword)(x) - offsetof(Task, threadLink))        // get task address using task.threadLink address.
 
 #pragma pack(push, 1)
 
@@ -126,7 +124,8 @@ typedef struct k_Task {
 	bool fpuUsed;            // FPU used flag: It indicates whether the task has used FPU operation before.
 	byte apicId;             // APIC ID of core which task is running on
 	byte affinity;           // task-processor affinity: APIC ID of core which has affinity with task
-	char padding[9];         // padding bytes: According to Condition 2 of FPU context, align task size with the multiple of 16 bytes.
+	qword waitGroupId;       // wait group ID
+	char padding[1];         // padding bytes: According to Condition 2 of FPU context, align task size with the multiple of 16 bytes.
 } Task; // Task is ListItem, and current task size is 816 bytes.
 
 typedef struct k_TaskPoolManager {
@@ -150,6 +149,11 @@ typedef struct k_Scheduler {
 	bool loadBalancing;                         // task load balancing flag
 } Scheduler;
 
+typedef struct k_CommonScheduler {
+	Spinlock spinlock; // spinlock
+	List waitList;     // wait list: Tasks which are waiting to be ready are in the list.
+} CommonScheduler;
+
 #pragma pack(pop)
 
 /* Task Pool Functions */
@@ -172,14 +176,22 @@ static Task* k_getProcessByThread(Task* thread); // get process by thread: proce
 static bool k_findSchedulerByTaskWithLock(qword taskId, byte* apicId);
 static byte k_findSchedulerByMinTaskCount(const Task* task);
 static void k_addTaskToSchedulerWithLoadBalancing(Task* task);
+static void k_addTaskToWaitList(Task* task);
+static Task* k_removeTaskFromWaitList(qword taskId);
 bool k_schedule(void); // task switching in task.
 bool k_scheduleInInterrupt(void); // task switching in interrupt handler.
 void k_decreaseProcessorTime(byte apicId);
 bool k_isProcessorTimeExpired(byte apicId);
-bool k_changeTaskPriority(qword taskId, byte priority); // change task priority.
-bool k_changeTaskAffinity(qword taskId, byte affinity); // change task affinity.
-bool k_endTask(qword taskId); // end task.
-void k_exitTask(void); // end task by itself.
+bool k_changeTaskPriority(qword taskId, byte priority);
+bool k_changeTaskAffinity(qword taskId, byte affinity);
+bool k_waitTask(qword taskId);
+bool k_waitGroup(qword groupId, void* lock);
+bool k_notifyTask(qword taskId);
+bool k_notifyOneInGroup(qword groupId);
+bool k_notifyAllInGroup(qword groupId);
+void k_printWaitTaskInfo(void);
+bool k_endTask(qword taskId);
+void k_exitTask(void);
 int k_getReadyTaskCount(byte apicId); // get ready task count.
 int k_getTaskCount(byte apicId); // get total task count. (total task count = ready task count + wait task count + running task count)
 Task* k_getTaskFromPool(int offset);

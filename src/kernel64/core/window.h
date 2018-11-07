@@ -130,7 +130,7 @@
 #define EVENT_SCREENUPDATE_BYSCREENAREA 17 // ScreenUpdateEvent.area (screen coordinates)
 
 /* macro function */
-#define GETWINDOWOFFSET(windowId) ((windowId) & 0xFFFFFFFF) // get low 32 bits of window.link.id (64 bits)
+#define GETWINDOWOFFSET(windowId) ((windowId) & 0xFFFFFFFF) // get window offset (low 32 bits) of window.link.id (64 bits).
 
 #pragma pack(push, 1)
 

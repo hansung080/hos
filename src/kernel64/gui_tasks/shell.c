@@ -49,7 +49,7 @@ void k_guiShellTask(void) {
 	/* create shell task */
 	k_setShellExitFlag(false);
 
-	shellTask = k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_shellTask, TASK_AFFINITY_LOADBALANCING);
+	shellTask = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_shellTask, TASK_AFFINITY_LOADBALANCING);
 	if (shellTask == null) {
 		k_deleteWindow(g_guiShellWindowId);
 		return;
@@ -61,6 +61,7 @@ void k_guiShellTask(void) {
 	
 	/* event processing loop */
 	while (true) {
+		// KHS create task
 		k_processConsoleScreenBuffer(g_guiShellWindowId);
 
 		if (k_recvEventFromWindow(&event, g_guiShellWindowId) == false) {

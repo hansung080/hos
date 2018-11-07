@@ -297,6 +297,7 @@ bool k_deleteWindow(qword windowId) {
 	window->buffer = null;
 
 	/* free event buffer */
+	k_closeQueue(&window->eventQueue);
 	k_freeMem(window->eventBuffer);
 	window->eventBuffer = null;
 
@@ -1252,7 +1253,7 @@ bool k_sendEventToWindow(const Event* event, qword windowId) {
 		return false;
 	}
 
-	result = k_putQueue(&window->eventQueue, event);
+	result = k_putQueueBlocking(&window->eventQueue, event);
 
 	k_unlock(&window->mutex);
 
@@ -1268,7 +1269,7 @@ bool k_recvEventFromWindow(Event* event, qword windowId) {
 		return false;
 	}
 
-	result = k_getQueue(&window->eventQueue, event);
+	result = k_getQueueBlocking(&window->eventQueue, event, &window->mutex);
 
 	k_unlock(&window->mutex);
 
@@ -1278,13 +1279,9 @@ bool k_recvEventFromWindow(Event* event, qword windowId) {
 bool k_sendEventToWindowManager(const Event* event) {
 	bool result;
 
-	if (k_isQueueFull(&g_windowManager.eventQueue) == true) {
-		return false;
-	}
-
 	k_lock(&g_windowManager.mutex);
 
-	result = k_putQueue(&g_windowManager.eventQueue, event);
+	result = k_putQueueBlocking(&g_windowManager.eventQueue, event);
 
 	k_unlock(&g_windowManager.mutex);
 
@@ -1300,7 +1297,7 @@ bool k_recvEventFromWindowManager(Event* event) {
 
 	k_lock(&g_windowManager.mutex);
 
-	result = k_getQueue(&g_windowManager.eventQueue, event);
+	result = k_getQueueBlocking(&g_windowManager.eventQueue, event, &g_windowManager.mutex);
 
 	k_unlock(&g_windowManager.mutex);
 

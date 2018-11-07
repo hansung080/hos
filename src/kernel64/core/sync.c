@@ -15,6 +15,7 @@ void k_unlockSystem(bool interruptFlag) {
 #endif
 
 void k_initMutex(Mutex* mutex) {
+	mutex->type = LOCK_TYPE_MUTEX;
 	mutex->lockFlag = false;
 	mutex->lockCount = 0;
 	mutex->taskId = TASK_INVALIDID;
@@ -38,9 +39,9 @@ void k_lock(Mutex* mutex) {
 			return;
 		}
 		
-		// If it's locked by other tasks, wait until it will be unlocked.
+		// If it's locked by another task, wait until it will be unlocked.
 		while (k_testAndSet(&(mutex->lockFlag), false, true) == false) {
-			// hand processor over to other tasks while waiting in order to prevent unnecessary usage of processor.
+			// hand processor over to another task while waiting in order to prevent unnecessary usage of processor.
 			k_schedule();
 		}
 	}
@@ -58,7 +59,7 @@ void k_unlock(Mutex* mutex) {
 	// disable interrupt while returning a lock.
 	interruptFlag = k_setInterruptFlag(false);
 	
-	// If it's already unlocked or it's locked by other tasks, return.
+	// If it's already unlocked or it's locked by another task, return.
 	if ((mutex->lockFlag == false) || (mutex->taskId != k_getRunningTask(k_getApicId())->link.id)) {
 		k_setInterruptFlag(interruptFlag);
 		return;
@@ -80,6 +81,7 @@ void k_unlock(Mutex* mutex) {
 }
 
 void k_initSpinlock(Spinlock* spinlock) {
+	spinlock->type = LOCK_TYPE_SPINLOCK;
 	spinlock->lockFlag = false;
 	spinlock->lockCount = 0;
 	spinlock->apicId = APICID_INVALID;
@@ -100,7 +102,7 @@ void k_lockSpin(Spinlock* spinlock) {
 			return;
 		}
 		
-		// If it's locked by other tasks, wait until it will be unlocked.
+		// If it's locked by another task, wait until it will be unlocked.
 		while (k_testAndSet(&(spinlock->lockFlag), false, true) == false) {
 			/**
 			  Spinlock do not do task switching here, but do retrying to get lock.
@@ -153,3 +155,32 @@ void k_unlockSpin(Spinlock* spinlock) {
 	k_setInterruptFlag(interruptFlag);
 }
 
+void k_lockAny(void* lock) {
+	switch (*(byte*)lock) {
+	case LOCK_TYPE_MUTEX:
+		k_lock((Mutex*)lock);
+		break;
+
+	case LOCK_TYPE_SPINLOCK:
+		k_lockSpin((Spinlock*)lock);
+		break;
+
+	default:
+		break;
+	}
+}
+
+void k_unlockAny(void* lock) {
+	switch (*(byte*)lock) {
+	case LOCK_TYPE_MUTEX:
+		k_unlock((Mutex*)lock);
+		break;
+
+	case LOCK_TYPE_SPINLOCK:
+		k_unlockSpin((Spinlock*)lock);
+		break;
+
+	default:
+		break;
+	}
+}

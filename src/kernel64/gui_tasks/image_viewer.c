@@ -61,7 +61,7 @@ void k_imageViewerTask(void) {
 			k_sleep(0);
 			continue;
 		}
-
+		
 		switch (event.type) {
 		case EVENT_MOUSE_LBUTTONDOWN:
 			mouseEvent = &event.mouseEvent;

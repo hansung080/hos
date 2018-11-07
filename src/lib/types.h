@@ -81,12 +81,12 @@
 #define TASK_INVALIDID 0xFFFFFFFFFFFFFFFF
 
 // task priority (low 8 bits of task flags)
-#define TASK_FLAGS_HIGHEST     0x00 // highest
-#define TASK_FLAGS_HIGH        0x01 // high
-#define TASK_FLAGS_MEDIUM      0x02 // medium
-#define TASK_FLAGS_LOW         0x03 // low
-#define TASK_FLAGS_LOWEST      0x04 // lowest
-#define TASK_FLAGS_ENDPRIORITY 0xFF // end task priority
+#define TASK_PRIORITY_HIGHEST 0x00 // highest
+#define TASK_PRIORITY_HIGH    0x01 // high
+#define TASK_PRIORITY_MEDIUM  0x02 // medium
+#define TASK_PRIORITY_LOW     0x03 // low
+#define TASK_PRIORITY_LOWEST  0x04 // lowest
+#define TASK_PRIORITY_END     0xFF // end task priority
 
 // task flags
 #define TASK_FLAGS_END     0x8000000000000000 // end task flag
@@ -101,9 +101,9 @@
 #define TASK_AFFINITY_LOADBALANCING 0xFF // load balancing (no affinity)
 
 /* macro functions */
-#define GETTASKOFFSET(taskId)            ((taskId) & 0xFFFFFFFF)                                 // get low 32 bits of task.link.id (64 bits)
-#define GETTASKPRIORITY(flags)           ((flags) & 0xFF)                                        // get low 8 bits of task.flags(64 bits)
-#define SETTASKPRIORITY(flags, priority) ((flags) = ((flags) & 0xFFFFFFFFFFFFFF00) | (priority)) // set low 8 bits of task.flags(64 bits)
+#define GETTASKOFFSET(taskId)            ((taskId) & 0xFFFFFFFF)                                 // get task offset (low 32 bits) of task.link.id (64 bits).
+#define GETTASKPRIORITY(flags)           ((flags) & 0xFF)                                        // get task priority (low 8 bits) of task.flags(64 bits).
+#define SETTASKPRIORITY(flags, priority) ((flags) = ((flags) & 0xFFFFFFFFFFFFFF00) | (priority)) // set task priority (low 8 bits) of task.flags(64 bits).
 
 //----------------------------------------------------------------------------------------------------
 // Macro from file_system.h
@@ -225,7 +225,7 @@ typedef word Color;
 #define EVENT_SCREENUPDATE_BYSCREENAREA 17 // ScreenUpdateEvent.area (screen coordinates)
 
 /* macro function */
-#define GETWINDOWOFFSET(windowId) ((windowId) & 0xFFFFFFFF) // get low 32 bits of window.link.id (64 bits)
+#define GETWINDOWOFFSET(windowId) ((windowId) & 0xFFFFFFFF) // get window offset (low 32 bits) of window.link.id (64 bits).
 
 //----------------------------------------------------------------------------------------------------
 // Macro from util.h ***/

@@ -196,13 +196,9 @@ ConsoleManager* k_getConsoleManager(void) {
 bool k_putKeyToConsoleKeyQueue(const Key* key) {
 	bool result;
 
-	if (k_isQueueFull(&g_consoleManager.keyQueue) == true) {
-		return false;
-	}
-
 	k_lock(&g_consoleManager.mutex);
 
-	result = k_putQueue(&g_consoleManager.keyQueue, key);
+	result = k_putQueueBlocking(&g_consoleManager.keyQueue, key);
 
 	k_unlock(&g_consoleManager.mutex);
 
@@ -211,14 +207,10 @@ bool k_putKeyToConsoleKeyQueue(const Key* key) {
 
 bool k_getKeyFromConsoleKeyQueue(Key* key) {
 	bool result;
-
-	if (k_isQueueEmpty(&g_consoleManager.keyQueue) == true) {
-		return false;
-	}
-
+	
 	k_lock(&g_consoleManager.mutex);
 
-	result = k_getQueue(&g_consoleManager.keyQueue, key);
+	result = k_getQueueBlocking(&g_consoleManager.keyQueue, key, &g_consoleManager.mutex);
 
 	k_unlock(&g_consoleManager.mutex);
 

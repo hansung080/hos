@@ -208,7 +208,7 @@ k_switchContext:
 	push rbp
 	mov rbp, rsp
 	
-	; If currentContext == null, it dosen't have to save context.
+	; If currentContext == null, it doesn't have to save context.
 	pushfq ; push RFLAGS to stack to keep RFLAGS not-changed after cmp command below.
 	cmp rdi, 0
 	je .loadContext

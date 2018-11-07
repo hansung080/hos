@@ -216,13 +216,13 @@ static CacheBuffer* k_allocCacheBufferWithFlush(int cacheTableIndex) {
 	// search free cache buffer.
 	cacheBuffer = k_allocCacheBuffer(cacheTableIndex);
 	
-	// If free cache buffer dosen't exist, flush old cache buffer, and allocate it.
+	// If free cache buffer doesn't exist, flush old cache buffer, and allocate it.
 	if (cacheBuffer == null) {
 		
 		// search old cache buffer.
 		cacheBuffer = k_getVictimInCacheBuffer(cacheTableIndex);
 		
-		// If old cache buffer dosen't exist, do error handling.
+		// If old cache buffer doesn't exist, do error handling.
 		if (cacheBuffer == null) {
 			k_printf("file system error: cache buffer allocation failure\n");
 			return null;
@@ -282,7 +282,7 @@ static bool k_readClusterLinkTableWithCache(dword offset, byte* buffer) {
 		return true;
 	}
 	
-	// If cache buffer dosen't exist, read from hard disk.
+	// If cache buffer doesn't exist, read from hard disk.
 	if (k_readClusterLinkTableWithoutCache(offset, buffer) == false) {
 		return false;
 	}
@@ -327,7 +327,7 @@ static bool k_writeClusterLinkTableWithCache(dword offset, byte* buffer) {
 		return true;
 	}
 	
-	// If cache buffer dosen't exist, allocate cache buffer.
+	// If cache buffer doesn't exist, allocate cache buffer.
 	cacheBuffer = k_allocCacheBufferWithFlush(CACHE_CLUSTERLINKTABLEAREA);
 	if (cacheBuffer == null) {
 		return false;
@@ -366,7 +366,7 @@ static bool k_readClusterWithCache(dword offset, byte* buffer) {
 		return true;
 	}
 	
-	// If cache buffer dosen't exist, read from hard disk.
+	// If cache buffer doesn't exist, read from hard disk.
 	if (k_readClusterWithoutCache(offset, buffer) == false) {
 		return false;
 	}
@@ -411,7 +411,7 @@ static bool k_writeClusterWithCache(dword offset, byte* buffer) {
 		return true;
 	}
 	
-	// If cache buffer dosen't exits, allocate cache buffer.
+	// If cache buffer doesn't exits, allocate cache buffer.
 	cacheBuffer = k_allocCacheBufferWithFlush(CACHE_DATAAREA);
 	if (cacheBuffer == null) {
 		return false;
@@ -736,13 +736,13 @@ static bool k_updateDirEntry(FileHandle* fileHandle) {
    File Open Mode  | Description
   ----------------------------------------------------------------------------------------------------
    "r"      | - read mode
-            | - If file dosen't exist, open fails
+            | - If file doesn't exist, open fails
   ----------------------------------------------------------------------------------------------------
    "w"      | - write mode
-            | - If file dosen't exist, create file. If file exists, flush file.
+            | - If file doesn't exist, create file. If file exists, flush file.
   ----------------------------------------------------------------------------------------------------
    "a"      | - append mode
-            | - If file dosen't exist, create file. If file exists, move to the end of file.
+            | - If file doesn't exist, create file. If file exists, move to the end of file.
   ----------------------------------------------------------------------------------------------------
    "r+"     | - read write mode
             | - the same as "r" mode except writing is possible.
@@ -771,13 +771,13 @@ File* k_openFile(const char* fileName, const char* mode) {
 	
 	//----------------------------------------------------------------------------------------------------
 	// check file existing
-	// and if file dosen't exist, check mode, and create file (w, w+, a, a+)
+	// and if file doesn't exist, check mode, and create file (w, w+, a, a+)
 	//----------------------------------------------------------------------------------------------------
 	
 	// search directory entry matching file name.
 	dirEntryOffset = k_findDirEntry(fileName, &entry);
 	
-	// If file dosen't exist.
+	// If file doesn't exist.
 	if (dirEntryOffset == -1) {
 		
 		// If it's read-related mode (r, r+), open fails.
@@ -990,7 +990,7 @@ dword k_writeFile(const void* buffer, dword size, dword count, File* file) {
 		} else if (((fileHandle->currentOffset % FS_CLUSTERSIZE) != 0) || ((totalCount - writeCount) < FS_CLUSTERSIZE)) {
 			
 			// read current cluster and copy it to temporary buffer,
-			//  because it overrides the part of cluster if it dosen't override the whole cluster.
+			//  because it overrides the part of cluster if it doesn't override the whole cluster.
 			if (k_readCluster(fileHandle->currentClusterIndex, g_tempBuffer) == false) {
 				break;
 			}
@@ -1206,7 +1206,7 @@ int k_removeFile(const char* fileName) {
 	
 	k_lock(&(g_fileSystemManager.mutex));
 	
-	// If file dosen't exist, can't delete it.
+	// If file doesn't exist, can't delete it.
 	dirEntryOffset = k_findDirEntry(fileName, &entry);
 	if (dirEntryOffset == -1) {
 		k_unlock(&(g_fileSystemManager.mutex));

@@ -5,6 +5,7 @@
 #include "keyboard.h"
 #include "task.h"
 #include "../gui_tasks/app_panel.h"
+#include "multiprocessor.h"
 
 /**
   < Screen Update Performance Test >
@@ -30,9 +31,6 @@ volatile qword g_winMgrMinLoopCount = 0xFFFFFFFFFFFFFFFF;
 
 void k_windowManagerTask(void) {
 	int mouseX, mouseY;
-	bool mouseResult;
-	bool keyResult;
-	bool windowManagerResult;
 	WindowManager* windowManager;
 	#if __DEBUG__
 	/* Screen Update Performance Test */
@@ -49,10 +47,14 @@ void k_windowManagerTask(void) {
 	k_moveMouseCursor(mouseX, mouseY);
 
 	// create app panel task.
-	k_createTask(TASK_FLAGS_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_appPanelTask, TASK_AFFINITY_LOADBALANCING);
+	k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_appPanelTask, TASK_AFFINITY_LOADBALANCING);
 	
 	// get window manager.
-	windowManager = k_getWindowManager();	
+	windowManager = k_getWindowManager();
+
+	// create mouse data task and key task.
+	k_createTask(TASK_PRIORITY_HIGHEST | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_mouseDataTask, k_getApicId());
+	k_createTask(TASK_PRIORITY_HIGHEST | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_keyTask, k_getApicId());
 
 	#if __DEBUG__
 	/* Screen Update Performance Test */
@@ -78,33 +80,40 @@ void k_windowManagerTask(void) {
 		
 		loopCount++;
 		#endif // __DEBUG__
-		
-		// process mouse data.
-		mouseResult = k_processMouseData();
-		
-		// process key.
-		keyResult = k_processKey();
-		
+				
 		// process window manager event.
-		windowManagerResult = false;
-		while (k_processWindowManagerEvent() == true) {
-			windowManagerResult = true;
+		if (k_processWindowManagerEvent() == false) {
+			k_sleep(0);
+			continue;
 		}
-						
+					
 		// If window manager event (screen update event) had occured, resize marker might have been cleared,
 		// so draw resize marker again.
-		if ((windowManagerResult == true) && (windowManager->windowResizing == true)) {
+		if (windowManager->windowResizing == true) {
 			k_drawResizeMarker(&windowManager->resizingWindowArea, true);
 		}
+	}
+}
 
-		// If no data/events have been processed, switch task.
-		if ((mouseResult == false) && (keyResult == false) && (windowManagerResult == false)) {
+static void k_mouseDataTask(void) {	
+	while (true) {
+		// process mouse data.
+		if (k_processMouseData() == false) {
 			k_sleep(0);
 		}
 	}
 }
 
-bool k_processMouseData(void) {
+static void k_keyTask(void) {
+	while (true) {
+		// process key.
+		if (k_processKey() == false) {
+			k_sleep(0);
+		}
+	}
+}
+
+static bool k_processMouseData(void) {
 	qword underMouseWindowId;
 	byte buttonStatus;
 	int relativeX, relativeY;
@@ -266,7 +275,7 @@ bool k_processMouseData(void) {
 	return true;
 }
 
-bool k_processKey(void) {
+static bool k_processKey(void) {
 	Key key;
 
 	if (k_getKeyFromKeyQueue(&key) == false) {
@@ -278,7 +287,7 @@ bool k_processKey(void) {
 	return true;
 }
 
-bool k_processWindowManagerEvent(void) {
+static bool k_processWindowManagerEvent(void) {
 	Event events[WINDOWMANAGER_DATAINTEGRATIONCOUNT];
 	int eventCount;
 	ScreenUpdateEvent* screenUpdateEvent;

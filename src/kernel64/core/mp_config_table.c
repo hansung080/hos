@@ -365,7 +365,7 @@ void k_printMpConfigTable(void) {
 }
 
 int k_getProcessorCount(void) {
-	// If MP configuration table dosen't exist, return 1 as processor count.
+	// If MP configuration table doesn't exist, return 1 as processor count.
 	if (g_mpConfigManager.processorCount == 0) {
 		return 1;
 	}

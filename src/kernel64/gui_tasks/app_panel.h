@@ -40,6 +40,8 @@ typedef struct k_AppPanelManager {
 #pragma pack(pop)
 
 void k_appPanelTask(void);
+static void k_appListTask(void);
+static void k_digitalClockTask(void);
 static bool k_createAppPanel(void);
 static void k_drawDigitalClock(qword windowId);
 static bool k_processAppPanelEvent(void);
