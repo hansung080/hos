@@ -22,6 +22,9 @@ static AppEntry g_appTable[] = {
 static AppPanelManager g_appPanelManager;
 
 void k_appPanelTask(void) {
+	bool appPanelResult;
+	bool appListResult;
+
 	/* check graphic mode */
 	if (k_isGraphicMode() == false) {
 		k_printf("[app panel error] not graphic mode\n");
@@ -33,31 +36,14 @@ void k_appPanelTask(void) {
 		return;
 	}
 
-	/* create app list task and digital clock task */
-	k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_appListTask, TASK_AFFINITY_LOADBALANCING);
-	k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_digitalClockTask, TASK_AFFINITY_LOADBALANCING);
-
 	/* event processing loop */
 	while (true) {
-		if (k_processAppPanelEvent() == false) {
+		appPanelResult = k_processAppPanelEvent();
+		appListResult = k_processAppListEvent();
+
+		if ((appPanelResult == false) && (appListResult == false)) {
 			k_sleep(0);
 		}
-	}
-}
-
-static void k_appListTask(void) {
-	/* event processing loop */
-	while (true) {
-		if (k_processAppListEvent() == false) {
-			k_sleep(0);
-		}
-	}
-}
-
-static void k_digitalClockTask(void) {
-	while (true) {
-		k_drawDigitalClock(g_appPanelManager.appPanelId);
-		k_sleep(1000);
 	}
 }
 
@@ -142,47 +128,54 @@ static bool k_processAppPanelEvent(void) {
 	Event event;
 	MouseEvent* mouseEvent;
 
-	if (k_recvEventFromWindow(&event, g_appPanelManager.appPanelId) == false) {
-		return false;
-	}
+	while (true) {
+		// call k_drawDigitalClock here in event processing loop,
+		// because the loop is running at short intervals.
+		// [NOTE] It will be the problem if the loop implementation changes from polling pattern to event-based pattern.
+		k_drawDigitalClock(g_appPanelManager.appPanelId);
 
-	switch (event.type) {
-	case EVENT_MOUSE_LBUTTONDOWN:
-		mouseEvent = &event.mouseEvent;
-
-		if (k_isPointInRect(&g_appPanelManager.buttonArea, mouseEvent->point.x, mouseEvent->point.y) == false) {
-			break;
+		if (k_recvEventFromWindow(&event, g_appPanelManager.appPanelId) == false) {
+			return false;
 		}
 
-		// app list button (toggle button): up -> down
-		if (g_appPanelManager.appListVisible == false) {
-			k_drawButton(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea, APPPANEL_COLOR_ACTIVE, "Applications", RGB(255, 255, 255));
-			k_updateScreenByWindowArea(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea);
+		switch (event.type) {
+		case EVENT_MOUSE_LBUTTONDOWN:
+			mouseEvent = &event.mouseEvent;
 
-			if (g_appPanelManager.prevMouseOverIndex != -1) {
-				k_drawAppItem(g_appPanelManager.prevMouseOverIndex, false);
-				g_appPanelManager.prevMouseOverIndex = -1;
+			if (k_isPointInRect(&g_appPanelManager.buttonArea, mouseEvent->point.x, mouseEvent->point.y) == false) {
+				break;
 			}
 
-			k_moveWindowToTop(g_appPanelManager.appListId);
-			k_showWindow(g_appPanelManager.appListId, true);
+			// app list button (toggle button): up -> down
+			if (g_appPanelManager.appListVisible == false) {
+				k_drawButton(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea, APPPANEL_COLOR_ACTIVE, "Applications", RGB(255, 255, 255));
+				k_updateScreenByWindowArea(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea);
 
-			g_appPanelManager.appListVisible = true;
+				if (g_appPanelManager.prevMouseOverIndex != -1) {
+					k_drawAppItem(g_appPanelManager.prevMouseOverIndex, false);
+					g_appPanelManager.prevMouseOverIndex = -1;
+				}
 
-		// app list button (toggle button): down -> up
-		} else {
-			k_drawButton(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea, APPPANEL_COLOR_BACKGROUND, "Applications", RGB(255, 255, 255));
-			k_updateScreenByWindowArea(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea);
+				k_moveWindowToTop(g_appPanelManager.appListId);
+				k_showWindow(g_appPanelManager.appListId, true);
 
-			k_showWindow(g_appPanelManager.appListId, false);
+				g_appPanelManager.appListVisible = true;
 
-			g_appPanelManager.appListVisible = false;
+			// app list button (toggle button): down -> up
+			} else {
+				k_drawButton(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea, APPPANEL_COLOR_BACKGROUND, "Applications", RGB(255, 255, 255));
+				k_updateScreenByWindowArea(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea);
+
+				k_showWindow(g_appPanelManager.appListId, false);
+
+				g_appPanelManager.appListVisible = false;
+			}
+
+			break;
+
+		default:
+			break;
 		}
-
-		break;
-
-	default:
-		break;
 	}
 
 	return true;
@@ -256,46 +249,48 @@ static bool k_processAppListEvent(void) {
 	MouseEvent* mouseEvent;
 	int mouseOverIndex;
 
-	if (k_recvEventFromWindow(&event, g_appPanelManager.appListId) == false) {
-		return false;
-	}
+	while (true) {
+		if (k_recvEventFromWindow(&event, g_appPanelManager.appListId) == false) {
+			return false;
+		}
 
-	switch (event.type) {
-	case EVENT_MOUSE_MOVE:
-		mouseEvent = &event.mouseEvent;
+		switch (event.type) {
+		case EVENT_MOUSE_MOVE:
+			mouseEvent = &event.mouseEvent;
 
-		mouseOverIndex = k_getMouseOverItemIndex(mouseEvent->point.y);
-		if ((mouseOverIndex == -1) || (mouseOverIndex == g_appPanelManager.prevMouseOverIndex)) {
+			mouseOverIndex = k_getMouseOverItemIndex(mouseEvent->point.y);
+			if ((mouseOverIndex == -1) || (mouseOverIndex == g_appPanelManager.prevMouseOverIndex)) {
+				break;
+			}
+
+			if (g_appPanelManager.prevMouseOverIndex != -1) {
+				k_drawAppItem(g_appPanelManager.prevMouseOverIndex, false);
+			}
+
+			k_drawAppItem(mouseOverIndex, true);
+
+			g_appPanelManager.prevMouseOverIndex = mouseOverIndex;
+
+			break;
+
+		case EVENT_MOUSE_LBUTTONDOWN:
+			mouseEvent = &event.mouseEvent;
+
+			mouseOverIndex = k_getMouseOverItemIndex(mouseEvent->point.y);
+			if (mouseOverIndex == -1) {
+				break;
+			}
+
+			k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)g_appTable[mouseOverIndex].entryPoint, TASK_AFFINITY_LOADBALANCING);
+
+			// send mouse event in oder to make app list invisible.
+			k_sendMouseEventToWindow(g_appPanelManager.appPanelId, EVENT_MOUSE_LBUTTONDOWN, g_appPanelManager.buttonArea.x1, g_appPanelManager.buttonArea.y1, 0);
+
+			break;
+
+		default:
 			break;
 		}
-
-		if (g_appPanelManager.prevMouseOverIndex != -1) {
-			k_drawAppItem(g_appPanelManager.prevMouseOverIndex, false);
-		}
-
-		k_drawAppItem(mouseOverIndex, true);
-
-		g_appPanelManager.prevMouseOverIndex = mouseOverIndex;
-
-		break;
-
-	case EVENT_MOUSE_LBUTTONDOWN:
-		mouseEvent = &event.mouseEvent;
-
-		mouseOverIndex = k_getMouseOverItemIndex(mouseEvent->point.y);
-		if (mouseOverIndex == -1) {
-			break;
-		}
-
-		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)g_appTable[mouseOverIndex].entryPoint, TASK_AFFINITY_LOADBALANCING);
-
-		// send mouse event in oder to make app list invisible.
-		k_sendMouseEventToWindow(g_appPanelManager.appPanelId, EVENT_MOUSE_LBUTTONDOWN, g_appPanelManager.buttonArea.x1, g_appPanelManager.buttonArea.y1, 0);
-
-		break;
-
-	default:
-		break;
 	}
 	
 	return true;

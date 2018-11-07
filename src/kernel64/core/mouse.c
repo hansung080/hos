@@ -128,7 +128,7 @@ bool k_accumulateMouseDataAndPutQueue(byte mouseData) {
 
 	if (g_mouseManager.byteCount >= 3) {
 		k_lockSpin(&g_mouseManager.spinlock);
-		k_putQueueBlocking(&g_mouseQueue, &g_mouseManager.currentData);
+		k_putQueue(&g_mouseQueue, &g_mouseManager.currentData);
 		k_unlockSpin(&g_mouseManager.spinlock);
 		g_mouseManager.byteCount = 0;
 	}
@@ -138,10 +138,18 @@ bool k_getMouseDataFromMouseQueue(byte* buttonStatus, int* relativeX, int* relat
 	MouseData mouseData;
 	bool result;
 
+	if (k_isQueueEmpty(&g_mouseQueue) == true) {
+		return false;
+	}
+
 	k_lockSpin(&g_mouseManager.spinlock);
-	result = k_getQueueBlocking(&g_mouseQueue, &mouseData, &g_mouseManager.spinlock);
+	result = k_getQueue(&g_mouseQueue, &mouseData);
 	k_unlockSpin(&g_mouseManager.spinlock);
 	
+	if (result == false) {
+		return false;
+	}
+
 	// set button status (low 3 bits).
 	*buttonStatus = mouseData.flagsAndButtonStatus & 0x07;
 

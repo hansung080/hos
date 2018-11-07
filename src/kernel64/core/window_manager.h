@@ -7,8 +7,6 @@
 #define WINDOWMANAGER_DATAINTEGRATIONCOUNT 20
 
 void k_windowManagerTask(void);
-static void k_mouseDataTask(void);
-static void k_keyTask(void);
 static bool k_processMouseData(void);
 static bool k_processKey(void);
 static bool k_processWindowManagerEvent(void);

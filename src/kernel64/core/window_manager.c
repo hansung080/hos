@@ -5,7 +5,6 @@
 #include "keyboard.h"
 #include "task.h"
 #include "../gui_tasks/app_panel.h"
-#include "multiprocessor.h"
 
 /**
   < Screen Update Performance Test >
@@ -31,6 +30,9 @@ volatile qword g_winMgrMinLoopCount = 0xFFFFFFFFFFFFFFFF;
 
 void k_windowManagerTask(void) {
 	int mouseX, mouseY;
+	bool mouseResult;
+	bool keyResult;
+	bool windowManagerResult;
 	WindowManager* windowManager;
 	#if __DEBUG__
 	/* Screen Update Performance Test */
@@ -51,10 +53,6 @@ void k_windowManagerTask(void) {
 	
 	// get window manager.
 	windowManager = k_getWindowManager();
-
-	// create mouse data task and key task.
-	k_createTask(TASK_PRIORITY_HIGHEST | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_mouseDataTask, k_getApicId());
-	k_createTask(TASK_PRIORITY_HIGHEST | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_keyTask, k_getApicId());
 
 	#if __DEBUG__
 	/* Screen Update Performance Test */
@@ -80,34 +78,27 @@ void k_windowManagerTask(void) {
 		
 		loopCount++;
 		#endif // __DEBUG__
-				
+		
+		// process mouse data.
+		mouseResult = k_processMouseData();
+
+		// process key.
+		keyResult = k_processKey();
+
 		// process window manager event.
-		if (k_processWindowManagerEvent() == false) {
-			k_sleep(0);
-			continue;
+		windowManagerResult = false;
+		while (k_processWindowManagerEvent() == true) {
+			windowManagerResult = true;
 		}
-					
+				
 		// If window manager event (screen update event) had occured, resize marker might have been cleared,
 		// so draw resize marker again.
-		if (windowManager->windowResizing == true) {
+		if ((windowManagerResult == true) && (windowManager->windowResizing == true)) {
 			k_drawResizeMarker(&windowManager->resizingWindowArea, true);
 		}
-	}
-}
 
-static void k_mouseDataTask(void) {	
-	while (true) {
-		// process mouse data.
-		if (k_processMouseData() == false) {
-			k_sleep(0);
-		}
-	}
-}
-
-static void k_keyTask(void) {
-	while (true) {
-		// process key.
-		if (k_processKey() == false) {
+		// If no data/events have been processed, switch task.
+		if ((mouseResult == false) && (keyResult == false) && (windowManagerResult == false)) {
 			k_sleep(0);
 		}
 	}

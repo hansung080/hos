@@ -61,7 +61,6 @@ void k_guiShellTask(void) {
 	
 	/* event processing loop */
 	while (true) {
-		// KHS create task
 		k_processConsoleScreenBuffer(g_guiShellWindowId);
 
 		if (k_recvEventFromWindow(&event, g_guiShellWindowId) == false) {

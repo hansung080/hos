@@ -1253,7 +1253,7 @@ bool k_sendEventToWindow(const Event* event, qword windowId) {
 		return false;
 	}
 
-	result = k_putQueueBlocking(&window->eventQueue, event);
+	result = k_putQueue(&window->eventQueue, event);
 
 	k_unlock(&window->mutex);
 
@@ -1269,7 +1269,7 @@ bool k_recvEventFromWindow(Event* event, qword windowId) {
 		return false;
 	}
 
-	result = k_getQueueBlocking(&window->eventQueue, event, &window->mutex);
+	result = k_getQueue(&window->eventQueue, event);
 
 	k_unlock(&window->mutex);
 
@@ -1281,7 +1281,7 @@ bool k_sendEventToWindowManager(const Event* event) {
 
 	k_lock(&g_windowManager.mutex);
 
-	result = k_putQueueBlocking(&g_windowManager.eventQueue, event);
+	result = k_putQueue(&g_windowManager.eventQueue, event);
 
 	k_unlock(&g_windowManager.mutex);
 
@@ -1297,7 +1297,7 @@ bool k_recvEventFromWindowManager(Event* event) {
 
 	k_lock(&g_windowManager.mutex);
 
-	result = k_getQueueBlocking(&g_windowManager.eventQueue, event, &g_windowManager.mutex);
+	result = k_getQueue(&g_windowManager.eventQueue, event);
 
 	k_unlock(&g_windowManager.mutex);
 
