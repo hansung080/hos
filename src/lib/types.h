@@ -170,6 +170,7 @@ typedef word Color;
 #define WINDOW_FLAGS_DRAWFRAME    0x00000002 // draw frame flag
 #define WINDOW_FLAGS_DRAWTITLEBAR 0x00000004 // draw title bar flag
 #define WINDOW_FLAGS_RESIZABLE    0x00000008 // resizable flag
+#define WINDOW_FLAGS_BLOCKING     0x00000010 // blocking flag
 #define WINDOW_FLAGS_DEFAULT      (WINDOW_FLAGS_SHOW | WINDOW_FLAGS_DRAWFRAME | WINDOW_FLAGS_DRAWTITLEBAR)
 
 // window size

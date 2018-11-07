@@ -11,7 +11,7 @@ static MouseData g_mouseBuffer[MOUSE_MAXQUEUECOUNT];
 bool k_initMouse(void) {
 	// initialize mouse queue.
 	// This function must be called before activating mouse.
-	k_initQueue(&g_mouseQueue, g_mouseBuffer, sizeof(MouseData), MOUSE_MAXQUEUECOUNT);
+	k_initQueue(&g_mouseQueue, g_mouseBuffer, sizeof(MouseData), MOUSE_MAXQUEUECOUNT, false);
 
 	// initialize spinlock
 	k_initSpinlock(&g_mouseManager.spinlock);
@@ -138,12 +138,12 @@ bool k_getMouseDataFromMouseQueue(byte* buttonStatus, int* relativeX, int* relat
 	MouseData mouseData;
 	bool result;
 
-	if (k_isQueueEmpty(&g_mouseQueue) == true) {
+	if (g_mouseQueue.blocking == false && k_isQueueEmpty(&g_mouseQueue) == true) {
 		return false;
 	}
 
 	k_lockSpin(&g_mouseManager.spinlock);
-	result = k_getQueue(&g_mouseQueue, &mouseData);
+	result = k_getQueue(&g_mouseQueue, &mouseData, &g_mouseManager.spinlock);
 	k_unlockSpin(&g_mouseManager.spinlock);
 	
 	if (result == false) {

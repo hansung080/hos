@@ -434,7 +434,7 @@ bool k_convertScanCodeToAsciiCode(byte scanCode, byte* asciiCode, byte* flags) {
 
 bool k_initKeyboard(void) {
 	// initialize key queue.
-	k_initQueue(&g_keyQueue, g_keyBuffer, sizeof(Key), KEY_MAXQUEUECOUNT);
+	k_initQueue(&g_keyQueue, g_keyBuffer, sizeof(Key), KEY_MAXQUEUECOUNT, false);
 	
 	// initialize spinlock.
 	k_initSpinlock(&(g_keyboardManager.spinlock));
@@ -466,14 +466,14 @@ bool k_convertScanCodeAndPutQueue(byte scanCode) {
 bool k_getKeyFromKeyQueue(Key* key) {
 	bool result = false;
 	
-	if (k_isQueueEmpty(&g_keyQueue) == true) {
+	if (g_keyQueue.blocking == false && k_isQueueEmpty(&g_keyQueue) == true) {
 		return false;
 	}
 
 	k_lockSpin(&(g_keyboardManager.spinlock));
 	
 	// get data from key queue.
-	result = k_getQueue(&g_keyQueue, key);
+	result = k_getQueue(&g_keyQueue, key, &(g_keyboardManager.spinlock));
 	
 	k_unlockSpin(&(g_keyboardManager.spinlock));
 	

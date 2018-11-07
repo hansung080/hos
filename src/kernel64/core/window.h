@@ -42,6 +42,7 @@
 #define WINDOW_FLAGS_DRAWFRAME    0x00000002 // draw frame flag
 #define WINDOW_FLAGS_DRAWTITLEBAR 0x00000004 // draw title bar flag
 #define WINDOW_FLAGS_RESIZABLE    0x00000008 // resizable flag
+#define WINDOW_FLAGS_BLOCKING     0x00000010 // blocking flag
 #define WINDOW_FLAGS_DEFAULT      (WINDOW_FLAGS_SHOW | WINDOW_FLAGS_DRAWFRAME | WINDOW_FLAGS_DRAWTITLEBAR)
 
 // window size
@@ -202,6 +203,7 @@ typedef struct k_Window {
 	                    //               bit 1 : draw frame flag
 	                    //               bit 2 : draw title bar flag
 	                    //               bit 3 : resizable flag
+						//               bit 4 : blocking flag
 	Queue eventQueue;   // event queue for mouse, window, key, user event
 	Event* eventBuffer; // event buffer
 	char title[WINDOW_MAXTITLELENGTH + 1]; // window title: include last null character

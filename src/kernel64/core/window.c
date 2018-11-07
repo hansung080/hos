@@ -134,7 +134,7 @@ void k_initGuiSystem(void) {
 		}
 	}
 
-	k_initQueue(&g_windowManager.eventQueue, g_windowManager.eventBuffer, sizeof(Event), EVENTQUEUE_WINDOWMANAGER_MAXCOUNT);
+	k_initQueue(&g_windowManager.eventQueue, g_windowManager.eventBuffer, sizeof(Event), EVENTQUEUE_WINDOWMANAGER_MAXCOUNT, false);
 
 	// allocate screen bitmap.
 	g_windowManager.screenBitmap = (byte*)k_allocMem((vbeMode->xResolution * vbeMode->yResolution + 7) / 8);
@@ -220,7 +220,13 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 		return WINDOW_INVALIDID;	
 	}
 
-	k_initQueue(&window->eventQueue, window->eventBuffer, sizeof(Event), EVENTQUEUE_WINDOW_MAXCOUNT);
+	if (flags & WINDOW_FLAGS_BLOCKING) {
+		k_initQueue(&window->eventQueue, window->eventBuffer, sizeof(Event), EVENTQUEUE_WINDOW_MAXCOUNT, true);
+
+	} else {
+		k_initQueue(&window->eventQueue, window->eventBuffer, sizeof(Event), EVENTQUEUE_WINDOW_MAXCOUNT, false);
+	}
+	
 
 	task = k_getRunningTask(k_getApicId());
 	task->flags |= TASK_FLAGS_GUI;
@@ -1269,7 +1275,7 @@ bool k_recvEventFromWindow(Event* event, qword windowId) {
 		return false;
 	}
 
-	result = k_getQueue(&window->eventQueue, event);
+	result = k_getQueue(&window->eventQueue, event, &window->mutex);
 
 	k_unlock(&window->mutex);
 
@@ -1291,13 +1297,13 @@ bool k_sendEventToWindowManager(const Event* event) {
 bool k_recvEventFromWindowManager(Event* event) {
 	bool result;
 
-	if (k_isQueueEmpty(&g_windowManager.eventQueue) == true) {
+	if (g_windowManager.eventQueue.blocking == false && k_isQueueEmpty(&g_windowManager.eventQueue) == true) {
 		return false;
 	}
 
 	k_lock(&g_windowManager.mutex);
 
-	result = k_getQueue(&g_windowManager.eventQueue, event);
+	result = k_getQueue(&g_windowManager.eventQueue, event, &g_windowManager.mutex);
 
 	k_unlock(&g_windowManager.mutex);
 

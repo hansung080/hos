@@ -19,7 +19,7 @@ void k_initConsole(int x, int y) {
 	} else {
 		g_consoleManager.screenBuffer = g_screenBuffer;
 		k_initMutex(&g_consoleManager.mutex);
-		k_initQueue(&g_consoleManager.keyQueue, g_keyBuffer, sizeof(Key), CONSOLE_KEYQUEUE_MAXCOUNT);
+		k_initQueue(&g_consoleManager.keyQueue, g_keyBuffer, sizeof(Key), CONSOLE_KEYQUEUE_MAXCOUNT, false);
 	}
 
 	k_setCursor(x, y);
@@ -208,13 +208,13 @@ bool k_putKeyToConsoleKeyQueue(const Key* key) {
 bool k_getKeyFromConsoleKeyQueue(Key* key) {
 	bool result;
 	
-	if (k_isQueueEmpty(&g_consoleManager.keyQueue) == true) {
+	if (g_consoleManager.keyQueue.blocking == false && k_isQueueEmpty(&g_consoleManager.keyQueue) == true) {
 		return false;
 	}
 
 	k_lock(&g_consoleManager.mutex);
 
-	result = k_getQueue(&g_consoleManager.keyQueue, key);
+	result = k_getQueue(&g_consoleManager.keyQueue, key, &g_consoleManager.mutex);
 
 	k_unlock(&g_consoleManager.mutex);
 

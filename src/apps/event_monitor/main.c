@@ -63,7 +63,7 @@ int main(const char* args) {
 	windowWidth = 500;
 	windowHeight = 200;
 	sprintf(tempBuffer, "Event Monitor %d", ++windowCount);
-	windowId = createWindow(mouseX - 10, mouseY - WINDOW_TITLEBAR_HEIGHT / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT, tempBuffer);
+	windowId = createWindow(mouseX - 10, mouseY - WINDOW_TITLEBAR_HEIGHT / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_BLOCKING, tempBuffer);
 	if (windowId == WINDOW_INVALIDID) {
 		return -1;
 	}

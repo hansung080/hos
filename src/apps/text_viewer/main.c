@@ -43,7 +43,7 @@ int main(const char* args) {
 	x = (getRectWidth(&screenArea) - width) / 2;
 	y = (getRectHeight(&screenArea) - height) / 2;
 
-	windowId = createWindow(x, y, width, height, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_RESIZABLE, "Text Viewer");
+	windowId = createWindow(x, y, width, height, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_RESIZABLE | WINDOW_FLAGS_BLOCKING, "Text Viewer");
 	if (windowId == WINDOW_INVALIDID) {
 		printf("[text viewer error] window creation failure\n");
 		return -1;
@@ -57,7 +57,7 @@ int main(const char* args) {
 	/* event processing loop */
 	while (true) {
 		if (recvEventFromWindow(&event, windowId) == false) {
-			sleep(10);
+			sleep(0);
 			continue;
 		}
 

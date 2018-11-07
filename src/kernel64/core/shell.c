@@ -2901,7 +2901,7 @@ static void k_testBlockingQueue(void) {
 	int data;
 
 	k_initMutex(&g_waitMutex);
-	k_initQueue(&g_waitQueue, g_waitQueueBuffer, sizeof(int), MAXWAITQUEUECOUNT);
+	k_initQueue(&g_waitQueue, g_waitQueueBuffer, sizeof(int), MAXWAITQUEUECOUNT, true);
 
 	for (i = 0; i < 3; i++) {
 		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_blockingTask, TASK_AFFINITY_LOADBALANCING);
@@ -2911,7 +2911,7 @@ static void k_testBlockingQueue(void) {
 		k_sleep(1000); // sleep 1 second.
 		data = i + 1;
 		k_lock(&g_waitMutex);
-		k_putQueueBlocking(&g_waitQueue, &data);
+		k_putQueue(&g_waitQueue, &data);
 		k_unlock(&g_waitMutex);
 	}
 
@@ -2919,7 +2919,7 @@ static void k_testBlockingQueue(void) {
 
 	k_lock(&g_waitMutex);
 	for (i = 0; i < 3; i++) {
-		k_putQueueBlocking(&g_waitQueue, &data);
+		k_putQueue(&g_waitQueue, &data);
 	}
 	k_unlock(&g_waitMutex);
 }
@@ -2933,7 +2933,7 @@ static void k_blockingTask(void) {
 	while (true) {
 		k_lock(&g_waitMutex);
 
-		if (k_getQueueBlocking(&g_waitQueue, &data, &g_waitMutex) == true) {
+		if (k_getQueue(&g_waitQueue, &data, &g_waitMutex) == true) {
 			k_unlock(&g_waitMutex);
 			k_printf("[blocking got data] core %d, task 0x%q, data: %d\n", task->apicId, task->link.id, data);
 
@@ -2953,7 +2953,7 @@ static void k_testNonblockingQueue(void) {
 	int data;
 
 	k_initMutex(&g_waitMutex);
-	k_initQueue(&g_waitQueue, g_waitQueueBuffer, sizeof(int), MAXWAITQUEUECOUNT);
+	k_initQueue(&g_waitQueue, g_waitQueueBuffer, sizeof(int), MAXWAITQUEUECOUNT, false);
 
 	for (i = 0; i < 3; i++) {
 		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_nonblockingTask, TASK_AFFINITY_LOADBALANCING);
@@ -2985,7 +2985,7 @@ static void k_nonblockingTask(void) {
 	while (true) {
 		k_lock(&g_waitMutex);
 
-		if (k_getQueue(&g_waitQueue, &data) == true) {
+		if (k_getQueue(&g_waitQueue, &data, &g_waitMutex) == true) {
 			k_unlock(&g_waitMutex);
 			k_printf("[blocking got data] core %d, task 0x%q, data: %d\n", task->apicId, task->link.id, data);
 

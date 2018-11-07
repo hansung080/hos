@@ -23,7 +23,7 @@ void k_baseTask(void) {
 	k_getMouseCursorPos(&mouseX, &mouseY);
 	windowWidth = 500;
 	windowHeight = 200;
-	windowId = k_createWindow(mouseX - 10, mouseY - WINDOW_TITLEBAR_HEIGHT / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_RESIZABLE, "Base");
+	windowId = k_createWindow(mouseX - 10, mouseY - WINDOW_TITLEBAR_HEIGHT / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_RESIZABLE | WINDOW_FLAGS_BLOCKING, "Base");
 	if (windowId == WINDOW_INVALIDID) {
 		return;
 	}

@@ -48,7 +48,7 @@ void k_eventMonitorTask(void) {
 	windowWidth = 500;
 	windowHeight = 200;
 	k_sprintf(tempBuffer, "Event Monitor %d", ++windowCount);
-	windowId = k_createWindow(mouseX - 10, mouseY - WINDOW_TITLEBAR_HEIGHT / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT, tempBuffer);
+	windowId = k_createWindow(mouseX - 10, mouseY - WINDOW_TITLEBAR_HEIGHT / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_BLOCKING, tempBuffer);
 	if (windowId == WINDOW_INVALIDID) {
 		return;
 	}
@@ -70,7 +70,7 @@ void k_eventMonitorTask(void) {
 			k_sleep(0);
 			continue;
 		}
-		
+				
 		// clear previous event info.
 		k_drawRect(windowId, 11, y + 20, windowWidth - 11, y + 69, WINDOW_COLOR_BACKGROUND, true);
 
