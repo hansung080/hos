@@ -12,6 +12,8 @@
 #include "../utils/jpeg.h"
 #include "../utils/util.h"
 #include "loader.h"
+#include "mp_config_table.h"
+#include "multiprocessor.h"
 
 /**
   < SYSCALL/SYSRET Initialization Registers >
@@ -87,6 +89,14 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 
 		return task->link.id;
 
+	case SYSCALL_GETCURRENTTASKID:
+		task = k_getRunningTask(k_getApicId());
+		if (task == null) {
+			return TASK_INVALIDID;
+		}
+
+		return task->link.id;
+
 	case SYSCALL_SCHEDULE:
 		return (qword)k_schedule();
 
@@ -96,6 +106,12 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 	case SYSCALL_CHANGETASKAFFINITY:
 		return (qword)k_changeTaskAffinity(PARAM(0), (byte)PARAM(1));
 		
+	case SYSCALL_WAITTASK:
+		return (qword)k_waitTask(PARAM(0));
+
+	case SYSCALL_NOTIFYTASK:
+		return (qword)k_notifyTask(PARAM(0));
+
 	case SYSCALL_ENDTASK:
 		return (qword)k_endTask(PARAM(0));
 
@@ -111,6 +127,31 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 
 	case SYSCALL_GETPROCESSORLOAD:
 		return k_getProcessorLoad((byte)PARAM(0));
+
+	case SYSCALL_GETTASKGROUPID:
+		return k_getTaskGroupId();
+
+	case SYSCALL_RETURNTASKGROUPID:
+		k_returnTaskGroupId(PARAM(0));
+		return (qword)true;
+
+	case SYSCALL_WAITGROUP:
+		return (qword)k_waitGroup(PARAM(0), (void*)PARAM(1));
+
+	case SYSCALL_NOTIFYONEINWAITGROUP:
+		return (qword)k_notifyOneInWaitGroup(PARAM(0));
+
+	case SYSCALL_NOTIFYALLINWAITGROUP:
+		return (qword)k_notifyAllInWaitGroup(PARAM(0));
+
+	case SYSCALL_JOINGROUP:
+		return (qword)k_joinGroup((qword*)PARAM(0), (int)PARAM(1));
+
+	case SYSCALL_NOTIFYONEINJOINGROUP:
+		return (qword)k_notifyOneInJoinGroup(PARAM(0));
+
+	case SYSCALL_NOTIFYALLINJOINGROUP:
+		return (qword)k_notifyAllInJoinGroup(PARAM(0));
 
 	case SYSCALL_CREATETHREAD:
 		return k_createThread(PARAM(0), PARAM(1), (byte)PARAM(2), PARAM(3));
@@ -184,6 +225,14 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 	case SYSCALL_CLEARSERIALFIFO:
 		k_clearSerialFifo();
 		return (qword)true;
+
+	/*** Syscall from mp_config_table.h ***/
+	case SYSCALL_GETPROCESSORCOUNT:
+		return (qword)k_getProcessorCount();
+
+	/*** Syscall from multiprocessor.h ***/
+	case SYSCALL_GETAPICID:
+		return (qword)k_getApicId();
 
 	/*** Syscall from window.h ***/
 	case SYSCALL_GETBACKGROUNDWINDOWID:

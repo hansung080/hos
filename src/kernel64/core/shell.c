@@ -2899,12 +2899,13 @@ static int g_waitQueueBuffer[MAXWAITQUEUECOUNT];
 static void k_testBlockingQueue(void) {
 	int i;
 	int data;
+	qword taskIds[3];
 
 	k_initMutex(&g_waitMutex);
 	k_initQueue(&g_waitQueue, g_waitQueueBuffer, sizeof(int), MAXWAITQUEUECOUNT, true);
 
 	for (i = 0; i < 3; i++) {
-		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_blockingTask, TASK_AFFINITY_LOADBALANCING);
+		taskIds[i] = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_blockingTask, TASK_AFFINITY_LOADBALANCING)->link.id;
 	}
 
 	for (i = 0; i < 10; i++) {
@@ -2922,6 +2923,9 @@ static void k_testBlockingQueue(void) {
 		k_putQueue(&g_waitQueue, &data);
 	}
 	k_unlock(&g_waitMutex);
+
+	k_joinGroup(taskIds, 3);
+	k_printf("-> Main task (0x%q) has ended.\n", k_getRunningTask(k_getApicId())->link.id);
 }
 
 static void k_blockingTask(void) {
@@ -2946,17 +2950,20 @@ static void k_blockingTask(void) {
 			break;
 		}
 	}
+
+	k_printf("-> Child task (0x%q) has ended.\n", task->link.id);
 }
 
 static void k_testNonblockingQueue(void) {
 	int i;
 	int data;
+	qword taskIds[3];
 
 	k_initMutex(&g_waitMutex);
 	k_initQueue(&g_waitQueue, g_waitQueueBuffer, sizeof(int), MAXWAITQUEUECOUNT, false);
 
 	for (i = 0; i < 3; i++) {
-		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_nonblockingTask, TASK_AFFINITY_LOADBALANCING);
+		taskIds[i] = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_nonblockingTask, TASK_AFFINITY_LOADBALANCING)->link.id;
 	}
 
 	for (i = 0; i < 10; i++) {
@@ -2974,6 +2981,9 @@ static void k_testNonblockingQueue(void) {
 		k_putQueue(&g_waitQueue, &data);
 	}
 	k_unlock(&g_waitMutex);
+
+	k_joinGroup(taskIds, 3);
+	k_printf("-> Main task (0x%q) has ended.\n", k_getRunningTask(k_getApicId())->link.id);
 }
 
 static void k_nonblockingTask(void) {
@@ -2999,6 +3009,8 @@ static void k_nonblockingTask(void) {
 			break;
 		}
 	}
+
+	k_printf("-> Child task (0x%q) has ended.\n", task->link.id);
 }
 
 #endif // __DEBUG__

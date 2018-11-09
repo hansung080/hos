@@ -86,16 +86,17 @@
 #define TASK_PRIORITY_MEDIUM  0x02 // medium
 #define TASK_PRIORITY_LOW     0x03 // low
 #define TASK_PRIORITY_LOWEST  0x04 // lowest
-#define TASK_PRIORITY_END     0xFF // end task priority
 
 // task flags
-#define TASK_FLAGS_END     0x8000000000000000 // end task flag
-#define TASK_FLAGS_SYSTEM  0x4000000000000000 // system task flag
-#define TASK_FLAGS_PROCESS 0x2000000000000000 // processor flag
-#define TASK_FLAGS_THREAD  0x1000000000000000 // thread flag
-#define TASK_FLAGS_IDLE    0x0800000000000000 // idle task flag
-#define TASK_FLAGS_GUI     0x0400000000000000 // GUI task flag: set in k_createWindow.
-#define TASK_FLAGS_USER    0x0200000000000000 // user task flag
+#define TASK_FLAGS_WAIT    0x8000000000000000 // wait task flag
+#define TASK_FLAGS_END     0x4000000000000000 // end task flag
+#define TASK_FLAGS_SYSTEM  0x2000000000000000 // system task flag
+#define TASK_FLAGS_PROCESS 0x1000000000000000 // processor flag
+#define TASK_FLAGS_THREAD  0x0800000000000000 // thread flag
+#define TASK_FLAGS_IDLE    0x0400000000000000 // idle task flag
+#define TASK_FLAGS_GUI     0x0200000000000000 // GUI task flag: set in k_createWindow.
+#define TASK_FLAGS_USER    0x0100000000000000 // user task flag
+#define TASK_FLAGS_JOIN    0x0080000000000000 // join task flag: set in k_joinGroup.
 
 // affinity
 #define TASK_AFFINITY_LOADBALANCING 0xFF // load balancing (no affinity)

@@ -2,6 +2,9 @@
 #include "defines.h"
 
 int main(const char* args) {
+	ArgList argList;
+	char option[ARG_MAXLENGTH] = {'\0', };
+	dword windowFlags;
 	int mouseX, mouseY;
 	int windowWidth, windowHeight;
 	qword windowId;	
@@ -42,7 +45,7 @@ int main(const char* args) {
 	}
 
 	/* print argument string */
-	#if __DEBUG__
+	#if 0
 	ArgList argList;
 	char arg[ARG_MAXLENGTH] = {'\0', };
 
@@ -56,14 +59,26 @@ int main(const char* args) {
 		printf("'%s', ", arg);
 	}
 	printf("\n");
-	#endif // __DEBUG__
+	#endif
+
+	/* get arguments */
+	initArgs(&argList, args);
+
+	getNextArg(&argList, option);
+
+	if (strcmp(option, "-nb") == 0) {
+		windowFlags = WINDOW_FLAGS_DEFAULT;
+
+	} else {
+		windowFlags = WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_BLOCKING;				
+	}
 
 	/* create window */
 	getMouseCursorPos(&mouseX, &mouseY);
 	windowWidth = 500;
 	windowHeight = 200;
 	sprintf(tempBuffer, "Event Monitor %d", ++windowCount);
-	windowId = createWindow(mouseX - 10, mouseY - WINDOW_TITLEBAR_HEIGHT / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_BLOCKING, tempBuffer);
+	windowId = createWindow(mouseX - 10, mouseY - WINDOW_TITLEBAR_HEIGHT / 2, windowWidth, windowHeight, windowFlags, tempBuffer);
 	if (windowId == WINDOW_INVALIDID) {
 		return -1;
 	}

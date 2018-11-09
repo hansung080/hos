@@ -3,13 +3,6 @@
 
 #include "../core/types.h"
 
-// max reusable index count
-// - The real max reusable index count is aligned with 8.
-#define QUEUE_MAXREUSABLEINDEXCOUNT 8192 
-
-/* macro function */
-#define GETQUEUEINDEX(id) ((id) & 0xFFFFFFFF) // get queue index (low 32 bits) of queue id (64 bits).
-
 #pragma pack(push, 1)
 
 // General Array Queue
@@ -21,13 +14,11 @@ typedef struct k_Queue {
 	int getIndex; // get index: get data from head of array.
 	bool lastOperationPut;
 	bool blocking;
-	qword waitGroupId; // wait group ID: consist of queue count (high 32 bits) and queue index (low 32 bits).
+	qword waitGroupId;
 } Queue;
 
 #pragma pack(pop)
 
-static qword k_getQueueId(void);
-static void k_returnQueueId(qword id);
 void k_initQueue(Queue* queue, void* array, int dataSize, int maxDataCount, bool blocking);
 bool k_isQueueFull(const Queue* queue);
 bool k_isQueueEmpty(const Queue* queue);

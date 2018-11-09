@@ -33,14 +33,25 @@ void readRtcDate(word* year, byte* month, byte* dayOfMonth, byte* dayOfWeek);
 
 /*** Syscall from task.h ***/
 qword createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr, byte affinity);
+qword getCurrentTaskId(void);
 bool schedule(void);
 bool changeTaskPriority(qword taskId, byte priority);
 bool changeTaskAffinity(qword taskId, byte affinity);
+bool waitTask(qword taskId);
+bool notifyTask(qword taskId);
 bool endTask(qword taskId);
 void exit(int status);
 int getTaskCount(byte apicId);
 bool existTask(qword taskId);
 qword getProcessorLoad(byte apicId);
+qword getTaskGroupId(void);
+void returnTaskGroupId(qword groupId);
+bool waitGroup(qword groupId, void* lock);
+bool notifyOneInWaitGroup(qword groupId);
+bool notifyAllInWaitGroup(qword groupId);
+bool joinGroup(qword* taskIds, int count);
+bool notifyOneInJoinGroup(qword groupId);
+bool notifyAllInJoinGroup(qword groupId);
 qword createThread(qword entryPointAddr, qword arg, byte affinity);
 
 /*** Syscall from sync.h ***/
@@ -72,6 +83,12 @@ bool isfopen(const dirent* entry);
 void sendSerialData(byte* buffer, int size);
 int recvSerialData(byte* buffer, int size);
 void clearSerialFifo(void);
+
+/*** Syscall from mp_config_table.h ***/
+int k_getProcessorCount(void);
+
+/*** Syscall from multiprocessor.h ***/
+byte k_getApicId(void);
 
 /*** Syscall from window.h ***/
 qword getBackgroundWindowId(void);

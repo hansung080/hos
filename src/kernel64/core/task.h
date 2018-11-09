@@ -5,6 +5,38 @@
 #include "../utils/list.h"
 #include "sync.h"
 
+/**
+  < Task Life Cycle >
+                              Start
+                                | create
+                  schedule      v
+      ----------- <------- -----------
+      | Running | -------> |  Ready  | -------  
+      ----------- schedule -----------       |
+          | |             wait | ^           |
+          | | wait             v | notify    |
+          | |              -----------       |
+     exit | -------------> |  Wait   |       | end
+          |                -----------       |
+          |                     | end        |
+          |                     v            |
+          |                -----------       |
+          ---------------> |   End   | <------
+                           -----------
+                                | idle
+                                v
+                           Complete End
+    
+    @ arrow functions
+      - create   : k_createTask, k_initScheduler
+      - schedule : k_schedule, k_scheduleInInterrupt 
+      - wait     : k_waitTask, k_waitGroup, k_joinGroup
+      - notify   : k_notifyTask, k_notifyOneInWaitGroup, k_notifyAllInWaitGroup, k_notifyOneInJoinGroup, k_notifyAllInJoinGroup
+      - end      : k_endTask
+      - exit     : k_exitTask
+      - idle     : k_idleTask
+*/
+
 // context register count and size
 #define TASK_REGISTERCOUNT 24 // 24 = 5 (SS, RSP, RFLAGS, CS, RIP) + 19 (registers saved in ISR)
 #define TASK_REGISTERSIZE  8
@@ -66,15 +98,22 @@
 #define TASK_FLAGS_IDLE    0x0400000000000000 // idle task flag
 #define TASK_FLAGS_GUI     0x0200000000000000 // GUI task flag: set in k_createWindow.
 #define TASK_FLAGS_USER    0x0100000000000000 // user task flag
+#define TASK_FLAGS_JOIN    0x0080000000000000 // join task flag: set in k_joinGroup.
 
 // affinity
 #define TASK_AFFINITY_LOADBALANCING 0xFF // load balancing (no affinity)
+
+// max reusable group index count
+// - The real max reusable group index count is aligned with 8.
+#define TASK_MAXREUSABLEGROUPINDEXCOUNT 8192 
 
 /* macro functions */
 #define GETTASKOFFSET(taskId)            ((taskId) & 0xFFFFFFFF)                                 // get task offset (low 32 bits) of task.link.id (64 bits).
 #define GETTASKPRIORITY(flags)           ((flags) & 0xFF)                                        // get task priority (low 8 bits) of task.flags(64 bits).
 #define SETTASKPRIORITY(flags, priority) ((flags) = ((flags) & 0xFFFFFFFFFFFFFF00) | (priority)) // set task priority (low 8 bits) of task.flags(64 bits).
 #define GETTASKFROMTHREADLINK(x)         (Task*)((qword)(x) - offsetof(Task, threadLink))        // get task address using task.threadLink address.
+// [REF] The group ID consists of group count (high 32 bits) and group index (low 32 bits).
+#define GETTASKGROUPINDEX(id) ((id) & 0xFFFFFFFF) // get group index (low 32 bits) of group ID (64 bits).
 
 #pragma pack(push, 1)
 
@@ -98,6 +137,7 @@ typedef struct k_Task {
 	                         //             bit 58  : idle task flag
 							 //             bit 57  : GUI task flag
 							 //             bit 56  : user task flag
+							 //             bit 55  : join task flag
 	void* memAddr;           // start address of process memory area (code/data area)
 	qword memSize;           // size of process memory area (code/data area)
 	
@@ -125,8 +165,10 @@ typedef struct k_Task {
 	byte apicId;             // APIC ID of core which task is running on
 	byte affinity;           // task-processor affinity: APIC ID of core which has affinity with task
 	qword waitGroupId;       // wait group ID
-	char padding[1];         // padding bytes: According to Condition 2 of FPU context, align task size with the multiple of 16 bytes.
-} Task; // Task is ListItem, and current task size is 816 bytes.
+	qword joinGroupId;       // join group ID
+	int joinCount;           // join count
+	char padding[5];         // padding bytes: According to Condition 2 of FPU context, align task size with the multiple of 16 bytes.
+} Task; // Task is ListItem, and current task size is 832 bytes.
 
 typedef struct k_TaskPoolManager {
 	Spinlock spinlock;  // spinlock
@@ -185,10 +227,7 @@ bool k_isProcessorTimeExpired(byte apicId);
 bool k_changeTaskPriority(qword taskId, byte priority);
 bool k_changeTaskAffinity(qword taskId, byte affinity);
 bool k_waitTask(qword taskId);
-bool k_waitGroup(qword groupId, void* lock);
 bool k_notifyTask(qword taskId);
-bool k_notifyOneInGroup(qword groupId);
-bool k_notifyAllInGroup(qword groupId);
 void k_printWaitTaskInfo(void);
 bool k_endTask(qword taskId);
 void k_exitTask(void);
@@ -206,6 +245,16 @@ void k_haltProcessorByLoad(byte apicId);
 /* FPU Functions */
 qword k_getLastFpuUsedTaskId(byte apicId);
 void k_setLastFpuUsedTaskId(byte apicId, qword taskId);
+
+/* Task Group Functions */
+qword k_getTaskGroupId(void);
+void k_returnTaskGroupId(qword groupId);
+bool k_waitGroup(qword groupId, void* lock);
+bool k_notifyOneInWaitGroup(qword groupId);
+bool k_notifyAllInWaitGroup(qword groupId);
+bool k_joinGroup(qword* taskIds, int count);
+bool k_notifyOneInJoinGroup(qword groupId);
+bool k_notifyAllInJoinGroup(qword groupId);
 
 /* Application Functions */
 qword k_createThread(qword entryPointAddr, qword arg, byte affinity, qword exitFunc);

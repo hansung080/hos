@@ -179,6 +179,8 @@ Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAd
 	task->apicId = currentApicId;
 	task->affinity = affinity;
 	task->waitGroupId = 0;
+	task->joinGroupId = 0;
+	task->joinCount = 0;
 	
 	// add task to scheduler with load balancing.
 	k_addTaskToSchedulerWithLoadBalancing(task);
@@ -272,6 +274,8 @@ void k_initScheduler(void) {
 	task->apicId = currentApicId;
 	task->affinity = currentApicId;
 	task->waitGroupId = 0;
+	task->joinGroupId = 0;
+	task->joinCount = 0;
 	
 	// If current core is BSP, the booting task will become the shell task in text mode or the window manager task in graphic mode.
 	// (The idle task of BSP will be created in k_main function.)
@@ -931,26 +935,6 @@ bool k_waitTask(qword taskId) {
 	return true;
 }
 
-bool k_waitGroup(qword groupId, void* lock) {
-	Task* target;
-	bool result;
-
-	target = k_getRunningTask(k_getApicId());
-	target->waitGroupId = groupId;
-
-	if (lock != null) {
-		k_unlockAny(lock);
-	}		
-
-	result = k_waitTask(target->link.id);
-
-	if (lock != null) {
-		k_lockAny(lock);
-	}
-
-	return result;
-}
-
 bool k_notifyTask(qword taskId) {
 	byte apicId;
 	Task* target;
@@ -958,7 +942,7 @@ bool k_notifyTask(qword taskId) {
 	if (k_findSchedulerByTaskWithLock(taskId, &apicId) == false) {
 		return false;
 	}
-	
+		
 	target = g_schedulers[apicId].runningTask;
 	
 	// If it's a running task, clear wait task flag.
@@ -989,47 +973,6 @@ bool k_notifyTask(qword taskId) {
 	return true;
 }
 
-bool k_notifyOneInGroup(qword groupId) {
-	Task* task;
-	bool result = false;
-
-	k_lockSpin(&g_commonScheduler.spinlock);
-
-	task = k_getHeadFromList(&g_commonScheduler.waitList);
-	while (task != null) {
-		if (task->waitGroupId == groupId) {
-			result = k_notifyTask(task->link.id);
-			break;
-		}
-
-		task = k_getNextFromList(&g_commonScheduler.waitList, task);
-	} 
-
-	k_unlockSpin(&g_commonScheduler.spinlock);
-
-	return result;
-}
-
-bool k_notifyAllInGroup(qword groupId) {
-	Task* task;
-	bool result = false;
-
-	k_lockSpin(&g_commonScheduler.spinlock);
-
-	task = k_getHeadFromList(&g_commonScheduler.waitList);
-	while (task != null) {
-		if (task->waitGroupId == groupId) {
-			result = k_notifyTask(task->link.id);
-		}
-
-		task = k_getNextFromList(&g_commonScheduler.waitList, task);
-	} 
-
-	k_unlockSpin(&g_commonScheduler.spinlock);
-
-	return result;
-}
-
 void k_printWaitTaskInfo(void) {
 	Task* task;
 	int count = 0;
@@ -1041,7 +984,7 @@ void k_printWaitTaskInfo(void) {
 	task = k_getHeadFromList(&g_commonScheduler.waitList);
 	while (task != null) {
 		count++;
-		k_printf("[wait task %d] core %d, task 0x%q, group 0x%q\n", count, task->apicId, task->link.id, task->waitGroupId);
+		k_printf("[wait task %d] core %d, task 0x%q, wait group 0x%q, join group 0x%q, join count %d\n", count, task->apicId, task->link.id, task->waitGroupId, task->joinGroupId, task->joinCount);
 		task = k_getNextFromList(&g_commonScheduler.waitList, task);
 	}
 
@@ -1062,6 +1005,10 @@ bool k_endTask(qword taskId) {
 	
 	// If it's a running task, set end task flag, and switch task.
 	if (target->link.id == taskId) {
+		if (target->flags & TASK_FLAGS_JOIN) {
+			k_notifyOneInJoinGroup(target->joinGroupId);
+		}
+
 		target->flags |= TASK_FLAGS_END;		
 		k_unlockSpin(&(g_schedulers[apicId].spinlock));
 		
@@ -1089,12 +1036,20 @@ bool k_endTask(qword taskId) {
 	if (target == null) {
 		target = k_getTaskFromPool(GETTASKOFFSET(taskId));
 		if (target != null) {
+			if (target->flags & TASK_FLAGS_JOIN) {
+				k_notifyOneInJoinGroup(target->joinGroupId);
+			}
+
 			target->flags |= TASK_FLAGS_END;
 		}
 		
 		k_unlockSpin(&(g_schedulers[apicId].spinlock));
 		
 		return true;
+	}
+
+	if (target->flags & TASK_FLAGS_JOIN) {
+		k_notifyOneInJoinGroup(target->joinGroupId);
 	}
 	
 	target->flags |= TASK_FLAGS_END;
@@ -1329,6 +1284,210 @@ qword k_getLastFpuUsedTaskId(byte apicId) {
 
 void k_setLastFpuUsedTaskId(byte apicId, qword taskId) {
 	g_schedulers[apicId].lastFpuUsedTaskId = taskId;
+}
+
+// group ID global variables
+static byte g_groupIndexBitmap[(TASK_MAXREUSABLEGROUPINDEXCOUNT + 7) / 8];
+static bool g_firstGroupIndex = true;
+static dword g_maxGroupIndex = (TASK_MAXREUSABLEGROUPINDEXCOUNT + 0x7) & 0xFFFFFFF8;
+static dword g_groupCount = 0;
+
+qword k_getTaskGroupId(void) {
+	int i, j;
+	byte data;	
+	
+	if (g_groupCount == 0xFFFFFFFF) {
+		g_groupCount = 0;
+	}
+
+	g_groupCount++;
+
+	/* reusable index */
+	if (g_firstGroupIndex == true) {
+		g_firstGroupIndex = false;
+		k_memset(g_groupIndexBitmap, 0, sizeof(g_groupIndexBitmap));
+		g_groupIndexBitmap[0] |= 1;
+		return ((qword)g_groupCount << 32) | 0;
+	}
+
+	for (i = 0; i < ((TASK_MAXREUSABLEGROUPINDEXCOUNT + 7) / 8); i++) {
+		data = g_groupIndexBitmap[i];
+
+		for (j = 0; j < 8; j++) {
+			if (!(data & (1 << j))) {
+				data |= 1 << j;
+				g_groupIndexBitmap[i] = data;
+				return ((qword)g_groupCount << 32) | ((i * 8) + j);
+			}
+		}
+	}
+
+	/* not-reusable index */
+	if (g_maxGroupIndex == 0xFFFFFFFF) {
+		g_maxGroupIndex = (TASK_MAXREUSABLEGROUPINDEXCOUNT + 0x7) & 0xFFFFFFF8;
+	}
+
+	return ((qword)g_groupCount << 32) | (g_maxGroupIndex++);
+}
+
+void k_returnTaskGroupId(qword groupId) {
+	dword index;
+	byte data;
+	
+	index = GETTASKGROUPINDEX(groupId);
+	if (index >= g_maxGroupIndex) {
+		return;
+	}
+
+	data = g_groupIndexBitmap[index / 8];
+	data &= ~(1 << (index % 8));
+	g_groupIndexBitmap[index / 8] = data;
+}
+
+bool k_waitGroup(qword groupId, void* lock) {
+	Task* target;
+	bool result;
+
+	target = k_getRunningTask(k_getApicId());
+	target->waitGroupId = groupId;
+
+	if (lock != null) {
+		k_unlockAny(lock);
+	}		
+
+	result = k_waitTask(target->link.id);
+
+	target->waitGroupId = 0;
+
+	if (lock != null) {
+		k_lockAny(lock);
+	}
+
+	return result;
+}
+
+bool k_notifyOneInWaitGroup(qword groupId) {
+	Task* task;
+	bool result = false;
+
+	k_lockSpin(&g_commonScheduler.spinlock);
+
+	task = k_getHeadFromList(&g_commonScheduler.waitList);
+	while (task != null) {
+		if (task->waitGroupId == groupId) {
+			result = k_notifyTask(task->link.id);
+			break;
+		}
+
+		task = k_getNextFromList(&g_commonScheduler.waitList, task);
+	} 
+
+	k_unlockSpin(&g_commonScheduler.spinlock);
+
+	return result;
+}
+
+bool k_notifyAllInWaitGroup(qword groupId) {
+	Task* task;
+	bool result = false;
+
+	k_lockSpin(&g_commonScheduler.spinlock);
+
+	task = k_getHeadFromList(&g_commonScheduler.waitList);
+	while (task != null) {
+		if (task->waitGroupId == groupId) {
+			result = k_notifyTask(task->link.id);
+		}
+
+		task = k_getNextFromList(&g_commonScheduler.waitList, task);
+	} 
+
+	k_unlockSpin(&g_commonScheduler.spinlock);
+
+	return result;
+}
+
+bool k_joinGroup(qword* taskIds, int count) {
+	qword groupId;
+	int i;
+	Task* joinTask;
+	Task* waitTask;
+	bool result;
+
+	groupId = k_getTaskGroupId();
+
+	for (i = 0; i < count; i++) {
+		joinTask = k_getTaskFromPool(GETTASKOFFSET(taskIds[i]));
+		joinTask->joinGroupId = groupId;
+		joinTask->flags |= TASK_FLAGS_JOIN;
+	}
+
+	waitTask = k_getRunningTask(k_getApicId());
+	waitTask->joinGroupId = groupId;
+	waitTask->joinCount = count;
+
+	result = k_waitTask(waitTask->link.id);
+
+	waitTask->joinGroupId = 0;
+	waitTask->joinCount = 0;
+
+	k_returnTaskGroupId(groupId);
+
+	return result;
+}
+
+bool k_notifyOneInJoinGroup(qword groupId) {
+	Task* task;
+	bool result = false;
+
+	k_lockSpin(&g_commonScheduler.spinlock);
+
+	task = k_getHeadFromList(&g_commonScheduler.waitList);
+	while (task != null) {
+		if (task->joinGroupId == groupId) {
+			if (task->joinCount > 1) {
+				task->joinCount--;
+				break;
+			}
+
+			task->joinCount = 0;
+			result = k_notifyTask(task->link.id);
+			break;
+		}
+
+		task = k_getNextFromList(&g_commonScheduler.waitList, task);
+	} 
+
+	k_unlockSpin(&g_commonScheduler.spinlock);
+
+	return result;
+}
+
+bool k_notifyAllInJoinGroup(qword groupId) {
+	Task* task;
+	bool result = false;
+
+	k_lockSpin(&g_commonScheduler.spinlock);
+
+	task = k_getHeadFromList(&g_commonScheduler.waitList);
+	while (task != null) {
+		if (task->joinGroupId == groupId) {
+			if (task->joinCount > 1) {
+				task->joinCount--;
+				task = k_getNextFromList(&g_commonScheduler.waitList, task);
+				continue;
+			}
+
+			task->joinCount = 0;
+			result = k_notifyTask(task->link.id);
+		}
+
+		task = k_getNextFromList(&g_commonScheduler.waitList, task);
+	} 
+
+	k_unlockSpin(&g_commonScheduler.spinlock);
+
+	return result;
 }
 
 qword k_createThread(qword entryPointAddr, qword arg, byte affinity, qword exitFunc) {

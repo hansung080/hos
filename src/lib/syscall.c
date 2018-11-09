@@ -68,6 +68,10 @@ qword createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr
 	return executeSyscall(SYSCALL_CREATETASK, &paramTable);
 }
 
+qword getCurrentTaskId(void) {
+	return executeSyscall(SYSCALL_GETCURRENTTASKID, null);
+}
+
 bool schedule(void) {
 	return (bool)executeSyscall(SYSCALL_SCHEDULE, null);
 }
@@ -88,6 +92,22 @@ bool changeTaskAffinity(qword taskId, byte affinity) {
 	PARAM(1) = (qword)affinity;
 
 	return (bool)executeSyscall(SYSCALL_CHANGETASKAFFINITY, &paramTable);
+}
+
+bool waitTask(qword taskId) {
+	ParamTable paramTable;
+
+	PARAM(0) = taskId;
+
+	return (bool)executeSyscall(SYSCALL_WAITTASK, &paramTable);
+}
+
+bool notifyTask(qword taskId) {
+	ParamTable paramTable;
+
+	PARAM(0) = taskId;
+
+	return (bool)executeSyscall(SYSCALL_NOTIFYTASK, &paramTable);
 }
 
 bool endTask(qword taskId) {
@@ -128,6 +148,68 @@ qword getProcessorLoad(byte apicId) {
 	PARAM(0) = (qword)apicId;
 
 	return executeSyscall(SYSCALL_GETPROCESSORLOAD, &paramTable);
+}
+
+qword getTaskGroupId(void) {
+	return executeSyscall(SYSCALL_GETTASKGROUPID, null);
+}
+
+void returnTaskGroupId(qword groupId) {
+	ParamTable paramTable;
+
+	PARAM(0) = groupId;
+
+	executeSyscall(SYSCALL_RETURNTASKGROUPID, &paramTable);
+}
+
+bool waitGroup(qword groupId, void* lock) {
+	ParamTable paramTable;
+
+	PARAM(0) = groupId;
+	PARAM(1) = (qword)lock;
+
+	return (bool)executeSyscall(SYSCALL_WAITGROUP, &paramTable);
+}
+
+bool notifyOneInWaitGroup(qword groupId) {
+	ParamTable paramTable;
+
+	PARAM(0) = groupId;
+
+	return (bool)executeSyscall(SYSCALL_NOTIFYONEINWAITGROUP, &paramTable);
+}
+
+bool notifyAllInWaitGroup(qword groupId) {
+	ParamTable paramTable;
+
+	PARAM(0) = groupId;
+
+	return (bool)executeSyscall(SYSCALL_NOTIFYALLINWAITGROUP, &paramTable);
+}
+
+bool joinGroup(qword* taskIds, int count) {
+	ParamTable paramTable;
+
+	PARAM(0) = (qword)taskIds;
+	PARAM(1) = (qword)count;
+
+	return (bool)executeSyscall(SYSCALL_JOINGROUP, &paramTable);
+}
+
+bool notifyOneInJoinGroup(qword groupId) {
+	ParamTable paramTable;
+
+	PARAM(0) = groupId;
+
+	return (bool)executeSyscall(SYSCALL_NOTIFYONEINJOINGROUP, &paramTable);
+}
+
+bool notifyAllInJoinGroup(qword groupId) {
+	ParamTable paramTable;
+
+	PARAM(0) = groupId;
+
+	return (bool)executeSyscall(SYSCALL_NOTIFYALLINJOINGROUP, &paramTable);
 }
 
 qword createThread(qword entryPointAddr, qword arg, byte affinity) {
@@ -314,6 +396,14 @@ int recvSerialData(byte* buffer, int size) {
 
 void clearSerialFifo(void) {
 	executeSyscall(SYSCALL_CLEARSERIALFIFO, null);
+}
+
+int k_getProcessorCount(void) {
+	return (int)executeSyscall(SYSCALL_GETPROCESSORCOUNT, null);
+}
+
+byte k_getApicId(void) {
+	return (byte)executeSyscall(SYSCALL_GETAPICID, null);
 }
 
 qword getBackgroundWindowId(void) {

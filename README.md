@@ -38,6 +38,7 @@ on your computer or QEMU.
 - GUI system: consist of 2D graphics libraries, mouse driver, window, window manager, event queue
 - GUI tasks: base, event-monitor, app-panel, system-monitor, shell, image-viewer
 - system call and user libraries
+- applications: event-monitor, test-elf, text-viewer
 
 < Shorthands >
 - ID: IDentification
