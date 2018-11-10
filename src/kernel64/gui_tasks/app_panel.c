@@ -4,6 +4,7 @@
 #include "system_monitor.h"
 #include "shell.h"
 #include "image_viewer.h"
+#include "color_picker.h"
 #include "../core/rtc.h"
 #include "../core/task.h"
 #include "../utils/util.h"
@@ -16,7 +17,8 @@ static AppEntry g_appTable[] = {
 	{"Event Monitor", k_eventMonitorTask},
 	{"System Monitor", k_systemMonitorTask},
 	{"Shell", k_guiShellTask},
-	{"Image Viewer", k_imageViewerTask}
+	{"Image Viewer", k_imageViewerTask},
+	{"Color Picker", k_colorPickerTask}
 };
 
 static AppPanelManager g_appPanelManager;
