@@ -119,6 +119,11 @@ local.properties
 *.bin
 *.img
 
+# Executable files
+image-maker
+network-transfer
+dep-modifier
+
 # Mac files
 .DS_Store
 
