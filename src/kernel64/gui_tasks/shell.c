@@ -41,7 +41,7 @@ void k_guiShellTask(void) {
 	windowWidth = FONT_DEFAULT_WIDTH * CONSOLE_WIDTH + 4;
 	windowHeight = FONT_DEFAULT_HEIGHT * CONSOLE_HEIGHT + WINDOW_TITLEBAR_HEIGHT + 2;
 
-	g_guiShellWindowId = k_createWindow((screenArea.x2 - windowWidth) / 2, (screenArea.y2 - windowHeight) / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT, "Shell");
+	g_guiShellWindowId = k_createWindow(screenArea.x1, screenArea.y2 - windowHeight, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT, "Shell");
 	if (g_guiShellWindowId == WINDOW_INVALIDID) {
 		return;
 	}

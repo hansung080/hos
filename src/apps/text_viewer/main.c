@@ -84,43 +84,41 @@ int main(const char* args) {
 		case EVENT_KEY_DOWN:
 			keyEvent = &event.keyEvent;
 
-			if (keyEvent->flags & KEY_FLAGS_DOWN) {
-				switch (keyEvent->asciiCode) {
-				case KEY_UP:
-					moveLines = -1;
-					break;
+			switch (keyEvent->asciiCode) {
+			case KEY_UP:
+				moveLines = -1;
+				break;
 
-				case KEY_DOWN:
-					moveLines = 1;
-					break;
+			case KEY_DOWN:
+				moveLines = 1;
+				break;
 
-				case KEY_PAGEUP:
-					moveLines = -info.rows;
-					break;
+			case KEY_PAGEUP:
+				moveLines = -info.rows;
+				break;
 
-				case KEY_PAGEDOWN:
-					moveLines = info.rows;
-					break;
+			case KEY_PAGEDOWN:
+				moveLines = info.rows;
+				break;
 
-				default:
-					moveLines = 0;
-					break;
-				}
-
-				if (info.currentLine + moveLines < 0) {
-					moveLines = -info.currentLine;
-
-				} else if (info.currentLine + moveLines >= info.maxLines) {
-					moveLines = info.maxLines - info.currentLine - 1;
-				}
-
-				if (moveLines == 0) {
-					break;
-				}
-
-				info.currentLine += moveLines;
-				drawTextBuffer(windowId, &info);
+			default:
+				moveLines = 0;
+				break;
 			}
+
+			if (info.currentLine + moveLines < 0) {
+				moveLines = -info.currentLine;
+
+			} else if (info.currentLine + moveLines >= info.maxLines) {
+				moveLines = info.maxLines - info.currentLine - 1;
+			}
+
+			if (moveLines == 0) {
+				break;
+			}
+
+			info.currentLine += moveLines;
+			drawTextBuffer(windowId, &info);
 
 			break;
 

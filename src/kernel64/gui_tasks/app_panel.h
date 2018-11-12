@@ -7,7 +7,7 @@
 
 // app panel-related macros
 #define APPPANEL_TITLE      "SYS_APPPANEL"
-#define APPPANEL_HEIGHT     31
+#define APPPANEL_HEIGHT     WINDOW_APPPANEL_HEIGHT
 #define APPPANEL_CLOCKWIDTH (FONT_DEFAULT_WIDTH * 8) // clock ex) 09:00 AM
 
 // app list-related macros

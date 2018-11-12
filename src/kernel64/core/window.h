@@ -50,6 +50,7 @@
 #define WINDOW_XBUTTON_SIZE     19 // close button, resize button size
 #define WINDOW_MINWIDTH         (WINDOW_XBUTTON_SIZE * 2 + 30) // min window width
 #define WINDOW_MINHEIGHT        (WINDOW_TITLEBAR_HEIGHT + 30)  // min window height
+#define WINDOW_APPPANEL_HEIGHT  31
 
 // window color
 #define WINDOW_COLOR_BACKGROUND                 RGB(255, 255, 255)

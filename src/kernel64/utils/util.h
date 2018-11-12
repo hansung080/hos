@@ -19,11 +19,19 @@ void k_checkTotalRamSize(void);
 qword k_getTotalRamSize(void);
 
 /* String Functions */
+int k_strcpy(char* dest, const char* src);
+int k_strcmp(const char* dest, const char* src);
+int k_strncpy(char* dest, const char* src, int size);
+int k_strncmp(const char* dest, const char* src, int size);
 int k_strlen(const char* str);
 void k_reverseStr(char* str);
 bool k_equalStr(const char* str1, const char* str2);
+int k_atoi10(const char* str);
+dword k_atoi16(const char* str);
 long k_atol10(const char* str);
 qword k_atol16(const char* str);
+int k_itoa10(int value, char* str);
+int k_itoa16(dword value, char* str);
 int k_ltoa10(long value, char* str);
 int k_ltoa16(qword value, char* str);
 int k_sprintf(char* str, const char* format, ...);

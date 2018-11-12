@@ -176,6 +176,58 @@ qword k_getTotalRamSize(void) {
 	return g_totalRamMbSize;
 }
 
+int k_strcpy(char* dest, const char* src) {
+	int i;
+
+	for (i = 0; src[i] != '\0'; i++) {
+		dest[i] = src[i];
+	}
+
+	dest[i] = '\0';
+
+	return i;
+}
+
+int k_strcmp(const char* dest, const char* src) {
+	int i;
+
+	for (i = 0; (dest[i] != '\0') && (src[i] != '\0'); i++) {
+		if ((dest[i] - src[i]) != 0) {
+			break;
+		}
+	}
+
+	return (dest[i] - src[i]);
+}
+
+int k_strncpy(char* dest, const char* src, int size) {
+	int i;
+
+	for (i = 0; (i < size) && (src[i] != '\0'); i++) {
+		dest[i] = src[i];
+	}
+
+	dest[i] = '\0';
+
+	return i;	
+}
+
+int k_strncmp(const char* dest, const char* src, int size) {
+	int i;
+
+	for (i = 0; (i < size) && (dest[i] != '\0') && (src[i] != '\0'); i++) {
+		if ((dest[i] - src[i]) != 0) {
+			break;
+		}
+	}
+
+	if (i == size) {
+		return 0;
+	}
+
+	return (dest[i] - src[i]);
+}
+
 int k_strlen(const char* str) {
 	int i;
 	
@@ -212,6 +264,50 @@ bool k_equalStr(const char* str1, const char* str2) {
 	}
 	
 	return false;
+}
+
+int k_atoi10(const char* str) {
+	int value = 0;
+	int i;
+	
+	if (str[0] == '-') {
+		i = 1;
+		
+	} else {
+		i = 0;
+	}
+	
+	for ( ; str[i] != '\0'; i++) {
+		value *= 10;
+		value += (str[i] - '0');
+	}
+	
+	if (str[0] == '-') {
+		value = -value;
+	}
+	
+	return value;
+}
+
+dword k_atoi16(const char* str) {
+	dword value = 0;
+	int i;
+	
+	for (i = 0; str[i] != '\0'; i++) {
+		value *= 16;
+		
+		if ('A' <= str[i] && str[i] <= 'Z') {
+			value += (str[i] - 'A') + 10;
+			
+		} else if ('a' <= str[i] && str[i] <= 'z') {
+			value += (str[i] - 'a') + 10;
+			
+		} else {
+			value += (str[i] - '0');
+		}
+	}
+	
+	return value;
 }
 
 long k_atol10(const char* str) {
@@ -256,6 +352,71 @@ qword k_atol16(const char* str) {
 	}
 	
 	return value;
+}
+
+int k_itoa10(int value, char* str) {
+	int i;
+	
+	if (value == 0) {
+		str[0] = '0';
+		str[1] = '\0';
+		return 1;
+	}
+	
+	if (value < 0) {
+		i = 1;
+		str[0] = '-';
+		value = -value;
+		
+	} else {
+		i = 0;
+	}
+	
+	for ( ; value > 0; i++) {
+		str[i] = (value % 10) + '0';
+		value /= 10;
+	}
+	
+	str[i] = '\0';
+	
+	if (str[0] == '-') {
+		k_reverseStr(&(str[1]));
+		
+	} else {
+		k_reverseStr(str);
+	}
+	
+	return i;
+}
+
+int k_itoa16(dword value, char* str) {
+	dword i;
+	dword currentValue;
+	
+	if (value == 0) {
+		str[0] = '0';
+		str[1] = '\0';
+		return 1;
+	}
+	
+	for (i = 0; value > 0; i++) {
+		currentValue = value % 16;
+		
+		if (currentValue >= 10) {
+			str[i] = (currentValue - 10) + 'A';
+			
+		} else {
+			str[i] = currentValue + '0';
+		}
+		
+		value /= 16;
+	}
+	
+	str[i] = '\0';
+	
+	k_reverseStr(str);
+	
+	return i;
 }
 
 int k_ltoa10(long value, char* str) {

@@ -39,7 +39,7 @@ void k_systemMonitorTask(void) {
 		windowWidth += 40;
 	}
 
-	windowId = k_createWindow((windowManager->screenArea.x2 - windowWidth) / 2, (windowManager->screenArea.y2 - windowHeight) / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW, "System Monitor");
+	windowId = k_createWindow(windowManager->screenArea.x2 - windowWidth, windowManager->screenArea.y1 + WINDOW_APPPANEL_HEIGHT, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW, "System Monitor");
 	if (windowId == WINDOW_INVALIDID) {
 		return;
 	}
