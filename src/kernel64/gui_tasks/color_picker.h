@@ -5,7 +5,7 @@
 #include "../core/2d_graphics.h"
 
 // color
-#define COLORPICKER_COLOR_VALAREABORDER RGB(180, 180, 200) // gray
+#define COLORPICKER_COLOR_VALAREABORDER RGB(167, 173, 186)
 
 // size
 #define COLORPICKER_WIDTH  450

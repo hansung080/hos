@@ -36,7 +36,7 @@ on your computer or QEMU.
 - serial port driver
 - multi-core processing: process interrupt load balancing and task load balancing.
 - GUI system: consist of 2D graphics libraries, mouse driver, window, window manager, event queue
-- GUI tasks: base, event-monitor, app-panel, system-monitor, shell, image-viewer
+- GUI tasks: base, event-monitor, app-panel, system-monitor, shell, image-viewer, color-picker
 - system call and user libraries
 - applications: event-monitor, test-elf, text-viewer
 
@@ -147,3 +147,19 @@ on your computer or QEMU.
 - [task name info]: info message
 - [task name debug]: debug message
 - [task name error]: error message
+
+< Window Color >
+- reference site
+https://digitalsynopsis.com/
+https://webgradients.com/
+
+- blue: RGB(109, 213, 237) #6dd5ed -> graph bar, button clicked
+- blue: RGB(33, 147, 176) #2193b0 -> title bar background active
+- orange: RGB(255, 184, 140) #ffb88c -> not used
+- orange: RGB(222, 98, 98) #de6262 -> mouse over
+- gray: RGB(229, 229, 229) #e5e5e5 -> bright shadow 
+- gray: RGB(167, 173, 186) #a7adba -> title bar background inactive
+- gray: RGB(101, 115, 126) #65737e -> not used
+- gray: RGB(86, 86, 86) #565656 -> dark shadow
+- peach: RGB(255, 236, 210) #ffecd2 -> system background
+- peach: RGB(252, 182, 159) #fcb69f -> system background mark dark

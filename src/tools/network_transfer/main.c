@@ -126,10 +126,8 @@ int main(int argc, const char** argv) {
 	fclose(file);
 	close(sockfd);
 	
-	// print send complete message and wait for Enter key.
+	// print sending complete message.
 	printf("[info] sending complete: sent size: %d bytes\n", sentSize);
-	printf("Press any key to exit.");
-	getchar();
 	
 	return 0;
 }

@@ -61,7 +61,7 @@ void k_eventMonitorTask(void) {
 
 	/* draw user event send button */
 	k_setRect(&buttonArea, 10, y + 80, windowWidth - 10, windowHeight - 10);
-	k_drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "Send User Event", RGB(0, 0, 0));
+	k_drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "Send User Event", RGB(0, 0, 0), BUTTON_FLAGS_SHADOW);
 	k_showWindow(windowId, true);
 
 	/* event processing loop */
@@ -96,7 +96,7 @@ void k_eventMonitorTask(void) {
 			if (event.type == EVENT_MOUSE_LBUTTONDOWN) {
 				if (k_isPointInRect(&buttonArea, mouseEvent->point.x, mouseEvent->point.y) == true) {
 					// draw button with bright green color in order to express button down.
-					k_drawButton(windowId, &buttonArea, EVENTMONITOR_COLOR_BUTTONACTIVE, "Send User Event", RGB(255, 255, 255));
+					k_drawButton(windowId, &buttonArea, EVENTMONITOR_COLOR_BUTTONACTIVE, "Send User Event", RGB(255, 255, 255), BUTTON_FLAGS_SHADOW);
 					k_updateScreenById(windowId);
 
 					// set user event
@@ -117,7 +117,7 @@ void k_eventMonitorTask(void) {
 
 			} else if (event.type == EVENT_MOUSE_LBUTTONUP) {
 				// draw button with original color in order to express button up.
-				k_drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "Send User Event", RGB(0, 0, 0));
+				k_drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "Send User Event", RGB(0, 0, 0), BUTTON_FLAGS_SHADOW);
 			}
 
 			break;

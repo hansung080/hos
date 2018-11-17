@@ -13,6 +13,9 @@ typedef word Color;
 // - b: 0 ~ 255 (8 bits) / 8 = 0 ~ 31 (5 bits)
 // Being closer to 255 represents brighter color.
 #define RGB(r, g, b) ((((byte)(r) >> 3) << 11) | (((byte)(g) >> 2) << 5) | ((byte)(b) >> 3))
+#define GETR(rgb)    ((((rgb) & 0xF800) >> 11) << 3)
+#define GETG(rgb)    ((((rgb) & 0x07E0) >> 5) << 2)
+#define GETB(rgb)    (((rgb) & 0x001F) << 3)
 
 #pragma pack(push, 1)
 
@@ -29,6 +32,10 @@ typedef struct k_Rect {
 } Rect;
 
 #pragma pack(pop)
+
+/* Color Functions */
+Color k_changeColorBrightness(Color color, int r, int g, int b);
+Color k_changeColorBrightness2(Color color, int r, int g, int b);
 
 /* Rectangle Functions */
 void k_setRect(Rect* rect, int x1, int y1, int x2, int y2);

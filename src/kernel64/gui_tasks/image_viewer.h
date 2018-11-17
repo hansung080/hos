@@ -5,7 +5,7 @@
 #include "../core/window.h"
 
 // image viewer color
-#define IMAGEVIEWER_COLOR_BUTTONACTIVE RGB(79, 204, 11) // bright green
+#define IMAGEVIEWER_COLOR_BUTTONACTIVE RGB(109, 213, 237)
 
 void k_imageViewerTask(void);
 static void k_drawFileName(qword windowId, Rect* area, const char* fileName, int fileNameLen);

@@ -68,7 +68,7 @@ static bool k_createAppPanel(void) {
 
 	// draw app list button.
 	k_setRect(&g_appPanelManager.buttonArea, 5, 5, 120, 25);
-	k_drawButton(windowId, &g_appPanelManager.buttonArea, APPPANEL_COLOR_BACKGROUND, "Applications", RGB(255, 255, 255));
+	k_drawButton(windowId, &g_appPanelManager.buttonArea, APPPANEL_COLOR_BACKGROUND, "Applications", RGB(255, 255, 255), 0);
 
 	// draw digital clock.
 	k_drawDigitalClock(windowId);
@@ -110,14 +110,14 @@ static void k_drawDigitalClock(qword windowId) {
 	buffer[3] = minute / 10 + '0';
 	buffer[4] = minute % 10 + '0';
 	
-	#if __DEBUG__
+	#if 0
 	if ((second % 2) == 1) {
 		buffer[2] = ' ';
 
 	} else {
 		buffer[2] = ':';
 	}
-	#endif // __DEBUG__
+	#endif
 
 	k_getWindowArea(windowId, &windowArea);
 	k_setRect(&updateArea, windowArea.x2 - APPPANEL_CLOCKWIDTH - 13, 5, windowArea.x2 - 5, 25);
@@ -150,7 +150,7 @@ static bool k_processAppPanelEvent(void) {
 
 			// app list button (toggle button): up -> down
 			if (g_appPanelManager.appListVisible == false) {
-				k_drawButton(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea, APPPANEL_COLOR_ACTIVE, "Applications", RGB(255, 255, 255));
+				k_drawButton(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea, APPPANEL_COLOR_ACTIVE, "Applications", RGB(255, 255, 255), 0);
 				k_updateScreenByWindowArea(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea);
 
 				if (g_appPanelManager.prevMouseOverIndex != -1) {
@@ -165,7 +165,7 @@ static bool k_processAppPanelEvent(void) {
 
 			// app list button (toggle button): down -> up
 			} else {
-				k_drawButton(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea, APPPANEL_COLOR_BACKGROUND, "Applications", RGB(255, 255, 255));
+				k_drawButton(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea, APPPANEL_COLOR_BACKGROUND, "Applications", RGB(255, 255, 255), 0);
 				k_updateScreenByWindowArea(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea);
 
 				k_showWindow(g_appPanelManager.appListId, false);
@@ -225,23 +225,26 @@ static bool k_createAppList(void) {
 }
 
 static void k_drawAppItem(int index, bool mouseOver) {
-	Color color;
 	Rect itemArea;
 
-	if (mouseOver == true) {
-		color = APPPANEL_COLOR_ACTIVE;
-
-	} else {
-		color = APPPANEL_COLOR_BACKGROUND;
-	}
-
-	// draw app item border and background.
+	// draw app item border.
 	k_setRect(&itemArea, 0, APPLIST_ITEMHEIGHT * index, g_appPanelManager.appListWidth - 1, APPLIST_ITEMHEIGHT * (index + 1) - 1);
 	k_drawRect(g_appPanelManager.appListId, itemArea.x1, itemArea.y1, itemArea.x2, itemArea.y2, APPPANEL_COLOR_INNERLINE, false);
-	k_drawRect(g_appPanelManager.appListId, itemArea.x1 + 1, itemArea.y1 + 1, itemArea.x2 - 1, itemArea.y2 - 1, color, true);
 
-	// draw app name.
-	k_drawText(g_appPanelManager.appListId, itemArea.x1 + 10, itemArea.y1 + 2, RGB(255, 255, 255), color, g_appTable[index].name, k_strlen(g_appTable[index].name));
+	if (mouseOver == true) {
+		// draw app item background.	
+		k_drawRect(g_appPanelManager.appListId, itemArea.x1 + 1, itemArea.y1 + 1, itemArea.x2 - 1, itemArea.y2 - 1, APPPANEL_COLOR_ACTIVE, true);
+
+		// draw app name.
+		k_drawText(g_appPanelManager.appListId, itemArea.x1 + 10, itemArea.y1 + 2, RGB(255, 255, 255), APPPANEL_COLOR_ACTIVE, g_appTable[index].name, k_strlen(g_appTable[index].name));
+
+	} else {
+		// draw app item background.	
+		k_drawRect(g_appPanelManager.appListId, itemArea.x1 + 1, itemArea.y1 + 1, itemArea.x2 - 1, itemArea.y2 - 1, APPPANEL_COLOR_BACKGROUND, true);
+
+		// draw app name.
+		k_drawText(g_appPanelManager.appListId, itemArea.x1 + 10, itemArea.y1 + 2, RGB(255, 255, 255), APPPANEL_COLOR_BACKGROUND, g_appTable[index].name, k_strlen(g_appTable[index].name));	
+	}
 
 	k_updateScreenByWindowArea(g_appPanelManager.appListId, &itemArea);
 }

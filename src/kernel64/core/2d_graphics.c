@@ -3,6 +3,76 @@
 #include "../fonts/fonts.h"
 #include "../utils/util.h"
 
+inline Color k_changeColorBrightness(Color color, int r, int g, int b) {
+	int red, green, blue;
+
+	red = GETR(color);
+	green = GETG(color);
+	blue = GETB(color);
+
+	red += r;
+	green += g;
+	blue += b;
+
+	if (red < 0) {
+		red = 0;
+
+	} else if (red > 255) {
+		red = 255;
+	}
+
+	if (green < 0) {
+		green = 0;
+
+	} else if (green > 255) {
+		green = 255;
+	}
+
+	if (blue < 0) {
+		blue = 0;
+
+	} else if (blue > 255) {
+		blue = 255;
+	}
+
+	return RGB(red, green, blue);
+}
+
+inline Color k_changeColorBrightness2(Color color, int r, int g, int b) {
+	int red, green, blue;
+
+	red = GETR(color);
+	green = GETG(color);
+	blue = GETB(color);
+
+	red += r;
+	green += g;
+	blue += b;
+
+	if (red < 86) {
+		red = 86;
+
+	} else if (red > 229) {
+		red = 229;
+	}
+
+	if (green < 86) {
+		green = 86;
+
+	} else if (green > 229) {
+		green = 229;
+	}
+
+	if (blue < 86) {
+		blue = 86;
+
+	} else if (blue > 229) {
+		blue = 229;
+	}
+
+	return RGB(red, green, blue);
+}
+
 inline void k_setRect(Rect* rect, int x1, int y1, int x2, int y2) {
 	// This logic guarantee the rule that rect.x1 < rect.x2.
 	if (x1 < x2) {

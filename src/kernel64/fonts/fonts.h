@@ -16,7 +16,7 @@
 */
 
 /**
-  - font          : Bitstream Vera Sans Mono
+  - font name     : Bitstream Vera Sans Mono
   - font style    : normal
   - font size     : 16
   - font type     : bitmap

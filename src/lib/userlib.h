@@ -58,6 +58,8 @@ void printf(const char* format, ...);
 void k_initMutex(Mutex* mutex);
 
 /* 2D Graphics Functions */
+Color changeColorBrightness(Color color, int r, int g, int b);
+Color changeColorBrightness2(Color color, int r, int g, int b);
 void setRect(Rect* rect, int x1, int y1, int x2, int y2);
 int getRectWidth(const Rect* rect);
 int getRectHeight(const Rect* rect);

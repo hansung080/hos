@@ -126,7 +126,7 @@ static void k_processConsoleScreenBuffer(qword windowId) {
 
 		for (j = 0; j < CONSOLE_WIDTH; j++) {
 			if ((screenBuffer->char_ != prevScreenBuffer->char_) || (fullRedraw == true)) {
-				k_drawText(windowId, FONT_DEFAULT_WIDTH * j + 2, FONT_DEFAULT_HEIGHT * i + WINDOW_TITLEBAR_HEIGHT, RGB(0, 255, 0), RGB(0, 0, 0), &screenBuffer->char_, 1);
+				k_drawText(windowId, FONT_DEFAULT_WIDTH * j + 2, FONT_DEFAULT_HEIGHT * i + WINDOW_TITLEBAR_HEIGHT, GUISHELL_COLOR_TEXT, GUISHELL_COLOR_BACKGROUND, &screenBuffer->char_, 1);
 				k_memcpy(prevScreenBuffer, screenBuffer, sizeof(Char));
 				changed = true;
 			}

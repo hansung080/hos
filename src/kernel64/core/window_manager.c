@@ -114,6 +114,8 @@ static bool k_processMouseData(void) {
 	Rect windowArea;
 	WindowManager* windowManager;
 	int i;
+	bool mouseOverCloseButton = false;
+	bool mouseOverResizeButton = false;
 
 	windowManager = k_getWindowManager();
 
@@ -231,6 +233,32 @@ static bool k_processMouseData(void) {
 	/* no buttons changed */
 	} else {
 		k_sendMouseEventToWindow(underMouseWindowId, EVENT_MOUSE_MOVE, mouseX, mouseY, buttonStatus);
+
+		if (k_isPointInCloseButton(underMouseWindowId, mouseX, mouseY) == true) {
+			if (windowManager->overCloseWindowId == WINDOW_INVALIDID) {
+				windowManager->overCloseWindowId = underMouseWindowId;
+				k_updateCloseButton(underMouseWindowId, true);
+			}
+
+		} else {
+			if (windowManager->overCloseWindowId != WINDOW_INVALIDID) {
+				k_updateCloseButton(windowManager->overCloseWindowId, false);
+				windowManager->overCloseWindowId = WINDOW_INVALIDID;				
+			}
+		}
+
+		if (k_isPointInResizeButton(underMouseWindowId, mouseX, mouseY) == true) {
+			if (windowManager->overResizeWindowId == WINDOW_INVALIDID) {
+				windowManager->overResizeWindowId = underMouseWindowId;
+				k_updateResizeButton(underMouseWindowId, true);			
+			}
+
+		} else {
+			if (windowManager->overResizeWindowId != WINDOW_INVALIDID && windowManager->windowResizing == false) {
+				k_updateResizeButton(windowManager->overResizeWindowId, false);
+				windowManager->overResizeWindowId = WINDOW_INVALIDID;			
+			}
+		}
 	}
 
 	/* process window move */

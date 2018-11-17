@@ -47,24 +47,26 @@
 
 // window size
 #define WINDOW_TITLEBAR_HEIGHT  21 // title bar height
-#define WINDOW_XBUTTON_SIZE     19 // close button, resize button size
+#define WINDOW_XBUTTON_SIZE     19 // close button and resize button size
 #define WINDOW_MINWIDTH         (WINDOW_XBUTTON_SIZE * 2 + 30) // min window width
 #define WINDOW_MINHEIGHT        (WINDOW_TITLEBAR_HEIGHT + 30)  // min window height
 #define WINDOW_APPPANEL_HEIGHT  31
 
 // window color
 #define WINDOW_COLOR_BACKGROUND                 RGB(255, 255, 255)
-#define WINDOW_COLOR_FRAME                      RGB(109, 218, 22)
-#define WINDOW_COLOR_TITLEBARTEXT               RGB(255, 255, 255)
-#define WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE   RGB(79, 204, 11)   // bright green
-#define WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE RGB(55, 135, 11)   // dark green
-#define WINDOW_COLOR_TITLEBARBRIGHT1            RGB(183, 249, 171) // bright color
-#define WINDOW_COLOR_TITLEBARBRIGHT2            RGB(150, 210, 140) // bright color
-#define WINDOW_COLOR_TITLEBARDARK               RGB(46, 59, 30)    // dark color
-#define WINDOW_COLOR_BUTTONBRIGHT               RGB(229, 229, 229) // bright color
-#define WINDOW_COLOR_BUTTONDARK                 RGB(86, 86, 86)    // dark color
-#define WINDOW_COLOR_SYSTEMBACKGROUND           RGB(232, 255, 232) // brighter green
-#define WINDOW_COLOR_XBUTTONMARK                RGB(71, 199, 21)   // 'X' mark on close button, '<->' mark on resize button  
+#define WINDOW_COLOR_FRAME                      RGB(33, 147, 176)
+#define WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE   RGB(33, 147, 176)
+#define WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE RGB(167, 173, 186)
+#define WINDOW_COLOR_TITLEBARTEXTACTIVE         RGB(255, 255, 255)
+#define WINDOW_COLOR_TITLEBARTEXTINACTIVE       RGB(255, 255, 255)
+#define WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE    RGB(33, 147, 176)
+#define WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE  RGB(167, 173, 186)
+#define WINDOW_COLOR_XBUTTONMARKACTIVE          RGB(222, 98, 98)          
+#define WINDOW_COLOR_XBUTTONMARKINACTIVE        RGB(255, 255, 255)
+#define WINDOW_COLOR_BUTTONDARK                 RGB(86, 86, 86)
+#define WINDOW_COLOR_SYSBACKGROUND              RGB(255, 236, 210)
+#define WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT    RGB(255, 255, 255)
+#define WINDOW_COLOR_SYSBACKGROUNDMARKDARK      RGB(252, 182, 159)
 
 // background window title
 #define WINDOW_BACKGROUNDWINDOWTITLE "SYS_BACKGROUND"
@@ -72,23 +74,25 @@
 // max copied area array count
 #define WINDOW_MAXCOPIEDAREAARRAYCOUNT 20
 
+// button flags
+#define BUTTON_FLAGS_SHADOW 0x00000001 // shadow flag
+
 // mouse cursor width and height
-#define MOUSE_CURSOR_WIDTH  20
-#define MOUSE_CURSOR_HEIGHT 20
+#define MOUSE_CURSOR_WIDTH  10
+#define MOUSE_CURSOR_HEIGHT 18
 
 // mouse cursor color
-#define MOUSE_CURSOR_COLOR_OUTERLINE RGB(0, 0, 0)       // black, represent 1 in bitmap
-#define MOUSE_CURSOR_COLOR_OUTER     RGB(79, 204, 11)   // bright green, represent 2 in bitmap
-#define MOUSE_CURSOR_COLOR_INNER     RGB(232, 255, 232) // brighter green, represent 3 in bitmap
-
-// event queue-related macros
-#define EVENTQUEUE_WINDOW_MAXCOUNT        100             // window event queue max count
-#define EVENTQUEUE_WINDOWMANAGER_MAXCOUNT WINDOW_MAXCOUNT // window manager event queue max count
+#define MOUSE_CURSOR_COLOR_OUTER RGB(255, 255, 255)
+#define MOUSE_CURSOR_COLOR_INNER RGB(0, 0, 0)
 
 // resize marker-related macros
 #define RESIZEMARKER_SIZE  20
 #define RESIZEMARKER_THICK 4
-#define RESIZEMARKER_COLOR RGB(210, 20, 20) // bright red
+#define RESIZEMARKER_COLOR RGB(222, 98, 98)
+
+// event queue-related macros
+#define EVENTQUEUE_WINDOW_MAXCOUNT        100             // window event queue max count
+#define EVENTQUEUE_WINDOWMANAGER_MAXCOUNT WINDOW_MAXCOUNT // window manager event queue max count
 
 /**
   < Event Classification >
@@ -235,6 +239,8 @@ typedef struct k_WindowManager {
 	bool windowResizing;      // window resizing flag
 	qword resizingWindowId;   // resizing window ID
 	Rect resizingWindowArea;  // resizing window area
+	qword overCloseWindowId;  // mouse over close button window ID
+	qword overResizeWindowId; // mouse over resize button window ID
 	byte* screenBitmap;       // screen bitmap
 } WindowManager;
 
@@ -271,8 +277,10 @@ bool k_moveWindowToTop(qword windowId);
 bool k_isPointInTitleBar(qword windowId, int x, int y);
 bool k_isPointInCloseButton(qword windowId, int x, int y);
 bool k_isPointInResizeButton(qword windowId, int x, int y);
-bool k_moveWindow(qword windowId, int x, int y);
 static bool k_updateWindowTitleBar(qword windowId, bool selected);
+bool k_updateCloseButton(qword windowId, bool mouseOver);
+bool k_updateResizeButton(qword windowId, bool mouseOver);
+bool k_moveWindow(qword windowId, int x, int y);
 bool k_resizeWindow(qword windowId, int x, int y, int width, int height);
 
 /* Coordinates Conversion Functions */
@@ -303,14 +311,17 @@ bool k_updateScreenByScreenArea(const Rect* area); // screen coordinates
 bool k_drawWindowBackground(qword windowId);
 bool k_drawWindowFrame(qword windowId);
 bool k_drawWindowTitleBar(qword windowId, const char* title, bool selected);
-bool k_drawButton(qword windowId, const Rect* buttonArea, Color backgroundColor, const char* text, Color textColor);
+static bool k_drawCloseButton(qword windowId, bool selected, bool mouseOver);
+static bool k_drawResizeButton(qword windowId, bool selected, bool mouseOver);
+bool k_drawButton(qword windowId, const Rect* buttonArea, Color backgroundColor, const char* text, Color textColor, dword flags);
 bool k_drawPixel(qword windowId, int x, int y, Color color);
 bool k_drawLine(qword windowId, int x1, int y1, int x2, int y2, Color color);
 bool k_drawRect(qword windowId, int x1, int y1, int x2, int y2, Color color, bool fill);
 bool k_drawCircle(qword windowId, int x, int y, int radius, Color color, bool fill);
 bool k_drawText(qword windowId, int x, int y, Color textColor, Color backgroundColor, const char* str, int len);
 bool k_bitblt(qword windowId, int x, int y, const Color* buffer, int width, int height);
-void k_drawBackgroundImage(void);
+static void k_drawBackgroundMark(void);
+static void k_drawBackgroundImage(void);
 
 /* Mouse Cursor Functions */
 static void k_drawMouseCursor(int x, int y); // draw mouse cursor in video memory using screen coordinates.  

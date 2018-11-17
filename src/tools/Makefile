@@ -2,7 +2,7 @@
 
 OUT_DIR=../../build/output/tools
 
-all: prepare dep-modifier image-maker network-transfer
+all: prepare dep-modifier image-maker network-transfer bintoc
 
 prepare:
 	mkdir -p $(OUT_DIR)
@@ -30,15 +30,25 @@ network-transfer:
 	make -C network_transfer
 	
 	@echo network-transfer build end.
+
+bintoc:
+	@echo
+	@echo bin2c build start.
+	
+	make -C bin2c
+	
+	@echo bin2c build end.
 	@echo
 
 install:
 	make -C image_maker install
 	make -C dep_modifier install
 	make -C network_transfer install
+	make -C bin2c install
 
 clean:
 	make -C image_maker clean
 	make -C dep_modifier clean
 	make -C network_transfer clean
+	make -C bin2c clean
 	rm -rf $(OUT_DIR)

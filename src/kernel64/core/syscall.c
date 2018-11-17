@@ -272,6 +272,9 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 	case SYSCALL_ISPOINTINCLOSEBUTTON:
 		return (qword)k_isPointInCloseButton(PARAM(0), (int)PARAM(1), (int)PARAM(2));
 
+	case SYSCALL_ISPOINTINRESIZEBUTTON:
+		return (qword)k_isPointInResizeButton(PARAM(0), (int)PARAM(1), (int)PARAM(2));
+
 	case SYSCALL_MOVEWINDOW:
 		return (qword)k_moveWindow(PARAM(0), (int)PARAM(1), (int)PARAM(2));
 
@@ -306,7 +309,7 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 		return (qword)k_drawWindowTitleBar(PARAM(0), (char*)PARAM(1), (bool)PARAM(2));
 
 	case SYSCALL_DRAWBUTTON:
-		return (qword)k_drawButton(PARAM(0), (Rect*)PARAM(1), (Color)PARAM(2), (char*)PARAM(3), (Color)PARAM(4));
+		return (qword)k_drawButton(PARAM(0), (Rect*)PARAM(1), (Color)PARAM(2), (char*)PARAM(3), (Color)PARAM(4), (dword)PARAM(5));
 
 	case SYSCALL_DRAWPIXEL:
 		return (qword)k_drawPixel(PARAM(0), (int)PARAM(1), (int)PARAM(2), (Color)PARAM(3));

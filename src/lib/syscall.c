@@ -503,6 +503,16 @@ bool isPointInCloseButton(qword windowId, int x, int y) {
 	return (bool)executeSyscall(SYSCALL_ISPOINTINCLOSEBUTTON, &paramTable);
 }
 
+bool isPointInResizeButton(qword windowId, int x, int y) {
+	ParamTable paramTable;
+
+	PARAM(0) = windowId;
+	PARAM(1) = (qword)x;
+	PARAM(2) = (qword)y;
+
+	return (bool)executeSyscall(SYSCALL_ISPOINTINRESIZEBUTTON, &paramTable);	
+}
+
 bool moveWindow(qword windowId, int x, int y) {
 	ParamTable paramTable;
 
@@ -603,7 +613,7 @@ bool drawWindowTitleBar(qword windowId, const char* title, bool selected) {
 	return (bool)executeSyscall(SYSCALL_DRAWWINDOWTITLEBAR, &paramTable);
 }
 
-bool drawButton(qword windowId, const Rect* buttonArea, Color backgroundColor, const char* text, Color textColor) {
+bool drawButton(qword windowId, const Rect* buttonArea, Color backgroundColor, const char* text, Color textColor, dword flags) {
 	ParamTable paramTable;
 
 	PARAM(0) = windowId;
@@ -611,6 +621,7 @@ bool drawButton(qword windowId, const Rect* buttonArea, Color backgroundColor, c
 	PARAM(2) = (qword)backgroundColor;
 	PARAM(3) = (qword)text;
 	PARAM(4) = (qword)textColor;
+	PARAM(5) = (qword)flags;
 
 	return (bool)executeSyscall(SYSCALL_DRAWBUTTON, &paramTable);
 }

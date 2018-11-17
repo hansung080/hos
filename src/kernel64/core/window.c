@@ -150,12 +150,16 @@ void k_initGuiSystem(void) {
 	g_windowManager.resizingWindowId = WINDOW_INVALIDID;
 	k_memset(&g_windowManager.resizingWindowArea, 0, sizeof(Rect));
 
+	g_windowManager.overCloseWindowId = WINDOW_INVALIDID;
+	g_windowManager.overResizeWindowId = WINDOW_INVALIDID;
+
 	/* create background window */
 	// set 0 to flags in order not to show. After drawing background color, It will show.
 	backgroundWindowId = k_createWindow(0, 0, vbeMode->xResolution, vbeMode->yResolution, 0, WINDOW_BACKGROUNDWINDOWTITLE);
 	g_windowManager.backgroundWindowId = backgroundWindowId;
-	k_drawRect(backgroundWindowId, 0, 0, vbeMode->xResolution - 1, vbeMode->yResolution - 1, WINDOW_COLOR_SYSTEMBACKGROUND, true);	
-	k_drawBackgroundImage();
+	k_drawRect(backgroundWindowId, 0, 0, vbeMode->xResolution - 1, vbeMode->yResolution - 1, WINDOW_COLOR_SYSBACKGROUND, true);
+	k_drawBackgroundMark();
+	//k_drawBackgroundImage();
 	k_showWindow(backgroundWindowId, true);
 }
 
@@ -999,6 +1003,67 @@ bool k_isPointInResizeButton(qword windowId, int x, int y) {
 	return false;
 }
 
+static bool k_updateWindowTitleBar(qword windowId, bool selected) {
+	Window* window;
+	Rect titleBarArea;
+
+	window = k_getWindow(windowId);
+	if ((window != null) && (window->flags & WINDOW_FLAGS_DRAWTITLEBAR)) {
+		k_drawWindowTitleBar(window->link.id, window->title, selected);
+		k_setRect(&titleBarArea, 0, 0, k_getRectWidth(&window->area) - 1, WINDOW_TITLEBAR_HEIGHT - 1);
+		k_updateScreenByWindowArea(window->link.id, &titleBarArea);
+		return true;
+	}
+
+	return false;
+}
+
+bool k_updateCloseButton(qword windowId, bool mouseOver) {
+	Window* window;
+	int width;
+	Rect buttonArea;
+
+	window = k_getWindow(windowId);
+	if ((window != null) && (window->flags & WINDOW_FLAGS_DRAWTITLEBAR)) {
+		if (window->link.id == k_getTopWindowId()) {
+			k_drawCloseButton(window->link.id, true, mouseOver);
+
+		} else {
+			k_drawCloseButton(window->link.id, false, mouseOver);
+		}
+
+		width = k_getRectWidth(&window->area);
+		k_setRect(&buttonArea, width - 1 - WINDOW_XBUTTON_SIZE, 1, width - 2, WINDOW_XBUTTON_SIZE - 1);
+		k_updateScreenByWindowArea(window->link.id, &buttonArea);	
+		return true;
+	}
+
+	return false;
+}
+
+bool k_updateResizeButton(qword windowId, bool mouseOver) {
+	Window* window;
+	int width;
+	Rect buttonArea;
+
+	window = k_getWindow(windowId);
+	if ((window != null) && (window->flags & WINDOW_FLAGS_RESIZABLE)) {
+		if (window->link.id == k_getTopWindowId()) {
+			k_drawResizeButton(window->link.id, true, mouseOver);
+
+		} else {
+			k_drawResizeButton(window->link.id, false, mouseOver);
+		}
+
+		width = k_getRectWidth(&window->area);
+		k_setRect(&buttonArea, width - 2 - (WINDOW_XBUTTON_SIZE * 2), 1, width - 2 - WINDOW_XBUTTON_SIZE, WINDOW_XBUTTON_SIZE - 1);
+		k_updateScreenByWindowArea(window->link.id, &buttonArea);	
+		return true;
+	}
+
+	return false;
+}
+
 bool k_moveWindow(qword windowId, int x, int y) {
 	Window* window;
 	Rect prevArea;
@@ -1023,21 +1088,6 @@ bool k_moveWindow(qword windowId, int x, int y) {
 	k_sendWindowEventToWindow(windowId, EVENT_WINDOW_MOVE);
 
 	return true;
-}
-
-static bool k_updateWindowTitleBar(qword windowId, bool selected) {
-	Window* window;
-	Rect titleBarArea;
-
-	window = k_getWindow(windowId);
-	if ((window != null) && (window->flags & WINDOW_FLAGS_DRAWTITLEBAR)) {
-		k_drawWindowTitleBar(window->link.id, window->title, selected);
-		k_setRect(&titleBarArea, 0, 0, k_getRectWidth(&window->area) - 1, WINDOW_TITLEBAR_HEIGHT);
-		k_updateScreenByWindowArea(windowId, &titleBarArea);
-		return true;
-	}
-
-	return false;
 }
 
 bool k_resizeWindow(qword windowId, int x, int y, int width, int height) {
@@ -1434,7 +1484,7 @@ bool k_drawWindowFrame(qword windowId) {
 	height = k_getRectHeight(&window->area);
 	k_setRect(&area, 0, 0, width - 1, height - 1);
 
-	// draw edges (2 pixes-thick) of a window frame.
+	// draw a window frame (2 pixes-thick).
 	__k_drawRect(window->buffer, &area, 0, 0, width - 1, height - 1, WINDOW_COLOR_FRAME, false);
 	__k_drawRect(window->buffer, &area, 1, 1, width - 2, height - 2, WINDOW_COLOR_FRAME, false);
 
@@ -1446,56 +1496,104 @@ bool k_drawWindowFrame(qword windowId) {
 bool k_drawWindowTitleBar(qword windowId, const char* title, bool selected) {
 	Window* window;
 	int width;
-	int height;
 	Rect area;
-	Rect buttonArea;
 
 	window = k_getWindowWithLock(windowId);
 	if (window == null) {
 		return false;
 	}
 
-	// get width, height and set clipping area on window coordinates.
+	// get width and set clipping area on window coordinates.
 	width = k_getRectWidth(&window->area);
-	height = k_getRectHeight(&window->area);
-	k_setRect(&area, 0, 0, width - 1, height - 1);
+	k_setRect(&area, 0, 0, width - 1, k_getRectHeight(&window->area) - 1);
 
 	/* draw a title bar */
 
 	if (selected == true) {
+		// [NOTE] (x1, y1) has changed from (2, 2) to (0, 0) when WINDOW_FLAGS_DRAWFRAME is set,
+		//        because WINDOW_COLOR_FRAME == WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE
 		// draw a title bar background.
-		__k_drawRect(window->buffer, &area, 0, 3, width - 1, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE, true);
+		__k_drawRect(window->buffer, &area, 0, 0, width - 1, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE, true);
 		
 		// draw a title.
-		__k_drawText(window->buffer, &area, 6, 3, WINDOW_COLOR_TITLEBARTEXT, WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE, title, k_strlen(title));
+		__k_drawText(window->buffer, &area, 6, 3, WINDOW_COLOR_TITLEBARTEXTACTIVE, WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE, title, k_strlen(title));
 
 	} else {
 		// draw a title bar background.
-		__k_drawRect(window->buffer, &area, 0, 3, width - 1, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE, true);
+		__k_drawRect(window->buffer, &area, 0, 0, width - 1, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE, true);
 		
 		// draw a title.
-		__k_drawText(window->buffer, &area, 6, 3, WINDOW_COLOR_TITLEBARTEXT, WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE, title, k_strlen(title));
+		__k_drawText(window->buffer, &area, 6, 3, WINDOW_COLOR_TITLEBARTEXTINACTIVE, WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE, title, k_strlen(title));
 	}
 
+	#if 0
 	// draw top lines (2 pixels-thick) of the title bar with bright color in order to make it 3-dimensional.
 	__k_drawLine(window->buffer, &area, 1, 1, width - 1, 1, WINDOW_COLOR_TITLEBARBRIGHT1);
 	__k_drawLine(window->buffer, &area, 1, 2, width - 1, 2, WINDOW_COLOR_TITLEBARBRIGHT2);
-	
+
 	// draw left lines (2 pixels-thick) of the title bar with bright color in order to make it 3-dimensional.
 	__k_drawLine(window->buffer, &area, 1, 2, 1, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARBRIGHT1);
 	__k_drawLine(window->buffer, &area, 2, 2, 2, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARBRIGHT2);
-	
+
 	// draw bottom lines (2 pixels-thick) of the title bar with dark color in order to make it 3-dimensional.
 	__k_drawLine(window->buffer, &area, 2, WINDOW_TITLEBAR_HEIGHT - 2, width - 2, WINDOW_TITLEBAR_HEIGHT - 2, WINDOW_COLOR_TITLEBARDARK);
 	__k_drawLine(window->buffer, &area, 2, WINDOW_TITLEBAR_HEIGHT - 1, width - 2, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARDARK);
-	
+	#endif
+
 	k_unlock(&window->mutex);
 
 	/* draw a close button */
+	k_drawCloseButton(windowId, selected, false);
+
+	/* draw a resize button */
+	if (window->flags & WINDOW_FLAGS_RESIZABLE) {
+		k_drawResizeButton(windowId, selected, false);
+	}
+
+	return true;
+}
+
+static bool k_drawCloseButton(qword windowId, bool selected, bool mouseOver) {
+	Window* window;
+	int width;
+	Rect area;
+	Rect buttonArea;
+	Color markColor;
+
+	window = k_getWindowWithLock(windowId);
+	if (window == null) {
+		return false;
+	}
+
+	// get width and set clipping area on window coordinates.
+	width = k_getRectWidth(&window->area);
+	k_setRect(&area, 0, 0, width - 1, k_getRectHeight(&window->area) - 1);
+
+	k_unlock(&window->mutex);
 
 	// draw a close button.
 	k_setRect(&buttonArea, width - 1 - WINDOW_XBUTTON_SIZE, 1, width - 2, WINDOW_XBUTTON_SIZE - 1);
-	k_drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "", WINDOW_COLOR_BACKGROUND);
+
+	if (selected == true) {
+		if (mouseOver == true) {
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, BUTTON_FLAGS_SHADOW);
+			markColor = WINDOW_COLOR_XBUTTONMARKACTIVE;
+
+		} else {
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, 0);
+			markColor = WINDOW_COLOR_XBUTTONMARKINACTIVE;
+		}
+		
+	} else {
+		if (mouseOver == true) {
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, BUTTON_FLAGS_SHADOW);
+			markColor = WINDOW_COLOR_XBUTTONMARKACTIVE;
+
+		} else {
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, 0);
+			markColor = WINDOW_COLOR_XBUTTONMARKINACTIVE;
+		}
+	}
 
 	window = k_getWindowWithLock(windowId);
 	if (window == null) {
@@ -1504,103 +1602,139 @@ bool k_drawWindowTitleBar(qword windowId, const char* title, bool selected) {
 
 	// draw 'X' mark on the close button.
 	// draw '\' mark (3 pixels-thick).
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 1 + 4, width - 2 - 4, WINDOW_TITLEBAR_HEIGHT - 6, WINDOW_COLOR_XBUTTONMARK);
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 5, 1 + 4, width - 2 - 4, WINDOW_TITLEBAR_HEIGHT - 7, WINDOW_COLOR_XBUTTONMARK);
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 1 + 5, width - 2 - 5, WINDOW_TITLEBAR_HEIGHT - 6, WINDOW_COLOR_XBUTTONMARK);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 1 + 4, width - 2 - 4, WINDOW_TITLEBAR_HEIGHT - 6, markColor);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 5, 1 + 4, width - 2 - 4, WINDOW_TITLEBAR_HEIGHT - 7, markColor);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 1 + 5, width - 2 - 5, WINDOW_TITLEBAR_HEIGHT - 6, markColor);
 	
 	// draw '/' mark (3 pixels-thick).
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 19 - 4, width - 2 - 4, 1 + 4, WINDOW_COLOR_XBUTTONMARK);
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 5, 19 - 4, width - 2 - 4, 1 + 5, WINDOW_COLOR_XBUTTONMARK);
-	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 19 - 5, width - 2 - 5, 1 + 4, WINDOW_COLOR_XBUTTONMARK);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 19 - 4, width - 2 - 4, 1 + 4, markColor);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 5, 19 - 4, width - 2 - 4, 1 + 5, markColor);
+	__k_drawLine(window->buffer, &area, width - 2 - 18 + 4, 19 - 5, width - 2 - 5, 1 + 4, markColor);
 
 	k_unlock(&window->mutex);
-
-	/* draw a resize button */
-	if (window->flags & WINDOW_FLAGS_RESIZABLE) {
-		// draw a resize button.
-		k_setRect(&buttonArea, width - 2 - (WINDOW_XBUTTON_SIZE * 2), 1, width - 2 - WINDOW_XBUTTON_SIZE, WINDOW_XBUTTON_SIZE - 1);
-		k_drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "", WINDOW_COLOR_BACKGROUND);
-
-		window = k_getWindowWithLock(windowId);
-		if (window == null) {
-			return false;
-		}
-
-		// draw '<->' mark on the resize button.
-		// draw '/' mark (3 pixels-thick).
-		__k_drawLine(window->buffer, &area, buttonArea.x1 + 4, buttonArea.y2 - 4, buttonArea.x2 - 5, buttonArea.y1 + 3, WINDOW_COLOR_XBUTTONMARK);
-		__k_drawLine(window->buffer, &area, buttonArea.x1 + 4, buttonArea.y2 - 3, buttonArea.x2 - 4, buttonArea.y1 + 3, WINDOW_COLOR_XBUTTONMARK);
-		__k_drawLine(window->buffer, &area, buttonArea.x1 + 5, buttonArea.y2 - 3, buttonArea.x2 - 4, buttonArea.y1 + 4, WINDOW_COLOR_XBUTTONMARK);
-
-		// draw '>' mark (2 pixels-thick).
-		__k_drawLine(window->buffer, &area, buttonArea.x1 + 9, buttonArea.y1 + 3, buttonArea.x2 - 4, buttonArea.y1 + 3, WINDOW_COLOR_XBUTTONMARK);
-		__k_drawLine(window->buffer, &area, buttonArea.x1 + 9, buttonArea.y1 + 4, buttonArea.x2 - 4, buttonArea.y1 + 4, WINDOW_COLOR_XBUTTONMARK);
-		__k_drawLine(window->buffer, &area, buttonArea.x2 - 4, buttonArea.y1 + 5, buttonArea.x2 - 4, buttonArea.y1 + 9, WINDOW_COLOR_XBUTTONMARK);
-		__k_drawLine(window->buffer, &area, buttonArea.x2 - 5, buttonArea.y1 + 5, buttonArea.x2 - 5, buttonArea.y1 + 9, WINDOW_COLOR_XBUTTONMARK);
-
-		// draw '<' mark (2 pixels-thick).
-		__k_drawLine(window->buffer, &area, buttonArea.x1 + 4, buttonArea.y1 + 8, buttonArea.x1 + 4, buttonArea.y2 - 3, WINDOW_COLOR_XBUTTONMARK);
-		__k_drawLine(window->buffer, &area, buttonArea.x1 + 5, buttonArea.y1 + 8, buttonArea.x1 + 5, buttonArea.y2 - 3, WINDOW_COLOR_XBUTTONMARK);
-		__k_drawLine(window->buffer, &area, buttonArea.x1 + 6, buttonArea.y2 - 4, buttonArea.x1 + 10, buttonArea.y2 - 4, WINDOW_COLOR_XBUTTONMARK);
-		__k_drawLine(window->buffer, &area, buttonArea.x1 + 6, buttonArea.y2 - 3, buttonArea.x1 + 10, buttonArea.y2 - 3, WINDOW_COLOR_XBUTTONMARK);
-
-		k_unlock(&window->mutex);
-	}
 
 	return true;
 }
 
-bool k_drawButton(qword windowId, const Rect* buttonArea, Color backgroundColor, const char* text, Color textColor) {
+static bool k_drawResizeButton(qword windowId, bool selected, bool mouseOver) {
 	Window* window;
-	int windowWidth;
-	int windowHeight;
+	int width;
 	Rect area;
-	int buttonWidth;
-	int buttonHeight;
-	int textLen;
-	int textWidth;
-	int textX;
-	int textY;
+	Rect buttonArea;
+	Color markColor;
 
 	window = k_getWindowWithLock(windowId);
 	if (window == null) {
 		return false;
 	}
 
-	// get window width, window height and set clipping area on window coordinates.
-	windowWidth = k_getRectWidth(&window->area);
-	windowHeight = k_getRectHeight(&window->area);
-	k_setRect(&area, 0, 0, windowWidth - 1, windowHeight - 1);
+	// get width and set clipping area on window coordinates.
+	width = k_getRectWidth(&window->area);
+	k_setRect(&area, 0, 0, width - 1, k_getRectHeight(&window->area) - 1);
+
+	k_unlock(&window->mutex);
+
+	// draw a resize button.
+	k_setRect(&buttonArea, width - 2 - (WINDOW_XBUTTON_SIZE * 2), 1, width - 2 - WINDOW_XBUTTON_SIZE, WINDOW_XBUTTON_SIZE - 1);
+
+	if (selected == true) {
+		if (mouseOver == true) {
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, BUTTON_FLAGS_SHADOW);
+			markColor = WINDOW_COLOR_XBUTTONMARKACTIVE;
+
+		} else {
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, 0);
+			markColor = WINDOW_COLOR_XBUTTONMARKINACTIVE;
+		}
+		
+
+	} else {
+		if (mouseOver == true) {
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, BUTTON_FLAGS_SHADOW);
+			markColor = WINDOW_COLOR_XBUTTONMARKACTIVE;
+
+		} else {
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, 0);
+			markColor = WINDOW_COLOR_XBUTTONMARKINACTIVE;
+		}
+	}
+	
+	window = k_getWindowWithLock(windowId);
+	if (window == null) {
+		return false;
+	}
+
+	// draw '<->' mark on the resize button.
+	// draw '/' mark (3 pixels-thick).
+	__k_drawLine(window->buffer, &area, buttonArea.x1 + 4, buttonArea.y2 - 4, buttonArea.x2 - 5, buttonArea.y1 + 3, markColor);
+	__k_drawLine(window->buffer, &area, buttonArea.x1 + 4, buttonArea.y2 - 3, buttonArea.x2 - 4, buttonArea.y1 + 3, markColor);
+	__k_drawLine(window->buffer, &area, buttonArea.x1 + 5, buttonArea.y2 - 3, buttonArea.x2 - 4, buttonArea.y1 + 4, markColor);
+
+	// draw '>' mark (2 pixels-thick).
+	__k_drawLine(window->buffer, &area, buttonArea.x1 + 9, buttonArea.y1 + 3, buttonArea.x2 - 4, buttonArea.y1 + 3, markColor);
+	__k_drawLine(window->buffer, &area, buttonArea.x1 + 9, buttonArea.y1 + 4, buttonArea.x2 - 4, buttonArea.y1 + 4, markColor);
+	__k_drawLine(window->buffer, &area, buttonArea.x2 - 4, buttonArea.y1 + 5, buttonArea.x2 - 4, buttonArea.y1 + 9, markColor);
+	__k_drawLine(window->buffer, &area, buttonArea.x2 - 5, buttonArea.y1 + 5, buttonArea.x2 - 5, buttonArea.y1 + 9, markColor);
+
+	// draw '<' mark (2 pixels-thick).
+	__k_drawLine(window->buffer, &area, buttonArea.x1 + 4, buttonArea.y1 + 8, buttonArea.x1 + 4, buttonArea.y2 - 3, markColor);
+	__k_drawLine(window->buffer, &area, buttonArea.x1 + 5, buttonArea.y1 + 8, buttonArea.x1 + 5, buttonArea.y2 - 3, markColor);
+	__k_drawLine(window->buffer, &area, buttonArea.x1 + 6, buttonArea.y2 - 4, buttonArea.x1 + 10, buttonArea.y2 - 4, markColor);
+	__k_drawLine(window->buffer, &area, buttonArea.x1 + 6, buttonArea.y2 - 3, buttonArea.x1 + 10, buttonArea.y2 - 3, markColor);
+
+	k_unlock(&window->mutex);
+
+	return true;
+}
+
+bool k_drawButton(qword windowId, const Rect* buttonArea, Color backgroundColor, const char* text, Color textColor, dword flags) {
+	Window* window;
+	int width;
+	Rect area;
+	int textLen;
+	int textX;
+	int textY;
+	Color brighterColor;
+
+	window = k_getWindowWithLock(windowId);
+	if (window == null) {
+		return false;
+	}
+
+	// get width and set clipping area on window coordinates.
+	width = k_getRectWidth(&window->area);
+	k_setRect(&area, 0, 0, width - 1, k_getRectHeight(&window->area) - 1);
 
 	// draw a button background.
 	__k_drawRect(window->buffer, &area, buttonArea->x1, buttonArea->y1, buttonArea->x2, buttonArea->y2, backgroundColor, true);	
 
-	// get button width, button height, text length, text width;
-	buttonWidth = k_getRectWidth(buttonArea);
-	buttonHeight = k_getRectHeight(buttonArea);
+	// get text length.
 	textLen = k_strlen(text);
-	textWidth = textLen * FONT_DEFAULT_WIDTH;
 
 	// draw a text in the center.
-	textX = (buttonArea->x1 + buttonWidth / 2) - textWidth / 2;
-	textY = (buttonArea->y1 + buttonHeight / 2) - FONT_DEFAULT_HEIGHT / 2;
+	textX = (buttonArea->x1 + k_getRectWidth(buttonArea) / 2) - (textLen * FONT_DEFAULT_WIDTH) / 2;
+	textY = (buttonArea->y1 + k_getRectHeight(buttonArea) / 2) - FONT_DEFAULT_HEIGHT / 2;
 	__k_drawText(window->buffer, &area, textX, textY, textColor, backgroundColor, text, textLen);
-		
-	// draw top lines (2 pixels-thick) of the button with bright color in order to make it 3-dimensional.
-	__k_drawLine(window->buffer, &area, buttonArea->x1, buttonArea->y1, buttonArea->x2, buttonArea->y1, WINDOW_COLOR_BUTTONBRIGHT);
-	__k_drawLine(window->buffer, &area, buttonArea->x1, buttonArea->y1 + 1, buttonArea->x2 - 1, buttonArea->y1 + 1, WINDOW_COLOR_BUTTONBRIGHT);
-
-	// draw left lines (2 pixels-thick) of the button with bright color in order to make it 3-dimensional.
-	__k_drawLine(window->buffer, &area, buttonArea->x1, buttonArea->y1, buttonArea->x1, buttonArea->y2, WINDOW_COLOR_BUTTONBRIGHT);
-	__k_drawLine(window->buffer, &area, buttonArea->x1 + 1, buttonArea->y1, buttonArea->x1 + 1, buttonArea->y2 - 1, WINDOW_COLOR_BUTTONBRIGHT);
 	
-	// draw bottom lines (2 pixels-thick) of the button with dark color in order to make it 3-dimensional.
-	__k_drawLine(window->buffer, &area, buttonArea->x1 + 1, buttonArea->y2, buttonArea->x2, buttonArea->y2, WINDOW_COLOR_BUTTONDARK);
-	__k_drawLine(window->buffer, &area, buttonArea->x1 + 2, buttonArea->y2 - 1, buttonArea->x2, buttonArea->y2 - 1, WINDOW_COLOR_BUTTONDARK);
+	if (flags & BUTTON_FLAGS_SHADOW) {
+		brighterColor = k_changeColorBrightness2(backgroundColor, 30, 30, 30);
 
-	// draw right lines (2 pixels-thick) of the button with dark color in order to make it 3-dimensional.
-	__k_drawLine(window->buffer, &area, buttonArea->x2, buttonArea->y1 + 1, buttonArea->x2, buttonArea->y2, WINDOW_COLOR_BUTTONDARK);
-	__k_drawLine(window->buffer, &area, buttonArea->x2 - 1, buttonArea->y1 + 2, buttonArea->x2 - 1, buttonArea->y2, WINDOW_COLOR_BUTTONDARK);
+		// draw top lines (2 pixels-thick) of the button with bright color in order to make it 3-dimensional.
+		__k_drawLine(window->buffer, &area, buttonArea->x1, buttonArea->y1, buttonArea->x2, buttonArea->y1, brighterColor);
+		__k_drawLine(window->buffer, &area, buttonArea->x1, buttonArea->y1 + 1, buttonArea->x2 - 1, buttonArea->y1 + 1, brighterColor);
+
+		// draw left lines (2 pixels-thick) of the button with bright color in order to make it 3-dimensional.
+		__k_drawLine(window->buffer, &area, buttonArea->x1, buttonArea->y1, buttonArea->x1, buttonArea->y2, brighterColor);
+		__k_drawLine(window->buffer, &area, buttonArea->x1 + 1, buttonArea->y1, buttonArea->x1 + 1, buttonArea->y2 - 1, brighterColor);
+		
+		// draw bottom lines (2 pixels-thick) of the button with dark color in order to make it 3-dimensional.
+		__k_drawLine(window->buffer, &area, buttonArea->x1 + 1, buttonArea->y2, buttonArea->x2, buttonArea->y2, WINDOW_COLOR_BUTTONDARK);
+		__k_drawLine(window->buffer, &area, buttonArea->x1 + 2, buttonArea->y2 - 1, buttonArea->x2, buttonArea->y2 - 1, WINDOW_COLOR_BUTTONDARK);
+
+		// draw right lines (2 pixels-thick) of the button with dark color in order to make it 3-dimensional.
+		__k_drawLine(window->buffer, &area, buttonArea->x2, buttonArea->y1 + 1, buttonArea->x2, buttonArea->y2, WINDOW_COLOR_BUTTONDARK);
+		__k_drawLine(window->buffer, &area, buttonArea->x2 - 1, buttonArea->y1 + 2, buttonArea->x2 - 1, buttonArea->y2, WINDOW_COLOR_BUTTONDARK);
+	}
 
 	k_unlock(&window->mutex);
 
@@ -1762,18 +1896,61 @@ bool k_bitblt(qword windowId, int x, int y, const Color* buffer, int width, int 
 	return true;
 }
 
-void k_drawBackgroundImage(void) {
+static void k_drawBackgroundMark(void) {
+	int startX, startY;
+
+	startX = (k_getRectWidth(&g_windowManager.screenArea) - 60) / 2;
+	startY = (k_getRectHeight(&g_windowManager.screenArea) - 60) / 2;
+
+	/* draw dark shadow of mark */
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 19, startY, startX + 19, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 20, startY, startX + 20, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 19, startY + 40, startX + 19, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 20, startY + 40, startX + 20, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);	
+	
+	k_drawLine(g_windowManager.backgroundWindowId, startX, startY + 59, startX + 20, startY + 59, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundWindowId, startX, startY + 60, startX + 20, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 20, startY + 39, startX + 40, startY + 39, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 20, startY + 40, startX + 40, startY + 40, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 59, startY, startX + 59, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 60, startY, startX + 60, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 40, startY + 59, startX + 60, startY + 59, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 40, startY + 60, startX + 60, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+
+	/* draw bright shadow of mark */
+	k_drawLine(g_windowManager.backgroundWindowId, startX, startY, startX + 20, startY, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundWindowId, startX, startY + 1, startX + 20, startY + 1, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+
+	k_drawLine(g_windowManager.backgroundWindowId, startX, startY, startX, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 1, startY, startX + 1, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 20, startY + 20, startX + 40, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 20, startY + 21, startX + 40, startY + 21, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 40, startY, startX + 60, startY, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 40, startY + 1, startX + 60, startY + 1, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 40, startY, startX + 40, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 41, startY, startX + 41, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 40, startY + 40, startX + 40, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundWindowId, startX + 41, startY + 40, startX + 41, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+}
+
+static void k_drawBackgroundImage(void) {
 	Jpeg* jpeg;
 	Color* imageBuffer;
-	WindowManager* windowManager;
-	int screenWidth, screenHeight;
 		
 	jpeg = (Jpeg*)k_allocMem(sizeof(Jpeg));
 	if (jpeg == null) {
 		return;
 	}
 
-	if (k_initJpeg(jpeg, g_imageWallpaper, g_sizeWallpaper) == false) {
+	if (k_initJpeg(jpeg, IMAGE_WALLPAPER, IMAGE_WALLPAPER_SIZE) == false) {
 		k_freeMem(jpeg);
 		return;
 	}
@@ -1790,39 +1967,33 @@ void k_drawBackgroundImage(void) {
 		return;
 	}
 
-	windowManager = k_getWindowManager();
-	screenWidth = k_getRectWidth(&windowManager->screenArea);
-	screenHeight = k_getRectHeight(&windowManager->screenArea);
-
-	k_bitblt(windowManager->backgroundWindowId, (screenWidth - jpeg->width) / 2, (screenHeight - jpeg->height) / 2, imageBuffer, jpeg->width, jpeg->height);
+	k_bitblt(g_windowManager.backgroundWindowId, g_windowManager.screenArea.x1, g_windowManager.screenArea.y1, imageBuffer, jpeg->width, jpeg->height);
 
 	k_freeMem(imageBuffer);
 	k_freeMem(jpeg);
 }
 
-// mouse cursor bitmap (20 * 20 = 400 bytes)
-// A byte in bitmap represents a color (16 bits) in video memory or a pixel (16 bits) in screen.
+// mouse cursor bitmap (10 * 18 = 180 bytes)
+// - A byte in bitmap represents a color (16 bits) in video memory or a pixel (16 bits) in screen.
 static byte g_mouseCursorBitmap[MOUSE_CURSOR_WIDTH * MOUSE_CURSOR_HEIGHT] = {
-	1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	1, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-	1, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0,
-	0, 1, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1,
-	0, 1, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 1, 1,
-	0, 1, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 1, 1, 0, 0,
-	0, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 1, 1, 0, 0, 0, 0,
-	0, 0, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0,
-	0, 0, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 1, 2, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1, 0, 0, 0, 0, 0, 0,
-	0, 0, 1, 2, 2, 3, 3, 3, 2, 2, 3, 3, 3, 2, 1, 0, 0, 0, 0, 0,
-	0, 0, 0, 1, 2, 3, 3, 2, 1, 1, 2, 3, 2, 2, 2, 1, 0, 0, 0, 0,
-	0, 0, 0, 1, 2, 3, 2, 2, 1, 0, 1, 2, 2, 2, 2, 2, 1, 0, 0, 0,
-	0, 0, 0, 1, 2, 3, 2, 1, 0, 0, 0, 1, 2, 2, 2, 2, 2, 1, 0, 0,
-	0, 0, 0, 1, 2, 2, 2, 1, 0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 1, 0,
-	0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 1,
-	0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 1, 0,
-	0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 0,
-	0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0
+	1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+	1, 2, 1, 0, 0, 0, 0, 0, 0, 0,
+	1, 2, 2, 1, 0, 0, 0, 0, 0, 0,
+	1, 2, 2, 2, 1, 0, 0, 0, 0, 0,
+	1, 2, 2, 2, 2, 1, 0, 0, 0, 0,
+	1, 2, 2, 2, 2, 2, 1, 0, 0, 0,
+	1, 2, 2, 2, 2, 2, 2, 1, 0, 0,
+	1, 2, 2, 2, 2, 2, 2, 2, 1, 0,
+	1, 2, 2, 2, 2, 2, 2, 2, 2, 1,
+	1, 2, 2, 2, 2, 2, 1, 1, 1, 1,
+	1, 2, 2, 2, 2, 2, 1, 0, 0, 0,
+	1, 2, 2, 1, 2, 2, 2, 1, 0, 0,
+	1, 2, 1, 0, 1, 2, 2, 1, 0, 0,
+	1, 1, 0, 0, 1, 2, 2, 2, 1, 0,
+	1, 0, 0, 0, 0, 1, 2, 2, 1, 0,
+	0, 0, 0, 0, 0, 1, 2, 2, 1, 0,
+	0, 0, 0, 0, 0, 0, 1, 1, 0, 0
 };
 
 static void k_drawMouseCursor(int x, int y) {
@@ -1837,15 +2008,11 @@ static void k_drawMouseCursor(int x, int y) {
 			case 0: // background
 				break;
 
-			case 1: // outer line
-				__k_drawPixel(g_windowManager.videoMem, &g_windowManager.screenArea, x + j, y + i, MOUSE_CURSOR_COLOR_OUTERLINE);
-				break;
-
-			case 2: // outer
+			case 1: // outer
 				__k_drawPixel(g_windowManager.videoMem, &g_windowManager.screenArea, x + j, y + i, MOUSE_CURSOR_COLOR_OUTER);
 				break;
 
-			case 3: // inner
+			case 2: // inner
 				__k_drawPixel(g_windowManager.videoMem, &g_windowManager.screenArea, x + j, y + i, MOUSE_CURSOR_COLOR_INNER);
 				break;
 			}

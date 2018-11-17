@@ -123,6 +123,7 @@ local.properties
 image-maker
 network-transfer
 dep-modifier
+bin2c
 
 # Mac files
 .DS_Store

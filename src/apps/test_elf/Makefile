@@ -33,8 +33,8 @@ install:
 
 clean:
 	rm -rf $(OUT_DIR)
-	rm -f ../../tools/network_transfer/event-monitor.elf
-	rm -f $(OUT_DIR)/../../tools/network_transfer/event-monitor.elf
+	rm -f ../../tools/network_transfer/test-elf.elf
+	rm -f $(OUT_DIR)/../../tools/network_transfer/test-elf.elf
 
 readelf: all
 	$(READELF) -a $(TARGET)

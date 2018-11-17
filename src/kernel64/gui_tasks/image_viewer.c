@@ -33,7 +33,7 @@ void k_imageViewerTask(void) {
 	windowWidth = FONT_DEFAULT_WIDTH * FS_MAXFILENAMELENGTH + 165;
 	windowHeight = WINDOW_TITLEBAR_HEIGHT + 40;
 
-	windowId = k_createWindow((screenArea.x2 - windowWidth) / 2, (screenArea.y2 - windowHeight) / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW | WINDOW_FLAGS_BLOCKING, "Image Viewer");
+	windowId = k_createWindow((screenArea.x2 - windowWidth) / 2, screenArea.y1 + WINDOW_APPPANEL_HEIGHT, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW | WINDOW_FLAGS_BLOCKING, "Image Viewer");
 	if (windowId == WINDOW_INVALIDID) {
 		return;
 	}
@@ -51,7 +51,7 @@ void k_imageViewerTask(void) {
 
 	// draw show button.
 	k_setRect(&buttonArea, editBoxArea.x2 + 10, editBoxArea.y1, editBoxArea.x2 + 70, editBoxArea.y2);
-	k_drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "Show", RGB(0, 0, 0));
+	k_drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "Show", RGB(0, 0, 0), BUTTON_FLAGS_SHADOW);
 
 	k_showWindow(windowId, true);
 
@@ -67,7 +67,7 @@ void k_imageViewerTask(void) {
 			mouseEvent = &event.mouseEvent;
 
 			if (k_isPointInRect(&buttonArea, mouseEvent->point.x, mouseEvent->point.y) == true) {
-				k_drawButton(windowId, &buttonArea, IMAGEVIEWER_COLOR_BUTTONACTIVE, "Show", RGB(255, 255, 255));
+				k_drawButton(windowId, &buttonArea, IMAGEVIEWER_COLOR_BUTTONACTIVE, "Show", RGB(255, 255, 255), BUTTON_FLAGS_SHADOW);
 				k_updateScreenByWindowArea(windowId, &buttonArea);
 
 				if (k_showImage(windowId, fileName) == false) {
@@ -75,7 +75,7 @@ void k_imageViewerTask(void) {
 					k_sleep(200);
 				}
 
-				k_drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "Show", RGB(0, 0, 0));
+				k_drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "Show", RGB(0, 0, 0), BUTTON_FLAGS_SHADOW);
 				k_updateScreenByWindowArea(windowId, &buttonArea);
 			}
 

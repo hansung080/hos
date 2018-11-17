@@ -96,7 +96,7 @@ int main(const char* args) {
 
 	/* draw user event send button */
 	setRect(&buttonArea, 10, y + 80, windowWidth - 10, windowHeight - 10);
-	drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "Send User Event", RGB(0, 0, 0));
+	drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "Send User Event", RGB(0, 0, 0), BUTTON_FLAGS_SHADOW);
 	showWindow(windowId, true);
 
 	/* event processing loop */
@@ -131,7 +131,7 @@ int main(const char* args) {
 			if (event.type == EVENT_MOUSE_LBUTTONDOWN) {
 				if (isPointInRect(&buttonArea, mouseEvent->point.x, mouseEvent->point.y) == true) {
 					// draw button with bright green color in order to express button down.
-					drawButton(windowId, &buttonArea, EVENTMONITOR_COLOR_BUTTONACTIVE, "Send User Event", RGB(255, 255, 255));
+					drawButton(windowId, &buttonArea, EVENTMONITOR_COLOR_BUTTONACTIVE, "Send User Event", RGB(255, 255, 255), BUTTON_FLAGS_SHADOW);
 					updateScreenById(windowId);
 
 					// set user event
@@ -152,7 +152,7 @@ int main(const char* args) {
 
 			} else if (event.type == EVENT_MOUSE_LBUTTONUP) {
 				// draw button with original color in order to express button up.
-				drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "Send User Event", RGB(0, 0, 0));
+				drawButton(windowId, &buttonArea, WINDOW_COLOR_BACKGROUND, "Send User Event", RGB(0, 0, 0), BUTTON_FLAGS_SHADOW);
 			}
 
 			break;

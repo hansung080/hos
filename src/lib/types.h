@@ -145,6 +145,9 @@ typedef word Color;
 // - b: 0 ~ 255 (8 bits) / 8 = 0 ~ 31 (5 bits)
 // Being closer to 255 represents brighter color.
 #define RGB(r, g, b) ((((byte)(r) >> 3) << 11) | (((byte)(g) >> 2) << 5) | ((byte)(b) >> 3))
+#define GETR(rgb)    ((((rgb) & 0xF800) >> 11) << 3)
+#define GETG(rgb)    ((((rgb) & 0x07E0) >> 5) << 2)
+#define GETB(rgb)    (((rgb) & 0x001F) << 3)
 
 //----------------------------------------------------------------------------------------------------
 // Macro from fonts.h
@@ -176,26 +179,32 @@ typedef word Color;
 
 // window size
 #define WINDOW_TITLEBAR_HEIGHT  21 // title bar height
-#define WINDOW_XBUTTON_SIZE     19 // close button, resize button size
+#define WINDOW_XBUTTON_SIZE     19 // close button and resize button size
 #define WINDOW_MINWIDTH         (WINDOW_XBUTTON_SIZE * 2 + 30) // min window width
 #define WINDOW_MINHEIGHT        (WINDOW_TITLEBAR_HEIGHT + 30)  // min window height
+#define WINDOW_APPPANEL_HEIGHT  31
 
 // window color
 #define WINDOW_COLOR_BACKGROUND                 RGB(255, 255, 255)
-#define WINDOW_COLOR_FRAME                      RGB(109, 218, 22)
-#define WINDOW_COLOR_TITLEBARTEXT               RGB(255, 255, 255)
-#define WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE   RGB(79, 204, 11)   // bright green
-#define WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE RGB(55, 135, 11)   // dark green
-#define WINDOW_COLOR_TITLEBARBRIGHT1            RGB(183, 249, 171) // bright color
-#define WINDOW_COLOR_TITLEBARBRIGHT2            RGB(150, 210, 140) // bright color
-#define WINDOW_COLOR_TITLEBARDARK               RGB(46, 59, 30)    // dark color
-#define WINDOW_COLOR_BUTTONBRIGHT               RGB(229, 229, 229) // bright color
-#define WINDOW_COLOR_BUTTONDARK                 RGB(86, 86, 86)    // dark color
-#define WINDOW_COLOR_SYSTEMBACKGROUND           RGB(232, 255, 232) // brighter green
-#define WINDOW_COLOR_XBUTTONMARK                RGB(71, 199, 21)   // 'X' mark on close button, '<->' mark on resize button  
+#define WINDOW_COLOR_FRAME                      RGB(33, 147, 176)
+#define WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE   RGB(33, 147, 176)
+#define WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE RGB(167, 173, 186)
+#define WINDOW_COLOR_TITLEBARTEXTACTIVE         RGB(255, 255, 255)
+#define WINDOW_COLOR_TITLEBARTEXTINACTIVE       RGB(255, 255, 255)
+#define WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE    RGB(33, 147, 176)
+#define WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE  RGB(167, 173, 186)
+#define WINDOW_COLOR_XBUTTONMARKACTIVE          RGB(222, 98, 98)          
+#define WINDOW_COLOR_XBUTTONMARKINACTIVE        RGB(255, 255, 255)
+#define WINDOW_COLOR_BUTTONDARK                 RGB(86, 86, 86)
+#define WINDOW_COLOR_SYSBACKGROUND              RGB(255, 236, 210)
+#define WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT    RGB(255, 255, 255)
+#define WINDOW_COLOR_SYSBACKGROUNDMARKDARK      RGB(252, 182, 159)
 
 // background window title
 #define WINDOW_BACKGROUNDWINDOWTITLE "SYS_BACKGROUND"
+
+// button flags
+#define BUTTON_FLAGS_SHADOW 0x00000001 // shadow flag
 
 /* event type */
 // unknown event

@@ -11,7 +11,7 @@
 #define SYSTEMMONITOR_MEMORY_HEIGHT          100
 #define SYSTEMMONITOR_MEMORY_SIDEMARGIN      10
 
-#define SYSTEMMONITOR_COLOR_BAR RGB(55, 215, 47)
+#define SYSTEMMONITOR_COLOR_BAR RGB(109, 213, 237)
 
 void k_systemMonitorTask(void);
 static void k_drawProcessorInfo(qword windowId, int x, int y, byte apicId);
