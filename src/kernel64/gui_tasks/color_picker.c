@@ -20,7 +20,7 @@ void k_colorPickerTask(void) {
 
 	/* create window */
 	k_getScreenArea(&screenArea);
-	cp.windowId = k_createWindow(screenArea.x2 - COLORPICKER_WIDTH, screenArea.y1 + WINDOW_APPPANEL_HEIGHT, COLORPICKER_WIDTH, COLORPICKER_HEIGHT, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_BLOCKING, "Color Picker");
+	cp.windowId = k_createWindow(screenArea.x2 - COLPKR_WIDTH, screenArea.y1 + WINDOW_SYSMENU_HEIGHT, COLPKR_WIDTH, COLPKR_HEIGHT, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_BLOCKING, "Color Picker", WINDOW_COLOR_BACKGROUND, null, WINDOW_INVALIDID);
 	if (cp.windowId == WINDOW_INVALIDID) {
 		return;
 	}
@@ -63,16 +63,16 @@ void k_colorPickerTask(void) {
 	// draw value picker (RGB).
 	k_drawText(cp.windowId, 100, y, RGB(255, 0, 0), WINDOW_COLOR_BACKGROUND, "R", 1);
 	k_setRect(&cp.rvalArea, 115, y, 115 + FONT_DEFAULT_WIDTH * 3, y + FONT_DEFAULT_HEIGHT);
-	k_drawRect(cp.windowId, cp.rvalArea.x1 - 1, cp.rvalArea.y1 - 1, cp.rvalArea.x2 + 1, cp.rvalArea.y2 + 1, COLORPICKER_COLOR_VALAREABORDER, false);
+	k_drawRect(cp.windowId, cp.rvalArea.x1 - 1, cp.rvalArea.y1 - 1, cp.rvalArea.x2 + 1, cp.rvalArea.y2 + 1, COLPKR_COLOR_VALAREABORDER, false);
 
 	k_drawText(cp.windowId, 160, y, RGB(0, 255, 0), WINDOW_COLOR_BACKGROUND, "G", 1);
 	k_setRect(&cp.gvalArea, 175, y, 175 + FONT_DEFAULT_WIDTH * 3, y + FONT_DEFAULT_HEIGHT);	
-	k_drawRect(cp.windowId, cp.gvalArea.x1 - 1, cp.gvalArea.y1 - 1, cp.gvalArea.x2 + 1, cp.gvalArea.y2 + 1, COLORPICKER_COLOR_VALAREABORDER, false);
+	k_drawRect(cp.windowId, cp.gvalArea.x1 - 1, cp.gvalArea.y1 - 1, cp.gvalArea.x2 + 1, cp.gvalArea.y2 + 1, COLPKR_COLOR_VALAREABORDER, false);
 	k_updateRGValue(&cp, cp.red, cp.green);
 
 	k_drawText(cp.windowId, 220, y, RGB(0, 0, 255), WINDOW_COLOR_BACKGROUND, "B", 1);
 	k_setRect(&cp.bvalArea, 235, y, 235 + FONT_DEFAULT_WIDTH * 3, y + FONT_DEFAULT_HEIGHT);
-	k_drawRect(cp.windowId, cp.bvalArea.x1 - 1, cp.bvalArea.y1 - 1, cp.bvalArea.x2 + 1, cp.bvalArea.y2 + 1, COLORPICKER_COLOR_VALAREABORDER, false);
+	k_drawRect(cp.windowId, cp.bvalArea.x1 - 1, cp.bvalArea.y1 - 1, cp.bvalArea.x2 + 1, cp.bvalArea.y2 + 1, COLPKR_COLOR_VALAREABORDER, false);
 	k_updateBValue(&cp, cp.blue);
 
 	k_setRect(&cp.rupdArea, cp.rvalArea.x1 - 2, cp.rvalArea.y1 - 2, cp.rvalArea.x2 + 2, cp.rvalArea.y2 + 2);
@@ -105,39 +105,39 @@ void k_colorPickerTask(void) {
 			}
 
 			if (k_isPointInRect(&cp.rgArea, mouseEvent->point.x, mouseEvent->point.y) == true) {
-				cp.focus = COLORPICKER_FOCUS_RGAREA;
+				cp.focus = COLPKR_FOCUS_RGAREA;
 				k_processRedGreenEvent(&cp, mouseEvent->point.x - cp.rgArea.x1, mouseEvent->point.y - cp.rgArea.y1);
 
 			} else if (k_isPointInRect(&cp.bArea, mouseEvent->point.x, mouseEvent->point.y) == true) {
-				cp.focus = COLORPICKER_FOCUS_BAREA;
+				cp.focus = COLPKR_FOCUS_BAREA;
 				k_processBlueEvent(&cp, mouseEvent->point.y - cp.bArea.y1);
 
 			} else if (k_isPointInRect(&cp.rvalArea, mouseEvent->point.x, mouseEvent->point.y) == true) {
-				cp.focus = COLORPICKER_FOCUS_RVALAREA;
-				k_processFocus(&cp, COLORPICKER_FOCUS_RVALAREA, true);
+				cp.focus = COLPKR_FOCUS_RVALAREA;
+				k_processFocus(&cp, COLPKR_FOCUS_RVALAREA, true);
 
 			} else if (k_isPointInRect(&cp.gvalArea, mouseEvent->point.x, mouseEvent->point.y) == true) {
-				cp.focus = COLORPICKER_FOCUS_GVALAREA;
-				k_processFocus(&cp, COLORPICKER_FOCUS_GVALAREA, true);
+				cp.focus = COLPKR_FOCUS_GVALAREA;
+				k_processFocus(&cp, COLPKR_FOCUS_GVALAREA, true);
 
 			} else if (k_isPointInRect(&cp.bvalArea, mouseEvent->point.x, mouseEvent->point.y) == true) {
-				cp.focus = COLORPICKER_FOCUS_BVALAREA;
-				k_processFocus(&cp, COLORPICKER_FOCUS_BVALAREA, true);
+				cp.focus = COLPKR_FOCUS_BVALAREA;
+				k_processFocus(&cp, COLPKR_FOCUS_BVALAREA, true);
 
 			} else {
-				cp.focus = COLORPICKER_FOCUS_DEFAULT;
+				cp.focus = COLPKR_FOCUS_DEFAULT;
 			}
 
-			if (cp.focus != COLORPICKER_FOCUS_RVALAREA) {
-				k_processFocus(&cp, COLORPICKER_FOCUS_RVALAREA, false);
+			if (cp.focus != COLPKR_FOCUS_RVALAREA) {
+				k_processFocus(&cp, COLPKR_FOCUS_RVALAREA, false);
 			}
 
-			if (cp.focus != COLORPICKER_FOCUS_GVALAREA) {
-				k_processFocus(&cp, COLORPICKER_FOCUS_GVALAREA, false);
+			if (cp.focus != COLPKR_FOCUS_GVALAREA) {
+				k_processFocus(&cp, COLPKR_FOCUS_GVALAREA, false);
 			}
 
-			if (cp.focus != COLORPICKER_FOCUS_BVALAREA) {
-				k_processFocus(&cp, COLORPICKER_FOCUS_BVALAREA, false);
+			if (cp.focus != COLPKR_FOCUS_BVALAREA) {
+				k_processFocus(&cp, COLPKR_FOCUS_BVALAREA, false);
 			}
 
 			break;
@@ -150,7 +150,7 @@ void k_colorPickerTask(void) {
 			keyEvent = &event.keyEvent;
 
 			switch (cp.focus) {
-			case COLORPICKER_FOCUS_RGAREA: 
+			case COLPKR_FOCUS_RGAREA: 
 				switch (keyEvent->asciiCode) {
 				case KEY_RIGHT:
 					k_processRedGreenEvent(&cp, cp.red + 1, cp.green);
@@ -171,7 +171,7 @@ void k_colorPickerTask(void) {
 
 				break;
 
-			case COLORPICKER_FOCUS_BAREA:
+			case COLPKR_FOCUS_BAREA:
 				switch (keyEvent->asciiCode) {
 				case KEY_DOWN:
 					k_processBlueEvent(&cp, cp.blue + 1);
@@ -184,7 +184,7 @@ void k_colorPickerTask(void) {
 
 				break;
 
-			case COLORPICKER_FOCUS_RVALAREA:
+			case COLPKR_FOCUS_RVALAREA:
 				switch (keyEvent->asciiCode) {
 				case KEY_UP:
 					if (cp.rval != -1 && cp.rval != cp.red) {
@@ -211,8 +211,8 @@ void k_colorPickerTask(void) {
 						k_processRedGreenEvent(&cp, cp.rval, cp.green);
 					}
 
-					k_processFocus(&cp, COLORPICKER_FOCUS_RVALAREA, false);
-					cp.focus = COLORPICKER_FOCUS_DEFAULT;
+					k_processFocus(&cp, COLPKR_FOCUS_RVALAREA, false);
+					cp.focus = COLPKR_FOCUS_DEFAULT;
 					break;
 
 				default:
@@ -234,7 +234,7 @@ void k_colorPickerTask(void) {
 
 				break;
 
-			case COLORPICKER_FOCUS_GVALAREA:
+			case COLPKR_FOCUS_GVALAREA:
 				switch (keyEvent->asciiCode) {
 				case KEY_UP:
 					if (cp.gval != -1 && cp.gval != cp.green) {
@@ -261,8 +261,8 @@ void k_colorPickerTask(void) {
 						k_processRedGreenEvent(&cp, cp.red, cp.gval);
 					}
 					
-					k_processFocus(&cp, COLORPICKER_FOCUS_GVALAREA, false);
-					cp.focus = COLORPICKER_FOCUS_DEFAULT;
+					k_processFocus(&cp, COLPKR_FOCUS_GVALAREA, false);
+					cp.focus = COLPKR_FOCUS_DEFAULT;
 					break;
 
 				default:
@@ -284,7 +284,7 @@ void k_colorPickerTask(void) {
 
 				break;
 
-			case COLORPICKER_FOCUS_BVALAREA:
+			case COLPKR_FOCUS_BVALAREA:
 				switch (keyEvent->asciiCode) {
 				case KEY_UP:
 					if (cp.bval != -1 && cp.bval != cp.blue) {
@@ -311,8 +311,8 @@ void k_colorPickerTask(void) {
 						k_processBlueEvent(&cp, cp.bval);
 					}
 
-					k_processFocus(&cp, COLORPICKER_FOCUS_BVALAREA, false);
-					cp.focus = COLORPICKER_FOCUS_DEFAULT;
+					k_processFocus(&cp, COLPKR_FOCUS_BVALAREA, false);
+					cp.focus = COLPKR_FOCUS_DEFAULT;
 					break;
 
 				default:
@@ -349,7 +349,7 @@ static void k_initColorPicker(ColorPicker* cp) {
 	cp->rval = -1;
 	cp->gval = -1;
 	cp->bval = -1;
-	cp->focus = COLORPICKER_FOCUS_DEFAULT;
+	cp->focus = COLPKR_FOCUS_DEFAULT;
 }
 
 static void k_drawRedGreenByBlue(const ColorPicker* cp, int blue) {
@@ -490,42 +490,42 @@ static void k_processBlueEvent(ColorPicker* cp, int blue) {
 
 static void k_processFocus(const ColorPicker* cp, int focus, bool on) {
 	switch (focus) {
-	case COLORPICKER_FOCUS_RVALAREA:
+	case COLPKR_FOCUS_RVALAREA:
 		if (on == true) {
 			k_drawRect(cp->windowId, cp->rvalArea.x1 - 1, cp->rvalArea.y1 - 1, cp->rvalArea.x2 + 1, cp->rvalArea.y2 + 1, RGB(255, 0, 0), false);
 			k_drawRect(cp->windowId, cp->rvalArea.x1 - 2, cp->rvalArea.y1 - 2, cp->rvalArea.x2 + 2, cp->rvalArea.y2 + 2, RGB(255, 0, 0), false);
 			k_updateScreenByWindowArea(cp->windowId, &cp->rupdArea);
 
 		} else {
-			k_drawRect(cp->windowId, cp->rvalArea.x1 - 1, cp->rvalArea.y1 - 1, cp->rvalArea.x2 + 1, cp->rvalArea.y2 + 1, COLORPICKER_COLOR_VALAREABORDER, false);
+			k_drawRect(cp->windowId, cp->rvalArea.x1 - 1, cp->rvalArea.y1 - 1, cp->rvalArea.x2 + 1, cp->rvalArea.y2 + 1, COLPKR_COLOR_VALAREABORDER, false);
 			k_drawRect(cp->windowId, cp->rvalArea.x1 - 2, cp->rvalArea.y1 - 2, cp->rvalArea.x2 + 2, cp->rvalArea.y2 + 2, WINDOW_COLOR_BACKGROUND, false);
 			k_updateScreenByWindowArea(cp->windowId, &cp->rupdArea);
 		}
 
 		break;
 
-	case COLORPICKER_FOCUS_GVALAREA:
+	case COLPKR_FOCUS_GVALAREA:
 		if (on == true) {
 			k_drawRect(cp->windowId, cp->gvalArea.x1 - 1, cp->gvalArea.y1 - 1, cp->gvalArea.x2 + 1, cp->gvalArea.y2 + 1, RGB(0, 255, 0), false);
 			k_drawRect(cp->windowId, cp->gvalArea.x1 - 2, cp->gvalArea.y1 - 2, cp->gvalArea.x2 + 2, cp->gvalArea.y2 + 2, RGB(0, 255, 0), false);
 			k_updateScreenByWindowArea(cp->windowId, &cp->gupdArea);
 
 		} else {
-			k_drawRect(cp->windowId, cp->gvalArea.x1 - 1, cp->gvalArea.y1 - 1, cp->gvalArea.x2 + 1, cp->gvalArea.y2 + 1, COLORPICKER_COLOR_VALAREABORDER, false);
+			k_drawRect(cp->windowId, cp->gvalArea.x1 - 1, cp->gvalArea.y1 - 1, cp->gvalArea.x2 + 1, cp->gvalArea.y2 + 1, COLPKR_COLOR_VALAREABORDER, false);
 			k_drawRect(cp->windowId, cp->gvalArea.x1 - 2, cp->gvalArea.y1 - 2, cp->gvalArea.x2 + 2, cp->gvalArea.y2 + 2, WINDOW_COLOR_BACKGROUND, false);
 			k_updateScreenByWindowArea(cp->windowId, &cp->gupdArea);
 		}
 
 		break;
 
-	case COLORPICKER_FOCUS_BVALAREA:
+	case COLPKR_FOCUS_BVALAREA:
 		if (on == true) {
 			k_drawRect(cp->windowId, cp->bvalArea.x1 - 1, cp->bvalArea.y1 - 1, cp->bvalArea.x2 + 1, cp->bvalArea.y2 + 1, RGB(0, 0, 255), false);
 			k_drawRect(cp->windowId, cp->bvalArea.x1 - 2, cp->bvalArea.y1 - 2, cp->bvalArea.x2 + 2, cp->bvalArea.y2 + 2, RGB(0, 0, 255), false);
 			k_updateScreenByWindowArea(cp->windowId, &cp->bupdArea);
 
 		} else {
-			k_drawRect(cp->windowId, cp->bvalArea.x1 - 1, cp->bvalArea.y1 - 1, cp->bvalArea.x2 + 1, cp->bvalArea.y2 + 1, COLORPICKER_COLOR_VALAREABORDER, false);
+			k_drawRect(cp->windowId, cp->bvalArea.x1 - 1, cp->bvalArea.y1 - 1, cp->bvalArea.x2 + 1, cp->bvalArea.y2 + 1, COLPKR_COLOR_VALAREABORDER, false);
 			k_drawRect(cp->windowId, cp->bvalArea.x1 - 2, cp->bvalArea.y1 - 2, cp->bvalArea.x2 + 2, cp->bvalArea.y2 + 2, WINDOW_COLOR_BACKGROUND, false);
 			k_updateScreenByWindowArea(cp->windowId, &cp->bupdArea);
 		}

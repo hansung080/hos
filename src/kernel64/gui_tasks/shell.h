@@ -3,8 +3,8 @@
 
 #include "../core/types.h"
 
-#define GUISHELL_COLOR_TEXT       RGB(33, 147, 176)
-#define GUISHELL_COLOR_BACKGROUND RGB(0, 0, 0)
+#define GUISH_COLOR_TEXT       RGB(33, 147, 176)
+#define GUISH_COLOR_BACKGROUND RGB(0, 0, 0)
 
 void k_guiShellTask(void);
 static void k_processConsoleScreenBuffer(qword windowId);

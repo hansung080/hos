@@ -41,7 +41,7 @@ void k_guiShellTask(void) {
 	windowWidth = FONT_DEFAULT_WIDTH * CONSOLE_WIDTH + 4;
 	windowHeight = FONT_DEFAULT_HEIGHT * CONSOLE_HEIGHT + WINDOW_TITLEBAR_HEIGHT + 2;
 
-	g_guiShellWindowId = k_createWindow(screenArea.x1, screenArea.y2 - windowHeight, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT, "Shell");
+	g_guiShellWindowId = k_createWindow(screenArea.x1, screenArea.y2 - windowHeight, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT, "Shell", GUISH_COLOR_BACKGROUND, null, WINDOW_INVALIDID);
 	if (g_guiShellWindowId == WINDOW_INVALIDID) {
 		return;
 	}
@@ -126,7 +126,7 @@ static void k_processConsoleScreenBuffer(qword windowId) {
 
 		for (j = 0; j < CONSOLE_WIDTH; j++) {
 			if ((screenBuffer->char_ != prevScreenBuffer->char_) || (fullRedraw == true)) {
-				k_drawText(windowId, FONT_DEFAULT_WIDTH * j + 2, FONT_DEFAULT_HEIGHT * i + WINDOW_TITLEBAR_HEIGHT, GUISHELL_COLOR_TEXT, GUISHELL_COLOR_BACKGROUND, &screenBuffer->char_, 1);
+				k_drawText(windowId, FONT_DEFAULT_WIDTH * j + 2, FONT_DEFAULT_HEIGHT * i + WINDOW_TITLEBAR_HEIGHT, GUISH_COLOR_TEXT, GUISH_COLOR_BACKGROUND, &screenBuffer->char_, 1);
 				k_memcpy(prevScreenBuffer, screenBuffer, sizeof(Char));
 				changed = true;
 			}

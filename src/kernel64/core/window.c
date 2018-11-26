@@ -104,7 +104,7 @@ static void k_freeWindow(qword windowId) {
 
 void k_initGuiSystem(void) {
 	VbeModeInfoBlock* vbeMode;
-	qword backgroundWindowId;
+	qword backgroundId;
 
 	/* initialize window pool */
 	k_initWindowPool();
@@ -143,24 +143,25 @@ void k_initGuiSystem(void) {
 	}
 
 	g_windowManager.prevButtonStatus = 0;
-	g_windowManager.windowMoving = false;
-	g_windowManager.movingWindowId = WINDOW_INVALIDID;
+	g_windowManager.prevUnderMouseId = WINDOW_INVALIDID;
+	g_windowManager.moving = false;
+	g_windowManager.movingId = WINDOW_INVALIDID;
 
-	g_windowManager.windowResizing = false;
-	g_windowManager.resizingWindowId = WINDOW_INVALIDID;
-	k_memset(&g_windowManager.resizingWindowArea, 0, sizeof(Rect));
+	g_windowManager.resizing = false;
+	g_windowManager.resizingId = WINDOW_INVALIDID;
+	k_memset(&g_windowManager.resizingArea, 0, sizeof(Rect));
 
-	g_windowManager.overCloseWindowId = WINDOW_INVALIDID;
-	g_windowManager.overResizeWindowId = WINDOW_INVALIDID;
+	g_windowManager.overCloseId = WINDOW_INVALIDID;
+	g_windowManager.overResizeId = WINDOW_INVALIDID;
+	g_windowManager.overMenuId = WINDOW_INVALIDID;
 
 	/* create background window */
 	// set 0 to flags in order not to show. After drawing background color, It will show.
-	backgroundWindowId = k_createWindow(0, 0, vbeMode->xResolution, vbeMode->yResolution, 0, WINDOW_BACKGROUNDWINDOWTITLE);
-	g_windowManager.backgroundWindowId = backgroundWindowId;
-	k_drawRect(backgroundWindowId, 0, 0, vbeMode->xResolution - 1, vbeMode->yResolution - 1, WINDOW_COLOR_SYSBACKGROUND, true);
+	backgroundId = k_createWindow(0, 0, vbeMode->xResolution, vbeMode->yResolution, 0, WINDOW_SYSBACKGROUND_TITLE, WINDOW_COLOR_SYSBACKGROUND, null, WINDOW_INVALIDID);
+	g_windowManager.backgroundId = backgroundId;
 	k_drawBackgroundMark();
 	//k_drawBackgroundImage();
-	k_showWindow(backgroundWindowId, true);
+	k_showWindow(backgroundId, true);
 }
 
 WindowManager* k_getWindowManager(void) {
@@ -168,19 +169,21 @@ WindowManager* k_getWindowManager(void) {
 }
 
 qword k_getBackgroundWindowId(void) {
-	return g_windowManager.backgroundWindowId;
+	return g_windowManager.backgroundId;
 }
 
 void k_getScreenArea(Rect* screenArea) {
 	k_memcpy(screenArea, &g_windowManager.screenArea, sizeof(Rect));
 }
 
-qword k_createWindow(int x, int y, int width, int height, dword flags, const char* title) {
+qword k_createWindow(int x, int y, int width, int height, dword flags, const char* title, Color backgroundColor, Menu* topMenu, qword parentId) {
 	Window* window;
+	Window* parent;
 	Task* task;
-	qword topWindowId;
+	qword topId;
 
 	if ((width <= 0) || (height <= 0)) {
+		k_printf("window error: negative window width or height: %d, %d\n", width, height);
 		return WINDOW_INVALIDID;
 	}
 
@@ -197,6 +200,7 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 	/* allocate window */
 	window = k_allocWindow();
 	if (window == null) {
+		k_printf("window error: window allocation failure\n");
 		return WINDOW_INVALIDID;
 	}
 
@@ -212,6 +216,7 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 	// allocate window buffer.
 	window->buffer = (Color*)k_allocMem(sizeof(Color) * width * height);
 	if (window->buffer == null) {
+		k_printf("window error: window buffer allocation failure\n");
 		k_freeWindow(window->link.id);
 		return WINDOW_INVALIDID;
 	}
@@ -219,6 +224,7 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 	// allocate event buffer.
 	window->eventBuffer = (Event*)k_allocMem(sizeof(Event) * EVENTQUEUE_WINDOW_MAXCOUNT);
 	if (window->eventBuffer == null) {
+		k_printf("window error: event buffer allocation failure\n");
 		k_freeMem(window->buffer);
 		k_freeWindow(window->link.id);
 		return WINDOW_INVALIDID;	
@@ -231,12 +237,28 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 		k_initQueue(&window->eventQueue, window->eventBuffer, sizeof(Event), EVENTQUEUE_WINDOW_MAXCOUNT, false);
 	}
 	
-
 	task = k_getRunningTask(k_getApicId());
 	task->flags |= TASK_FLAGS_GUI;
 	window->taskId = task->link.id;
 
 	window->flags = flags;
+	window->backgroundColor = backgroundColor;
+	window->topMenu = topMenu;
+
+	k_initList(&window->childList);
+
+	if ((flags & WINDOW_FLAGS_CHILD) && (parentId != WINDOW_INVALIDID) && (parentId != 0)) {
+		window->parentId = parentId;
+		parent = k_getWindowWithLock(parentId);
+		if (parent != null) {
+			k_addListToTail(&parent->childList, &window->childLink);
+			parent->flags |= WINDOW_FLAGS_HASCHILD;
+			k_unlock(&parent->mutex);
+		}
+
+	} else {
+		window->parentId = WINDOW_INVALIDID;
+	}
 
 	/* draw window to window buffer */
 	k_drawWindowBackground(window->link.id);
@@ -245,14 +267,18 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 		k_drawWindowFrame(window->link.id);
 	}
 
+	if (topMenu != null) {
+		k_createMenu(topMenu, (FONT_DEFAULT_WIDTH * k_strlen(title)) + (MENU_ITEMWIDTHPADDING * 2), 0, MENU_ITEMHEIGHT_TITLEBAR, null, window->link.id, MENU_FLAGS_HORIZONTAL | MENU_FLAGS_DRAWONPARENT);
+	}
+
 	if (flags & WINDOW_FLAGS_DRAWTITLEBAR) {
-		k_drawWindowTitleBar(window->link.id, title, true);
+		k_drawWindowTitleBar(window->link.id, true);
 	}
 
 	/* add window to window list */
 	k_lock(&g_windowManager.mutex);
 
-	topWindowId = k_getTopWindowId();
+	topId = k_getTopWindowId();
 
 	// add window to the top of screen.
 	// window list: head -> tail == the top window -> the bottom window
@@ -264,9 +290,11 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 	k_updateScreenById(window->link.id);
 	k_sendWindowEventToWindow(window->link.id, EVENT_WINDOW_SELECT);
 
-	if (topWindowId != g_windowManager.backgroundWindowId) {
-		k_updateWindowTitleBar(topWindowId, false);
-		k_sendWindowEventToWindow(topWindowId, EVENT_WINDOW_DESELECT);
+	if ((topId != WINDOW_INVALIDID) && (topId != g_windowManager.backgroundId)) {
+		k_sendWindowEventToWindow(topId, EVENT_WINDOW_DESELECT);
+		if (!((window->flags & WINDOW_FLAGS_CHILD) && (k_isTopWindowWithChild(window->parentId) == true))) {
+			k_updateWindowTitleBar(topId, false);
+		}
 	}
 
 	return window->link.id;
@@ -275,7 +303,7 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 bool k_deleteWindow(qword windowId) {
 	Window* window;
 	Rect area;
-	qword topWindowId;
+	qword topId;
 	bool top;
 
 	k_lock(&g_windowManager.mutex);
@@ -293,6 +321,11 @@ bool k_deleteWindow(qword windowId) {
 
 	} else {
 		top = false;
+	}
+
+	/* delete child windows */
+	if (window->flags & WINDOW_FLAGS_HASCHILD) {
+		k_deleteChildWindows(windowId);
 	}
 
 	/* remove window from window list */
@@ -322,10 +355,10 @@ bool k_deleteWindow(qword windowId) {
 	k_updateScreenByScreenArea(&area);
 
 	if (top == true) {
-		topWindowId = k_getTopWindowId();
-		if (topWindowId != WINDOW_INVALIDID) {
-			k_updateWindowTitleBar(topWindowId, true);
-			k_sendWindowEventToWindow(topWindowId, EVENT_WINDOW_SELECT);
+		topId = k_getTopWindowId();
+		if (topId != WINDOW_INVALIDID) {
+			k_sendWindowEventToWindow(topId, EVENT_WINDOW_SELECT);
+			k_updateWindowTitleBar(topId, true);
 		}
 	}
 
@@ -343,7 +376,7 @@ bool k_deleteWindowsByTask(qword taskId) {
 		// Getting the next window must be before deleting the current window.
 		nextWindow = k_getNextFromList(&g_windowManager.windowList, window);
 
-		if ((window->link.id != g_windowManager.backgroundWindowId) && (window->taskId == taskId)) {
+		if ((window->link.id != g_windowManager.backgroundId) && (window->taskId == taskId)) {
 			k_deleteWindow(window->link.id);
 		}
 
@@ -364,7 +397,7 @@ bool k_closeWindowsByTask(qword taskId) {
 		// Getting the next window must be before closing the current window.
 		nextWindow = k_getNextFromList(&g_windowManager.windowList, window);
 
-		if ((window->link.id != g_windowManager.backgroundWindowId) && (window->taskId == taskId)) {
+		if ((window->link.id != g_windowManager.backgroundId) && (window->taskId == taskId)) {
 			k_sendWindowEventToWindow(window->link.id, EVENT_WINDOW_CLOSE);
 		}
 
@@ -833,7 +866,7 @@ qword k_findWindowByPoint(int x, int y) {
 
 	// set background window ID to default window ID,
 	// because mouse point is always inside the background window.
-	windowId = g_windowManager.backgroundWindowId;
+	windowId = g_windowManager.backgroundId;
 
 	/**
 	  loop from the first window (the top window),
@@ -896,32 +929,60 @@ bool k_existWindow(qword windowId) {
 }
 
 qword k_getTopWindowId(void) {
-	Window* topWindow;
-	qword topWindowId;
+	Window* top;
+	qword topId;
 
 	k_lock(&g_windowManager.mutex);
 
-	topWindow = k_getHeadFromList(&g_windowManager.windowList);
-	if (topWindow != null) {
-		topWindowId = topWindow->link.id;
+	top = k_getHeadFromList(&g_windowManager.windowList);
+	if (top != null) {
+		topId = top->link.id;
 
 	} else {
-		topWindowId = WINDOW_INVALIDID;
+		topId = WINDOW_INVALIDID;
 	}
 
 	k_unlock(&g_windowManager.mutex);
 
-	return topWindowId;
+	return topId;
+}
+
+bool k_isTopWindow(qword windowId) {
+	if (windowId == k_getTopWindowId()) {
+		return true;
+	}
+
+	return false;
+}
+
+bool k_isTopWindowWithChild(qword windowId) {
+	qword topId;
+	Window* top;
+
+	topId = k_getTopWindowId();
+	if (topId == windowId) {
+		return true;
+	}
+
+	top = k_getWindow(topId);
+	if ((top != null) && (top->parentId != WINDOW_INVALIDID) && (top->parentId == windowId)) {
+		return true;
+	}
+
+	return false;
 }
 
 bool k_moveWindowToTop(qword windowId) {
 	Window* window;
 	Rect area;
 	dword flags;
-	qword topWindowId;
+	qword parentId;
+	qword topId;
+	Window* top;
 	
-	topWindowId = k_getTopWindowId();
-	if (topWindowId == windowId) {
+	topId = k_getTopWindowId();
+
+	if (topId == windowId) {
 		return true;
 	}
 
@@ -933,6 +994,7 @@ bool k_moveWindowToTop(qword windowId) {
 		k_addListToHead(&g_windowManager.windowList, window);
 		k_convertRectScreenToWindow(windowId, &window->area, &area);
 		flags = window->flags;
+		parentId = window->parentId;
 	}
 
 	k_unlock(&g_windowManager.mutex);
@@ -949,8 +1011,17 @@ bool k_moveWindowToTop(qword windowId) {
 			k_updateScreenById(windowId);
 		}
 
-		k_sendWindowEventToWindow(topWindowId, EVENT_WINDOW_DESELECT);
-		k_updateWindowTitleBar(topWindowId, false);
+		k_sendWindowEventToWindow(topId, EVENT_WINDOW_DESELECT);
+		top = k_getWindow(topId);
+		if (!(((flags & WINDOW_FLAGS_CHILD) && (k_isTopWindowWithChild(parentId) == true)) ||
+			  ((top != null) && (top->flags & WINDOW_FLAGS_CHILD) && (k_isTopWindowWithChild(top->parentId) == true)))) {
+			k_updateWindowTitleBar(topId, false);
+		}
+
+		/* not show all child windows */
+		if (flags & WINDOW_FLAGS_HASCHILD) {
+			k_showChildWindows(windowId, false, 0);
+		}
 
 		return true;
 	}
@@ -1003,13 +1074,49 @@ bool k_isPointInResizeButton(qword windowId, int x, int y) {
 	return false;
 }
 
+bool k_isPointInTopMenu(qword windowId, int x, int y) {
+	Window* window;
+	int menuOffsetX;
+	int menuWidth;
+
+	if (k_isTopWindowWithChild(windowId) == false) {
+		return false;
+	}
+
+	window = k_getWindow(windowId);
+	if ((window == null) || (window->topMenu == null)) {
+		return false;
+	}
+
+	menuOffsetX = (FONT_DEFAULT_WIDTH * k_strlen(window->title)) + (MENU_ITEMWIDTHPADDING * 2);
+	menuWidth = window->topMenu->table[window->topMenu->itemCount - 1].area.x2 - window->topMenu->table[0].area.x1 + 1;
+	if ((window->area.x1 + menuOffsetX <= x) && (x <= window->area.x1 + menuOffsetX + menuWidth - 1) && (window->area.y1 <= y) && (y <= window->area.y1 + MENU_ITEMHEIGHT_TITLEBAR)) {
+		return true;
+	}
+
+	return false;
+}
+
 static bool k_updateWindowTitleBar(qword windowId, bool selected) {
 	Window* window;
 	Rect titleBarArea;
 
 	window = k_getWindow(windowId);
+
+	if (window != null) {
+		// [NOTE] Child window has no title bar.
+		//        Thus, it gets parent window to update title bar.
+		if (window->flags & WINDOW_FLAGS_CHILD) {
+			window = k_getWindow(window->parentId);
+		}
+
+		if ((window->flags & WINDOW_FLAGS_HASCHILD) && (selected == false)) {
+			k_showChildWindows(window->link.id, false, 0);
+		}
+	}
+
 	if ((window != null) && (window->flags & WINDOW_FLAGS_DRAWTITLEBAR)) {
-		k_drawWindowTitleBar(window->link.id, window->title, selected);
+		k_drawWindowTitleBar(window->link.id, selected);
 		k_setRect(&titleBarArea, 0, 0, k_getRectWidth(&window->area) - 1, WINDOW_TITLEBAR_HEIGHT - 1);
 		k_updateScreenByWindowArea(window->link.id, &titleBarArea);
 		return true;
@@ -1025,7 +1132,7 @@ bool k_updateCloseButton(qword windowId, bool mouseOver) {
 
 	window = k_getWindow(windowId);
 	if ((window != null) && (window->flags & WINDOW_FLAGS_DRAWTITLEBAR)) {
-		if (window->link.id == k_getTopWindowId()) {
+		if (k_isTopWindowWithChild(window->link.id) == true) {
 			k_drawCloseButton(window->link.id, true, mouseOver);
 
 		} else {
@@ -1048,7 +1155,7 @@ bool k_updateResizeButton(qword windowId, bool mouseOver) {
 
 	window = k_getWindow(windowId);
 	if ((window != null) && (window->flags & WINDOW_FLAGS_RESIZABLE)) {
-		if (window->link.id == k_getTopWindowId()) {
+		if (k_isTopWindowWithChild(window->link.id) == true) {
 			k_drawResizeButton(window->link.id, true, mouseOver);
 
 		} else {
@@ -1081,6 +1188,11 @@ bool k_moveWindow(qword windowId, int x, int y) {
 	window->area.y2 = y + k_getRectHeight(&prevArea) - 1;
 
 	k_unlock(&window->mutex);
+
+	/* move child windows */
+	if (window->flags & WINDOW_FLAGS_HASCHILD) {
+		k_moveChildWindows(windowId, x - prevArea.x1, y - prevArea.y1);
+	}
 
 	/* update screen and send window event */
 	k_updateScreenByScreenArea(&prevArea);
@@ -1128,6 +1240,13 @@ bool k_resizeWindow(qword windowId, int x, int y, int width, int height) {
 	window->area.x2 = x + width - 1;
 	window->area.y2 = y + height - 1;
 
+	k_unlock(&window->mutex);
+
+	/* move child windows */
+	if (window->flags & WINDOW_FLAGS_HASCHILD) {
+		k_moveChildWindows(windowId, x - prevArea.x1, y - prevArea.y1);
+	}
+
 	/** 
 	  draw window basic objects
 	  - GUI task have to draw window contents when it receives EVENT_WINDOW_RESIZE event from window manger task. 
@@ -1139,10 +1258,8 @@ bool k_resizeWindow(qword windowId, int x, int y, int width, int height) {
 	}
 
 	if (window->flags & WINDOW_FLAGS_DRAWTITLEBAR) {
-		k_drawWindowTitleBar(windowId, window->title, true);
+		k_drawWindowTitleBar(windowId, true);
 	}
-
-	k_unlock(&window->mutex);
 
 	/* update screen and send window event */
 	if (window->flags & WINDOW_FLAGS_SHOW) {
@@ -1152,6 +1269,89 @@ bool k_resizeWindow(qword windowId, int x, int y, int width, int height) {
 	}
 
 	return true;
+}
+
+void k_moveChildWindows(qword windowId, int moveX, int moveY) {
+	Window* window;
+	void* childLink;
+	Window* child;
+
+	window = k_getWindowWithLock(windowId);
+	if (window == null) {
+		return;
+	}
+
+	childLink = k_getHeadFromList(&window->childList);
+	while (childLink != null) {
+		child = GETWINDOWFROMCHILDLINK(childLink);
+		k_moveWindow(child->link.id, child->area.x1 + moveX, child->area.y1 + moveY);
+		childLink = k_getNextFromList(&window->childList, childLink);
+	}
+
+	k_unlock(&window->mutex);
+}
+
+void k_showChildWindows(qword windowId, bool show, dword flags) {
+	Window* window;
+	void* childLink;
+	Window* child;
+	bool childShow;
+
+	window = k_getWindowWithLock(windowId);
+	if (window == null) {
+		return;
+	}
+
+	childLink = k_getHeadFromList(&window->childList);
+	while (childLink != null) {
+		child = GETWINDOWFROMCHILDLINK(childLink);
+
+		// If flags == 0, process all child windows.
+		// If flags == WINDOW_FLAGS_MENU, process only menu child windows.
+		if ((flags == 0) || (child->flags & flags)) {
+			if (child->flags & WINDOW_FLAGS_SHOW) {
+				childShow = true;
+
+			} else {
+				childShow = false;
+			}
+
+			if (childShow != show) {
+				k_showWindow(child->link.id, show);	
+			}
+
+		}
+
+		childLink = k_getNextFromList(&window->childList, childLink);
+	}
+
+	k_unlock(&window->mutex);
+}
+
+void k_deleteChildWindows(qword windowId) {
+	Window* window;
+	int count;
+	int i;
+	void* childLink;
+	Window* child;
+
+	window = k_getWindowWithLock(windowId);
+	if (window == null) {
+		return;
+	}
+
+	count = k_getListCount(&window->childList);
+	for (i = 0; i < count; i++) {
+		childLink = k_removeListFromHead(&window->childList);
+		if (childLink == null) {
+			break;
+		}
+
+		child = GETWINDOWFROMCHILDLINK(childLink);
+		k_deleteWindow(child->link.id);
+	}
+
+	k_unlock(&window->mutex);
 }
 
 bool k_getWindowArea(qword windowId, Rect* area) {
@@ -1237,6 +1437,7 @@ bool k_setMouseEvent(Event* event, qword windowId, qword eventType, int mouseX, 
 	case EVENT_MOUSE_RBUTTONUP:
 	case EVENT_MOUSE_MBUTTONDOWN:
 	case EVENT_MOUSE_MBUTTONUP:
+	case EVENT_MOUSE_OUT:
 		screenMousePoint.x = mouseX;
 		screenMousePoint.y = mouseY;
 
@@ -1244,7 +1445,6 @@ bool k_setMouseEvent(Event* event, qword windowId, qword eventType, int mouseX, 
 			return false;
 		}
 
-		/* set mouse event */
 		event->type = eventType;
 		event->mouseEvent.windowId = windowId;
 		k_memcpy(&event->mouseEvent.point, &windowMousePoint, sizeof(Point));
@@ -1272,7 +1472,6 @@ bool k_setWindowEvent(Event* event, qword windowId, qword eventType) {
 			return false;
 		}
 
-		/* set window event */
 		event->type = eventType;
 		event->windowEvent.windowId = windowId;
 		k_memcpy(&event->windowEvent.area, &area, sizeof(Rect));
@@ -1298,6 +1497,38 @@ void k_setKeyEvent(Event* event, qword windowId, const Key* key) {
 	event->keyEvent.scanCode = key->scanCode;
 	event->keyEvent.asciiCode = key->asciiCode;
 	event->keyEvent.flags = key->flags;
+}
+
+bool k_setMenuEvent(Event* event, qword windowId, qword eventType, int mouseX, int mouseY) {
+	Menu* topMenu;
+	int index;
+
+	switch (eventType) {
+	case EVENT_TOPMENU_CLICK:
+		index = k_getTopMenuItemIndex(windowId, mouseX, mouseY);
+		if (index == -1) {
+			break;
+		}
+
+		event->type = eventType;
+		event->menuEvent.windowId = windowId;
+		event->menuEvent.index = index;
+
+		topMenu = k_getWindow(windowId)->topMenu;
+		if (topMenu->table[index].hasSubMenu == true) {
+			k_toggleMenuVisibility((Menu*)topMenu->table[index].param, topMenu, index);
+
+		} else {
+			k_drawMenuItem(topMenu, index, false, topMenu->textColor, topMenu->backgroundColor, topMenu->activeColor);
+		}
+
+		break;
+
+	default:
+		return false;
+	}
+
+	return true;
 }
 
 bool k_sendEventToWindow(const Event* event, qword windowId) {
@@ -1388,6 +1619,16 @@ inline bool k_sendKeyEventToWindow(qword windowId, const Key* key) {
 	return k_sendEventToWindow(&event, windowId);
 }
 
+inline bool k_sendMenuEventToWindow(qword windowId, qword eventType, int mouseX, int mouseY) {
+	Event event;
+
+	if (k_setMenuEvent(&event, windowId, eventType, mouseX, mouseY) == false) {
+		return false;
+	}
+
+	return k_sendEventToWindow(&event, windowId);
+}
+
 bool k_updateScreenById(qword windowId) {
 	Event event;
 	Window* window;
@@ -1463,7 +1704,7 @@ bool k_drawWindowBackground(qword windowId) {
 	}
 
 	// draw a window background.
-	__k_drawRect(window->buffer, &area, x, y, width - 1 - x, height - 1 - x, WINDOW_COLOR_BACKGROUND, true);
+	__k_drawRect(window->buffer, &area, x, y, width - 1 - x, height - 1 - x, window->backgroundColor, true);
 
 	k_unlock(&window->mutex);
 }
@@ -1493,7 +1734,7 @@ bool k_drawWindowFrame(qword windowId) {
 	return true;
 }
 
-bool k_drawWindowTitleBar(qword windowId, const char* title, bool selected) {
+bool k_drawWindowTitleBar(qword windowId, bool selected) {
 	Window* window;
 	int width;
 	Rect area;
@@ -1510,20 +1751,25 @@ bool k_drawWindowTitleBar(qword windowId, const char* title, bool selected) {
 	/* draw a title bar */
 
 	if (selected == true) {
-		// [NOTE] (x1, y1) has changed from (2, 2) to (0, 0) when WINDOW_FLAGS_DRAWFRAME is set,
-		//        because WINDOW_COLOR_FRAME == WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE
+		// [NOTE] The title bar includes the frame.
 		// draw a title bar background.
 		__k_drawRect(window->buffer, &area, 0, 0, width - 1, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE, true);
 		
 		// draw a title.
-		__k_drawText(window->buffer, &area, 6, 3, WINDOW_COLOR_TITLEBARTEXTACTIVE, WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE, title, k_strlen(title));
+		if (window->topMenu == null) {
+			__k_drawText(window->buffer, &area, MENU_ITEMWIDTHPADDING, 2, WINDOW_COLOR_TITLEBARTEXTACTIVE, WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE, window->title, k_strlen(window->title));
+
+		} else {
+			__k_drawText(window->buffer, &area, MENU_ITEMWIDTHPADDING, 2, WINDOW_COLOR_TITLEBARTEXTACTIVEWITHMENU, WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE, window->title, k_strlen(window->title));
+		}
+		
 
 	} else {
 		// draw a title bar background.
 		__k_drawRect(window->buffer, &area, 0, 0, width - 1, WINDOW_TITLEBAR_HEIGHT - 1, WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE, true);
 		
 		// draw a title.
-		__k_drawText(window->buffer, &area, 6, 3, WINDOW_COLOR_TITLEBARTEXTINACTIVE, WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE, title, k_strlen(title));
+		__k_drawText(window->buffer, &area, MENU_ITEMWIDTHPADDING, 2, WINDOW_COLOR_TITLEBARTEXTINACTIVE, WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE, window->title, k_strlen(window->title));
 	}
 
 	#if 0
@@ -1541,6 +1787,16 @@ bool k_drawWindowTitleBar(qword windowId, const char* title, bool selected) {
 	#endif
 
 	k_unlock(&window->mutex);
+
+	/* draw all menu items */
+	if (window->topMenu != null) {
+		if (selected == true) {
+			k_drawAllMenuItems(window->topMenu, window->topMenu->textColor, window->topMenu->backgroundColor, window->topMenu->activeColor);
+
+		} else {
+			k_drawAllMenuItems(window->topMenu, window->topMenu->textColor, WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE, window->topMenu->activeColor);
+		}
+	}
 
 	/* draw a close button */
 	k_drawCloseButton(windowId, selected, false);
@@ -1576,21 +1832,21 @@ static bool k_drawCloseButton(qword windowId, bool selected, bool mouseOver) {
 
 	if (selected == true) {
 		if (mouseOver == true) {
-			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, BUTTON_FLAGS_SHADOW);
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, "", BUTTON_FLAGS_SHADOW);
 			markColor = WINDOW_COLOR_XBUTTONMARKACTIVE;
 
 		} else {
-			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, 0);
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, "", 0);
 			markColor = WINDOW_COLOR_XBUTTONMARKINACTIVE;
 		}
 		
 	} else {
 		if (mouseOver == true) {
-			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, BUTTON_FLAGS_SHADOW);
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, "", BUTTON_FLAGS_SHADOW);
 			markColor = WINDOW_COLOR_XBUTTONMARKACTIVE;
 
 		} else {
-			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, 0);
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, "", 0);
 			markColor = WINDOW_COLOR_XBUTTONMARKINACTIVE;
 		}
 	}
@@ -1639,22 +1895,22 @@ static bool k_drawResizeButton(qword windowId, bool selected, bool mouseOver) {
 
 	if (selected == true) {
 		if (mouseOver == true) {
-			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, BUTTON_FLAGS_SHADOW);
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, "", BUTTON_FLAGS_SHADOW);
 			markColor = WINDOW_COLOR_XBUTTONMARKACTIVE;
 
 		} else {
-			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, 0);
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE, "", 0);
 			markColor = WINDOW_COLOR_XBUTTONMARKINACTIVE;
 		}
 		
 
 	} else {
 		if (mouseOver == true) {
-			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, BUTTON_FLAGS_SHADOW);
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, "", BUTTON_FLAGS_SHADOW);
 			markColor = WINDOW_COLOR_XBUTTONMARKACTIVE;
 
 		} else {
-			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, "", WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, 0);
+			k_drawButton(windowId, &buttonArea, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE, "", 0);
 			markColor = WINDOW_COLOR_XBUTTONMARKINACTIVE;
 		}
 	}
@@ -1687,7 +1943,7 @@ static bool k_drawResizeButton(qword windowId, bool selected, bool mouseOver) {
 	return true;
 }
 
-bool k_drawButton(qword windowId, const Rect* buttonArea, Color backgroundColor, const char* text, Color textColor, dword flags) {
+bool k_drawButton(qword windowId, const Rect* buttonArea, Color textColor, Color backgroundColor, const char* text, dword flags) {
 	Window* window;
 	int width;
 	Rect area;
@@ -1903,42 +2159,42 @@ static void k_drawBackgroundMark(void) {
 	startY = (k_getRectHeight(&g_windowManager.screenArea) - 60) / 2;
 
 	/* draw dark shadow of mark */
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 19, startY, startX + 19, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 20, startY, startX + 20, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundId, startX + 19, startY, startX + 19, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundId, startX + 20, startY, startX + 20, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
 
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 19, startY + 40, startX + 19, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 20, startY + 40, startX + 20, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);	
+	k_drawLine(g_windowManager.backgroundId, startX + 19, startY + 40, startX + 19, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundId, startX + 20, startY + 40, startX + 20, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);	
 	
-	k_drawLine(g_windowManager.backgroundWindowId, startX, startY + 59, startX + 20, startY + 59, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-	k_drawLine(g_windowManager.backgroundWindowId, startX, startY + 60, startX + 20, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundId, startX, startY + 59, startX + 20, startY + 59, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundId, startX, startY + 60, startX + 20, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
 
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 20, startY + 39, startX + 40, startY + 39, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 20, startY + 40, startX + 40, startY + 40, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundId, startX + 20, startY + 39, startX + 40, startY + 39, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundId, startX + 20, startY + 40, startX + 40, startY + 40, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
 
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 59, startY, startX + 59, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 60, startY, startX + 60, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundId, startX + 59, startY, startX + 59, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundId, startX + 60, startY, startX + 60, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
 
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 40, startY + 59, startX + 60, startY + 59, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 40, startY + 60, startX + 60, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundId, startX + 40, startY + 59, startX + 60, startY + 59, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
+	k_drawLine(g_windowManager.backgroundId, startX + 40, startY + 60, startX + 60, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
 
 	/* draw bright shadow of mark */
-	k_drawLine(g_windowManager.backgroundWindowId, startX, startY, startX + 20, startY, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-	k_drawLine(g_windowManager.backgroundWindowId, startX, startY + 1, startX + 20, startY + 1, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundId, startX, startY, startX + 20, startY, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundId, startX, startY + 1, startX + 20, startY + 1, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
 
-	k_drawLine(g_windowManager.backgroundWindowId, startX, startY, startX, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 1, startY, startX + 1, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundId, startX, startY, startX, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundId, startX + 1, startY, startX + 1, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
 
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 20, startY + 20, startX + 40, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 20, startY + 21, startX + 40, startY + 21, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundId, startX + 20, startY + 20, startX + 40, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundId, startX + 20, startY + 21, startX + 40, startY + 21, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
 
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 40, startY, startX + 60, startY, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 40, startY + 1, startX + 60, startY + 1, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundId, startX + 40, startY, startX + 60, startY, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundId, startX + 40, startY + 1, startX + 60, startY + 1, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
 
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 40, startY, startX + 40, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 41, startY, startX + 41, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundId, startX + 40, startY, startX + 40, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundId, startX + 41, startY, startX + 41, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
 
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 40, startY + 40, startX + 40, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-	k_drawLine(g_windowManager.backgroundWindowId, startX + 41, startY + 40, startX + 41, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundId, startX + 40, startY + 40, startX + 40, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
+	k_drawLine(g_windowManager.backgroundId, startX + 41, startY + 40, startX + 41, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
 }
 
 static void k_drawBackgroundImage(void) {
@@ -1967,7 +2223,7 @@ static void k_drawBackgroundImage(void) {
 		return;
 	}
 
-	k_bitblt(g_windowManager.backgroundWindowId, g_windowManager.screenArea.x1, g_windowManager.screenArea.y1, imageBuffer, jpeg->width, jpeg->height);
+	k_bitblt(g_windowManager.backgroundId, g_windowManager.screenArea.x1, g_windowManager.screenArea.y1, imageBuffer, jpeg->width, jpeg->height);
 
 	k_freeMem(imageBuffer);
 	k_freeMem(jpeg);

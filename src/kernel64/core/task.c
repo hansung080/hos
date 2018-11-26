@@ -1187,7 +1187,7 @@ void k_idleTask(void) {
 					for (i = 0; i < count; i++) {
 						k_lockSpin(&(g_schedulers[currentApicId].spinlock));
 						
-						threadLink = (Task*)k_removeListFromHead(&(task->childThreadList));
+						threadLink = k_removeListFromHead(&(task->childThreadList));
 						if (threadLink == null) {
 							k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
 							break;

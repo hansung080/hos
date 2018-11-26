@@ -1,5 +1,6 @@
 #include "syscall.h"
 #include "syscall_numbers.h"
+#include "userlib.h"
 
 void setCursor(int x, int y) {
 	ParamTable paramTable;
@@ -418,7 +419,7 @@ void getScreenArea(Rect* screenArea) {
 	executeSyscall(SYSCALL_GETSCREENAREA, &paramTable);
 }
 
-qword createWindow(int x, int y, int width, int height, dword flags, const char* title) {
+qword createWindow(int x, int y, int width, int height, dword flags, const char* title, Color backgroundColor, Menu* topMenu, qword parentId) {
 	ParamTable paramTable;
 
 	PARAM(0) = (qword)x;
@@ -427,6 +428,9 @@ qword createWindow(int x, int y, int width, int height, dword flags, const char*
 	PARAM(3) = (qword)height;
 	PARAM(4) = (qword)flags;
 	PARAM(5) = (qword)title;
+	PARAM(6) = (qword)backgroundColor;
+	PARAM(7) = (qword)topMenu;
+	PARAM(8) = parentId;
 
 	return executeSyscall(SYSCALL_CREATEWINDOW, &paramTable);
 }
@@ -477,6 +481,22 @@ qword getTopWindowId(void) {
 	return executeSyscall(SYSCALL_GETTOPWINDOWID, null);
 }
 
+bool isTopWindow(qword windowId) {
+	ParamTable paramTable;
+
+	PARAM(0) = windowId;
+
+	return (bool)executeSyscall(SYSCALL_ISTOPWINDOW, &paramTable);
+}
+
+bool isTopWindowWithChild(qword windowId) {
+	ParamTable paramTable;
+
+	PARAM(0) = windowId;
+
+	return (bool)executeSyscall(SYSCALL_ISTOPWINDOWWITHCHILD, &paramTable);	
+}
+
 bool moveWindowToTop(qword windowId) {
 	ParamTable paramTable;
 
@@ -489,6 +509,8 @@ bool isPointInTitleBar(qword windowId, int x, int y) {
 	ParamTable paramTable;
 
 	PARAM(0) = windowId;
+	PARAM(1) = (qword)x;
+	PARAM(2) = (qword)y;
 
 	return (bool)executeSyscall(SYSCALL_ISPOINTINTITLEBAR, &paramTable);
 }
@@ -513,6 +535,16 @@ bool isPointInResizeButton(qword windowId, int x, int y) {
 	return (bool)executeSyscall(SYSCALL_ISPOINTINRESIZEBUTTON, &paramTable);	
 }
 
+bool isPointInTopMenu(qword windowId, int x, int y) {
+	ParamTable paramTable;
+
+	PARAM(0) = windowId;
+	PARAM(1) = (qword)x;
+	PARAM(2) = (qword)y;
+
+	return (bool)executeSyscall(SYSCALL_ISPOINTINTOPMENU, &paramTable);
+}
+
 bool moveWindow(qword windowId, int x, int y) {
 	ParamTable paramTable;
 
@@ -533,6 +565,34 @@ bool resizeWindow(qword windowId, int x, int y, int width, int height) {
 	PARAM(4) = (qword)height;
 
 	return (bool)executeSyscall(SYSCALL_RESIZEWINDOW, &paramTable);
+}
+
+void moveChildWindows(qword windowId, int moveX, int moveY) {
+	ParamTable paramTable;
+
+	PARAM(0) = windowId;
+	PARAM(1) = (qword)moveX;
+	PARAM(2) = (qword)moveY;
+
+	executeSyscall(SYSCALL_MOVECHILDWINDOWS, &paramTable);
+}
+
+void showChildWindows(qword windowId, bool show, dword flags) {
+	ParamTable paramTable;
+
+	PARAM(0) = windowId;
+	PARAM(1) = (qword)show;
+	PARAM(2) = (qword)flags;
+
+	executeSyscall(SYSCALL_SHOWCHILDWINDOWS, &paramTable);
+}
+
+void deleteChildWindows(qword windowId) {
+	ParamTable paramTable;
+
+	PARAM(0) = windowId;
+
+	executeSyscall(SYSCALL_DELETECHILDWINDOWS, &paramTable);
 }
 
 bool getWindowArea(qword windowId, Rect* area) {
@@ -603,17 +663,16 @@ bool drawWindowFrame(qword windowId) {
 	return (bool)executeSyscall(SYSCALL_DRAWWINDOWFRAME, &paramTable);
 }
 
-bool drawWindowTitleBar(qword windowId, const char* title, bool selected) {
+bool drawWindowTitleBar(qword windowId, bool selected) {
 	ParamTable paramTable;
 
 	PARAM(0) = windowId;
-	PARAM(1) = (qword)title;
-	PARAM(2) = (qword)selected;
+	PARAM(1) = (qword)selected;
 
 	return (bool)executeSyscall(SYSCALL_DRAWWINDOWTITLEBAR, &paramTable);
 }
 
-bool drawButton(qword windowId, const Rect* buttonArea, Color backgroundColor, const char* text, Color textColor, dword flags) {
+bool drawButton(qword windowId, const Rect* buttonArea, Color textColor, Color backgroundColor, const char* text, dword flags) {
 	ParamTable paramTable;
 
 	PARAM(0) = windowId;
@@ -770,4 +829,26 @@ qword executeApp(const char* fileName, const char* args, byte affinity) {
 	PARAM(2) = (qword)affinity;
 
 	return executeSyscall(SYSCALL_EXECUTEAPP, &paramTable);
+}
+
+bool createMenu(Menu* menu, int x, int y, int itemHeight, Color* colors, qword parentId, dword flags) {
+	ParamTable paramTable;
+
+	PARAM(0) = (qword)menu;
+	PARAM(1) = (qword)x;
+	PARAM(2) = (qword)y;
+	PARAM(3) = (qword)itemHeight;
+	PARAM(4) = (qword)colors;
+	PARAM(5) = parentId;
+	PARAM(6) = (qword)flags;
+
+	return (bool)executeSyscall(SYSCALL_CREATEMENU, &paramTable);
+}
+
+bool processMenuEvent(Menu* menu) {
+	ParamTable paramTable;
+
+	PARAM(0) = (qword)menu;
+
+	return (bool)executeSyscall(SYSCALL_PROCESSMENUEVENT, &paramTable);
 }

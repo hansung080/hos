@@ -134,6 +134,7 @@ on your computer or QEMU.
 - eng: english
 - over: overlapped
 - app: application
+- sys: system
 - syscall: system call
 - rand: random
 
@@ -163,3 +164,7 @@ https://webgradients.com/
 - gray: RGB(86, 86, 86) #565656 -> dark shadow
 - peach: RGB(255, 236, 210) #ffecd2 -> system background
 - peach: RGB(252, 182, 159) #fcb69f -> system background mark dark
+- green: RGB(212, 252, 121) #d4fc79 -> not used
+- green: RGB(150, 230, 161) #96e6a1 -> not used
+- green: RGB(132, 250, 176) #84fab0 -> not used
+- green: RGB(143, 211, 244) #8fd3f4 -> not used

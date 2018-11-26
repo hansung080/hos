@@ -7,6 +7,7 @@
 #include "../utils/list.h"
 #include "../utils/queue.h"
 #include "keyboard.h"
+#include "widgets.h"
 
 /**
   < GUI System Structure >
@@ -43,6 +44,9 @@
 #define WINDOW_FLAGS_DRAWTITLEBAR 0x00000004 // draw title bar flag
 #define WINDOW_FLAGS_RESIZABLE    0x00000008 // resizable flag
 #define WINDOW_FLAGS_BLOCKING     0x00000010 // blocking flag
+#define WINDOW_FLAGS_HASCHILD     0x00000020 // has child flag: set in k_createWindow.
+#define WINDOW_FLAGS_CHILD        0x00000040 // child flag
+#define WINDOW_FLAGS_MENU         0x00000080 // menu flag: set in k_createMenu. The top menu is not a menu.
 #define WINDOW_FLAGS_DEFAULT      (WINDOW_FLAGS_SHOW | WINDOW_FLAGS_DRAWFRAME | WINDOW_FLAGS_DRAWTITLEBAR)
 
 // window size
@@ -50,7 +54,7 @@
 #define WINDOW_XBUTTON_SIZE     19 // close button and resize button size
 #define WINDOW_MINWIDTH         (WINDOW_XBUTTON_SIZE * 2 + 30) // min window width
 #define WINDOW_MINHEIGHT        (WINDOW_TITLEBAR_HEIGHT + 30)  // min window height
-#define WINDOW_APPPANEL_HEIGHT  31
+#define WINDOW_SYSMENU_HEIGHT   31
 
 // window color
 #define WINDOW_COLOR_BACKGROUND                 RGB(255, 255, 255)
@@ -58,6 +62,7 @@
 #define WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE   RGB(33, 147, 176)
 #define WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE RGB(167, 173, 186)
 #define WINDOW_COLOR_TITLEBARTEXTACTIVE         RGB(255, 255, 255)
+#define WINDOW_COLOR_TITLEBARTEXTACTIVEWITHMENU RGB(0, 255, 0)
 #define WINDOW_COLOR_TITLEBARTEXTINACTIVE       RGB(255, 255, 255)
 #define WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE    RGB(33, 147, 176)
 #define WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE  RGB(167, 173, 186)
@@ -69,13 +74,13 @@
 #define WINDOW_COLOR_SYSBACKGROUNDMARKDARK      RGB(252, 182, 159)
 
 // background window title
-#define WINDOW_BACKGROUNDWINDOWTITLE "SYS_BACKGROUND"
+#define WINDOW_SYSBACKGROUND_TITLE "SYS_BACKGROUND"
 
 // max copied area array count
 #define WINDOW_MAXCOPIEDAREAARRAYCOUNT 20
 
 // button flags
-#define BUTTON_FLAGS_SHADOW 0x00000001 // shadow flag
+#define BUTTON_FLAGS_SHADOW 0x00000001 // 0: not draw shadow, 1: draw shadow
 
 // mouse cursor width and height
 #define MOUSE_CURSOR_WIDTH  10
@@ -118,33 +123,37 @@
 #define EVENT_MOUSE_RBUTTONUP   5
 #define EVENT_MOUSE_MBUTTONDOWN 6
 #define EVENT_MOUSE_MBUTTONUP   7
+#define EVENT_MOUSE_OUT         8
 
 // window event
-#define EVENT_WINDOW_SELECT   8
-#define EVENT_WINDOW_DESELECT 9
-#define EVENT_WINDOW_MOVE     10
-#define EVENT_WINDOW_RESIZE   11
-#define EVENT_WINDOW_CLOSE    12
+#define EVENT_WINDOW_SELECT   9
+#define EVENT_WINDOW_DESELECT 10
+#define EVENT_WINDOW_MOVE     11
+#define EVENT_WINDOW_RESIZE   12
+#define EVENT_WINDOW_CLOSE    13
 
 // key event
-#define EVENT_KEY_DOWN 13
-#define EVENT_KEY_UP   14
+#define EVENT_KEY_DOWN 14
+#define EVENT_KEY_UP   15
+
+// top menu event
+#define EVENT_TOPMENU_CLICK 16
 
 // screen update event
-#define EVENT_SCREENUPDATE_BYID         15 // Window.area (screen coordinates)
-#define EVENT_SCREENUPDATE_BYWINDOWAREA 16 // ScreenUpdateEvent.area (window coordinates)
-#define EVENT_SCREENUPDATE_BYSCREENAREA 17 // ScreenUpdateEvent.area (screen coordinates)
+#define EVENT_SCREENUPDATE_BYID         17 // Window.area (screen coordinates)
+#define EVENT_SCREENUPDATE_BYWINDOWAREA 18 // ScreenUpdateEvent.area (window coordinates)
+#define EVENT_SCREENUPDATE_BYSCREENAREA 19 // ScreenUpdateEvent.area (screen coordinates)
 
 /* macro function */
-#define GETWINDOWOFFSET(windowId) ((windowId) & 0xFFFFFFFF) // get window offset (low 32 bits) of window.link.id (64 bits).
+#define GETWINDOWOFFSET(windowId) ((windowId) & 0xFFFFFFFF)                             // get window offset (low 32 bits) of window.link.id (64 bits).
+#define GETWINDOWFROMCHILDLINK(x) ((Window*)((qword)(x) - offsetof(Window, childLink))) // get window address from window.childLink address.
 
 #pragma pack(push, 1)
 
 // mouse event: window manager -> window
 typedef struct k_MouseEvent {
 	qword windowId;    // window ID to send event
-	                   //     : window ID is not necessarily required to declare here, because window has mouse event.
-	                   //       But, window ID is declared here for the management.
+	                   //   : window ID is not necessarily required for mouse event.
 	Point point;       // mouse point (window coordinates)
 	byte buttonStatus; // mouse button status
 } MouseEvent;
@@ -153,8 +162,8 @@ typedef struct k_MouseEvent {
 // screen update event: window -> window manager
 typedef struct k_WindowEvent {
 	qword windowId; // window ID to send event
-	                //     : window ID is not necessarily required for window event.
-	                //       But, window ID is necessarily required for screen update event.
+	                //   : window ID is not necessarily required for window event.
+	                //     But, window ID is necessarily required for screen update event.
 	Rect area;      // window area: - window event (screen coordinates)
 	                //              - screen update by ID event (not use this area, but use Window.area)
 	                //              - screen update by window area event (window coordinates)
@@ -164,12 +173,18 @@ typedef struct k_WindowEvent {
 // key event: window manager -> window
 typedef struct k_KeyEvent {
 	qword windowId; // window ID to send event
-                    //     : window ID is not necessarily required to declare here, because window has key event.
-                    //       But, window ID is declared here for the management.
+                    //   : window ID is not necessarily required for key event.
 	byte scanCode;  // key scan code
 	byte asciiCode; // key ASCII code
 	byte flags;     // key flags
 } KeyEvent;
+
+// menu event: window manager -> window
+typedef struct k_MenuEvent {
+	qword windowId; // window ID to send event
+	                //   : window ID is not necessarily required for menu event.
+	int index;      // menu item index
+} MenuEvent;
 
 // user event
 typedef struct k_UserEvent {
@@ -183,6 +198,7 @@ typedef struct k_Event {
 		MouseEvent mouseEvent;               // mouse event
 		WindowEvent windowEvent;             // window event
 		KeyEvent keyEvent;                   // key event
+		MenuEvent menuEvent;                 // menu event
 		ScreenUpdateEvent screenUpdateEvent; // screen update event
 		UserEvent userEvent;                 // user event
 	};
@@ -197,6 +213,9 @@ typedef struct k_ScreenBitmap {
 } ScreenBitmap;
 
 typedef struct k_Window {
+	//--------------------------------------------------
+	// Window-related Fields
+	//--------------------------------------------------
 	ListLink link;      // window link: It consists of next window address (link.next) and window ID (link.id).
 	                    //              window ID consists of allocated window count (high 32 bits) and window offset (low 32 bits).
 	                    //              [NOTE] ListLink must be the first field.
@@ -209,9 +228,21 @@ typedef struct k_Window {
 	                    //               bit 2 : draw title bar flag
 	                    //               bit 3 : resizable flag
 						//               bit 4 : blocking flag
+	                    //               bit 5 : has child flag
+	                    //               bit 6 : child flag
+	                    //               bit 7 : menu flag
 	Queue eventQueue;   // event queue for mouse, window, key, user event
 	Event* eventBuffer; // event buffer
 	char title[WINDOW_MAXTITLELENGTH + 1]; // window title: include last null character
+	Color backgroundColor; // background color
+	Menu* topMenu;         // top menu
+
+	//--------------------------------------------------
+	// Child-related Fields
+	//--------------------------------------------------
+	ListLink childLink; // child link
+	qword parentId;     // parent ID: Only child window has valid parent ID.
+	List childList;     // child list: [NOTE] Child window has no title bar.
 } Window; // Window is ListItem.
 
 typedef struct k_WindowPoolManager {
@@ -223,25 +254,27 @@ typedef struct k_WindowPoolManager {
 } WindowPoolManager;
 
 typedef struct k_WindowManager {
-	Mutex mutex;              // mutex
-	List windowList;          // window list: connected by z-order. 
-	                          //              head -> tail == the top window -> the bottom window
-	int mouseX;               // mouse x (screen coordinates): always inside screen
-	int mouseY;               // mouse y (screen coordinates): always inside screen
-	Rect screenArea;          // screen area (screen coordinates)
-	Color* videoMem;          // video memory (screen coordinates) address
-	qword backgroundWindowId; // background window ID
-	Queue eventQueue;         // event queue for screen update event
-	Event* eventBuffer;       // event buffer
-	byte prevButtonStatus;    // previous mouse button status
-	bool windowMoving;        // window moving flag
-	qword movingWindowId;     // moving window ID
-	bool windowResizing;      // window resizing flag
-	qword resizingWindowId;   // resizing window ID
-	Rect resizingWindowArea;  // resizing window area
-	qword overCloseWindowId;  // mouse over close button window ID
-	qword overResizeWindowId; // mouse over resize button window ID
-	byte* screenBitmap;       // screen bitmap
+	Mutex mutex;            // mutex
+	List windowList;        // window list: connected by z-order. 
+	                        //              head -> tail == the top window -> the bottom window
+	int mouseX;             // mouse x (screen coordinates): always inside screen
+	int mouseY;             // mouse y (screen coordinates): always inside screen
+	Rect screenArea;        // screen area (screen coordinates)
+	Color* videoMem;        // video memory (screen coordinates) address
+	qword backgroundId;     // system background window ID
+	Queue eventQueue;       // event queue for screen update event
+	Event* eventBuffer;     // event buffer
+	byte* screenBitmap;     // screen bitmap
+	byte prevButtonStatus;  // previous mouse button status
+	qword prevUnderMouseId; // previous under mouse window ID
+	bool moving;            // moving window flag
+	qword movingId;         // moving window ID
+	bool resizing;          // resizing window flag
+	qword resizingId;       // resizing window ID
+	Rect resizingArea;      // resizing window area
+	qword overCloseId;      // mouse over close button window ID
+	qword overResizeId;     // mouse over resize button window ID
+	qword overMenuId;       // mouse over top menu window ID
 } WindowManager;
 
 #pragma pack(pop)
@@ -256,7 +289,7 @@ void k_initGuiSystem(void);
 WindowManager* k_getWindowManager(void);
 qword k_getBackgroundWindowId(void);
 void k_getScreenArea(Rect* screenArea);
-qword k_createWindow(int x, int y, int width, int height, dword flags, const char* title);
+qword k_createWindow(int x, int y, int width, int height, dword flags, const char* title, Color backgroundColor, Menu* topMenu, qword parentId);
 bool k_deleteWindow(qword windowId);
 bool k_deleteWindowsByTask(qword taskId);
 bool k_closeWindowsByTask(qword taskId);
@@ -273,15 +306,21 @@ qword k_findWindowByPoint(int x, int y);
 qword k_findWindowByTitle(const char* title);
 bool k_existWindow(qword windowId);
 qword k_getTopWindowId(void);
+bool k_isTopWindow(qword windowId);
+bool k_isTopWindowWithChild(qword windowId);
 bool k_moveWindowToTop(qword windowId);
 bool k_isPointInTitleBar(qword windowId, int x, int y);
 bool k_isPointInCloseButton(qword windowId, int x, int y);
 bool k_isPointInResizeButton(qword windowId, int x, int y);
+bool k_isPointInTopMenu(qword windowId, int x, int y);
 static bool k_updateWindowTitleBar(qword windowId, bool selected);
 bool k_updateCloseButton(qword windowId, bool mouseOver);
 bool k_updateResizeButton(qword windowId, bool mouseOver);
 bool k_moveWindow(qword windowId, int x, int y);
 bool k_resizeWindow(qword windowId, int x, int y, int width, int height);
+void k_moveChildWindows(qword windowId, int moveX, int moveY);
+void k_showChildWindows(qword windowId, bool show, dword flags);
+void k_deleteChildWindows(qword windowId);
 
 /* Coordinates Conversion Functions */
 bool k_getWindowArea(qword windowId, Rect* area);
@@ -294,6 +333,7 @@ bool k_convertRectWindowToScreen(qword windowId, const Rect* windowRect, Rect* s
 bool k_setMouseEvent(Event* event, qword windowId, qword eventType, int mouseX, int mouseY, byte buttonStatus);
 bool k_setWindowEvent(Event* event, qword windowId, qword eventType);
 void k_setKeyEvent(Event* event, qword windowId, const Key* key);
+bool k_setMenuEvent(Event* event, qword windowId, qword eventType, int mouseX, int mouseY);
 bool k_sendEventToWindow(const Event* event, qword windowId);
 bool k_recvEventFromWindow(Event* event, qword windowId);
 bool k_sendEventToWindowManager(const Event* event);
@@ -301,19 +341,20 @@ bool k_recvEventFromWindowManager(Event* event);
 bool k_sendMouseEventToWindow(qword windowId, qword eventType, int mouseX, int mouseY, byte buttonStatus);
 bool k_sendWindowEventToWindow(qword windowId, qword eventType);
 bool k_sendKeyEventToWindow(qword windowId, const Key* key);
+bool k_sendMenuEventToWindow(qword windowId, qword eventType, int mouseX, int mouseY);
 
 /* Screen Update Functions */
 bool k_updateScreenById(qword windowId); // screen coordinates
-bool k_updateScreenByWindowArea(qword windowId, const Rect* area); // window coordinates 
+bool k_updateScreenByWindowArea(qword windowId, const Rect* area); // window coordinates
 bool k_updateScreenByScreenArea(const Rect* area); // screen coordinates
 
 /* Window Drawing Functions: draw objects in window buffer using window coordinates */
 bool k_drawWindowBackground(qword windowId);
 bool k_drawWindowFrame(qword windowId);
-bool k_drawWindowTitleBar(qword windowId, const char* title, bool selected);
+bool k_drawWindowTitleBar(qword windowId, bool selected);
 static bool k_drawCloseButton(qword windowId, bool selected, bool mouseOver);
 static bool k_drawResizeButton(qword windowId, bool selected, bool mouseOver);
-bool k_drawButton(qword windowId, const Rect* buttonArea, Color backgroundColor, const char* text, Color textColor, dword flags);
+bool k_drawButton(qword windowId, const Rect* buttonArea, Color textColor, Color backgroundColor, const char* text, dword flags);
 bool k_drawPixel(qword windowId, int x, int y, Color color);
 bool k_drawLine(qword windowId, int x1, int y1, int x2, int y2, Color color);
 bool k_drawRect(qword windowId, int x1, int y1, int x2, int y2, Color color, bool fill);

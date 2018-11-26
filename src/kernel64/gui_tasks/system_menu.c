@@ -1,5 +1,5 @@
-#include "app_panel.h"
-#include "base.h"
+#include "system_menu.h"
+#include "prototype.h"
 #include "event_monitor.h"
 #include "system_monitor.h"
 #include "shell.h"
@@ -10,9 +10,193 @@
 #include "../utils/util.h"
 #include "../core/console.h"
 
+#if 0
+static MenuItem g_systemMenuTable[] = {
+	{"HansOS", k_prototypeTask},
+	{"Apps", k_prototypeTask},
+	{"Shell", k_guiShellTask}
+};
+
+static Menu g_hansMenu;
+
+static MenuItem g_hansMenuTable[] = {
+	{"About HansOS", k_prototypeTask},
+	{"Shutdown", k_prototypeTask},
+	{"Reboot", k_prototypeTask}
+};
+
+void k_systemMenuTask(void) {
+	bool systemMenuResult;
+	bool hansMenuResult;
+
+	/* check graphic mode */
+	if (k_isGraphicMode() == false) {
+		k_printf("[app panel error] not graphic mode\n");
+		return;
+	}
+
+	/* create windows */
+	if ((k_createSystemMenu() == false) || (k_createMenu() == false)) {
+		return;
+	}
+
+	/* event processing loop */
+	while (true) {
+		systemMenuResult = k_processSystemMenuEvent();
+		hansMenuResult = k_processMenuEvent();
+
+		if ((systemMenuResult == false) && (hansMenuResult == false)) {
+			k_sleep(0);
+		}
+	}
+}
+
+static bool k_createSystemMenu(void) {
+	WindowManager* windowManager;
+	qword windowId;
+	int i;
+	int count;
+	int x = 0;
+	int len;
+
+	windowManager = k_getWindowManager();
+
+	windowId = k_createWindow(0, 0, windowManager->screenArea.x2 + 1, SYSMENU_HEIGHT, 0, SYSMENU_TITLE, SYSMENU_COLOR_BACKGROUND, null, WINDOW_INVALIDID);
+	if (windowId == WINDOW_INVALIDID) {
+		return false;
+	}
+	
+	/*		
+	count = sizeof(g_systemMenuTable) / sizeof(MenuItem);	
+
+	for (i = 0; i < count; i++) {
+		len = k_strlen(g_systemMenuTable[i].name);
+		k_drawText(windowId, x, 5, RGB(255, 255, 255), SYSMENU_COLOR_BACKGROUND, g_systemMenuTable[i].name, len);
+		x += (len + 2) * FONT_DEFAULT_WIDTH;
+	}
+	*/
+
+	// draw app list button.
+	k_setRect(&g_hansMenu.parentArea, 5, 5, 120, 25);
+	k_drawButton(windowId, &g_hansMenu.parentArea, RGB(255, 255, 255), SYSMENU_COLOR_BACKGROUND, "Applications", 0);
+
+	// draw digital clock.
+	k_drawDigitalClock(windowId);
+
+	k_showWindow(windowId, true);
+
+	g_hansMenu.parentId = windowId;
+
+	return true;
+}
+
+static void k_drawDigitalClock(qword windowId) {
+	Rect windowArea;
+	Rect updateArea;
+	static byte prevHour, prevMinute, prevSecond;
+	byte hour, minute, second;
+	char buffer[9] = "00:00 AM";
+
+	k_readRtcTime(&hour, &minute, &second);
+
+	if ((prevHour == hour) && (prevMinute == minute) && (prevSecond == second)) {
+		return;
+	}
+
+	prevHour = hour;
+	prevMinute = minute;
+	prevSecond = second;
+
+	if (hour >= 12) {
+		if (hour > 12) {
+			hour -= 12;
+		}
+		
+		buffer[6] = 'P';
+	}
+
+	buffer[0] = hour / 10 + '0';
+	buffer[1] = hour % 10 + '0';
+	buffer[3] = minute / 10 + '0';
+	buffer[4] = minute % 10 + '0';
+	
+	#if 0
+	if ((second % 2) == 1) {
+		buffer[2] = ' ';
+
+	} else {
+		buffer[2] = ':';
+	}
+	#endif
+
+	k_getWindowArea(windowId, &windowArea);
+	k_setRect(&updateArea, windowArea.x2 - SYSMENU_CLOCKWIDTH - 13, 5, windowArea.x2 - 5, 25);
+	k_drawRect(windowId, updateArea.x1, updateArea.y1, updateArea.x2, updateArea.y2, SYSMENU_COLOR_INNERLINE, false);
+	k_drawText(windowId, updateArea.x1 + 4, updateArea.y1 + 3, RGB(255, 255, 255), SYSMENU_COLOR_BACKGROUND, buffer, k_strlen(buffer));
+	k_updateScreenByWindowArea(windowId, &updateArea);
+}
+
+static bool k_processSystemMenuEvent(void) {
+	Event event;
+	MouseEvent* mouseEvent;
+
+	while (true) {
+		// call k_drawDigitalClock here in event processing loop,
+		// because the loop is running at short intervals.
+		// [NOTE] It will be the problem if the loop implementation changes from polling pattern to event-based pattern.
+		k_drawDigitalClock(g_hansMenu.parentId);
+
+		if (k_recvEventFromWindow(&event, g_hansMenu.parentId) == false) {
+			return false;
+		}
+
+		switch (event.type) {
+		case EVENT_MOUSE_LBUTTONDOWN:
+			mouseEvent = &event.mouseEvent;
+
+			if (k_isPointInRect(&g_hansMenu.parentArea, mouseEvent->point.x, mouseEvent->point.y) == false) {
+				break;
+			}
+
+			// app list button (toggle button): up -> down
+			if (g_hansMenu.visible == false) {
+				k_drawButton(g_hansMenu.parentId, &g_hansMenu.parentArea, RGB(255, 255, 255), SYSMENU_COLOR_ACTIVE, "Applications", 0);
+				k_updateScreenByWindowArea(g_hansMenu.parentId, &g_hansMenu.parentArea);
+
+				if (g_hansMenu.prevIndex != -1) {
+					k_drawMenuItem(g_hansMenu.prevIndex, false);
+					g_hansMenu.prevIndex = -1;
+				}
+
+				k_moveWindowToTop(g_hansMenu.id);
+				k_showWindow(g_hansMenu.id, true);
+
+				g_hansMenu.visible = true;
+
+			// app list button (toggle button): down -> up
+			} else {
+				k_drawButton(g_hansMenu.parentId, &g_hansMenu.parentArea, RGB(255, 255, 255), SYSMENU_COLOR_BACKGROUND, "Applications", 0);
+				k_updateScreenByWindowArea(g_hansMenu.parentId, &g_hansMenu.parentArea);
+
+				k_showWindow(g_hansMenu.id, false);
+
+				g_hansMenu.visible = false;
+			}
+
+			break;
+
+		default:
+			break;
+		}
+	}
+
+	return true;
+}
+#endif
+
 static AppEntry g_appTable[] = {
 	#if __DEBUG__
-	{"Base", k_baseTask},
+	{"Prototype", k_prototypeTask},
 	#endif // __DEBUG__
 	{"Event Monitor", k_eventMonitorTask},
 	{"System Monitor", k_systemMonitorTask},
@@ -23,7 +207,7 @@ static AppEntry g_appTable[] = {
 
 static AppPanelManager g_appPanelManager;
 
-void k_appPanelTask(void) {
+void k_systemMenuTask(void) {
 	bool appPanelResult;
 	bool appListResult;
 
@@ -55,7 +239,7 @@ static bool k_createAppPanel(void) {
 
 	windowManager = k_getWindowManager();
 
-	windowId = k_createWindow(0, 0, windowManager->screenArea.x2 + 1, APPPANEL_HEIGHT, 0, APPPANEL_TITLE);
+	windowId = k_createWindow(0, 0, windowManager->screenArea.x2 + 1, APPPANEL_HEIGHT, 0, APPPANEL_TITLE, APPPANEL_COLOR_BACKGROUND, null, WINDOW_INVALIDID);
 	if (windowId == WINDOW_INVALIDID) {
 		return false;
 	}
@@ -68,7 +252,7 @@ static bool k_createAppPanel(void) {
 
 	// draw app list button.
 	k_setRect(&g_appPanelManager.buttonArea, 5, 5, 120, 25);
-	k_drawButton(windowId, &g_appPanelManager.buttonArea, APPPANEL_COLOR_BACKGROUND, "Applications", RGB(255, 255, 255), 0);
+	k_drawButton(windowId, &g_appPanelManager.buttonArea, RGB(255, 255, 255), APPPANEL_COLOR_BACKGROUND, "Applications", 0);
 
 	// draw digital clock.
 	k_drawDigitalClock(windowId);
@@ -150,7 +334,7 @@ static bool k_processAppPanelEvent(void) {
 
 			// app list button (toggle button): up -> down
 			if (g_appPanelManager.appListVisible == false) {
-				k_drawButton(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea, APPPANEL_COLOR_ACTIVE, "Applications", RGB(255, 255, 255), 0);
+				k_drawButton(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea, RGB(255, 255, 255), APPPANEL_COLOR_ACTIVE, "Applications", 0);
 				k_updateScreenByWindowArea(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea);
 
 				if (g_appPanelManager.prevMouseOverIndex != -1) {
@@ -165,7 +349,7 @@ static bool k_processAppPanelEvent(void) {
 
 			// app list button (toggle button): down -> up
 			} else {
-				k_drawButton(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea, APPPANEL_COLOR_BACKGROUND, "Applications", RGB(255, 255, 255), 0);
+				k_drawButton(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea, RGB(255, 255, 255), APPPANEL_COLOR_BACKGROUND, "Applications", 0);
 				k_updateScreenByWindowArea(g_appPanelManager.appPanelId, &g_appPanelManager.buttonArea);
 
 				k_showWindow(g_appPanelManager.appListId, false);
@@ -205,7 +389,7 @@ static bool k_createAppList(void) {
 	x = g_appPanelManager.buttonArea.x1;
 	y = g_appPanelManager.buttonArea.y2 + 5;
 
-	windowId = k_createWindow(x, y, windowWidth, APPLIST_ITEMHEIGHT * count, 0, APPLIST_TITLE);
+	windowId = k_createWindow(x, y, windowWidth, APPLIST_ITEMHEIGHT * count, 0, APPLIST_TITLE, APPPANEL_COLOR_BACKGROUND, null, WINDOW_INVALIDID);
 	if (windowId == WINDOW_INVALIDID) {
 		return false;
 	}

@@ -7,10 +7,10 @@
 #define BSPFLAG_AP  0x00           // AP
 #define BSPFLAG_BSP 0x01           // BSP
 
-void k_printStrXy(int x, int y, const char* str);
-bool k_isMemEnough(void);
-bool k_initKernel64Area(void);
-void k_copyKernel64To2MB(void);
+static void k_printStrXy(int x, int y, const char* str);
+static bool k_isMemEnough(void);
+static bool k_initKernel64Area(void);
+static void k_copyKernel64To2MB(void);
 
 void k_main(void) {
 	int y = 1; // y of cursor, blank line 0.
@@ -96,7 +96,7 @@ void k_main(void) {
 	while (true);
 }
 
-void k_printStrXy(int x, int y, const char* str) {
+static void k_printStrXy(int x, int y, const char* str) {
 	Char* screen = (Char*)0xB8000;
 	int i;
 	
@@ -107,7 +107,7 @@ void k_printStrXy(int x, int y, const char* str) {
 	}
 }
 
-bool k_isMemEnough(void) {
+static bool k_isMemEnough(void) {
 	dword* currentAddr = (dword*)0x100000; // 1 MB
 	
 	while ((dword)currentAddr < 0x4000000) { // 64 MB
@@ -123,7 +123,7 @@ bool k_isMemEnough(void) {
 	return true;
 }
 
-bool k_initKernel64Area(void) {
+static bool k_initKernel64Area(void) {
 	dword* currentAddr = (dword*)0x100000; // 1 MB
 	
 	while ((dword)currentAddr < 0x600000) { // 6 MB
@@ -139,7 +139,7 @@ bool k_initKernel64Area(void) {
 	return true;
 }
 
-void k_copyKernel64To2MB(void) {
+static void k_copyKernel64To2MB(void) {
 	word totalSectorCount, kernel32SectorCount;
 	dword* srcAddr, * destAddr;
 	int i;

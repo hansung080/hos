@@ -10,7 +10,7 @@
 #define SHELL_MAXPARAMETERLENGTH           30 // It's including the last null character, so the max parameter length user can input is 29.
 #define SHELL_ERROR_TOOLONGPARAMETERLENGTH -1 // too long parameter length error
 
-typedef void (*CommandFunc)(const char* pcParam);
+typedef void (*CommandFunc)(const char* paramBuffer);
 
 #pragma pack(push, 1)
 

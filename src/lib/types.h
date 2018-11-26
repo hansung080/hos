@@ -164,7 +164,6 @@ typedef word Color;
 //----------------------------------------------------------------------------------------------------
 // Macro from window.h
 //----------------------------------------------------------------------------------------------------
-
 // etc macros
 #define WINDOW_MAXTITLELENGTH 40   // max title length: exclude last null character
 #define WINDOW_INVALIDID      0xFFFFFFFFFFFFFFFF
@@ -175,6 +174,9 @@ typedef word Color;
 #define WINDOW_FLAGS_DRAWTITLEBAR 0x00000004 // draw title bar flag
 #define WINDOW_FLAGS_RESIZABLE    0x00000008 // resizable flag
 #define WINDOW_FLAGS_BLOCKING     0x00000010 // blocking flag
+#define WINDOW_FLAGS_HASCHILD     0x00000020 // has child flag: set in k_createWindow.
+#define WINDOW_FLAGS_CHILD        0x00000040 // child flag
+#define WINDOW_FLAGS_MENU         0x00000080 // menu flag: set in k_createMenu. The top menu is not a menu.
 #define WINDOW_FLAGS_DEFAULT      (WINDOW_FLAGS_SHOW | WINDOW_FLAGS_DRAWFRAME | WINDOW_FLAGS_DRAWTITLEBAR)
 
 // window size
@@ -182,7 +184,7 @@ typedef word Color;
 #define WINDOW_XBUTTON_SIZE     19 // close button and resize button size
 #define WINDOW_MINWIDTH         (WINDOW_XBUTTON_SIZE * 2 + 30) // min window width
 #define WINDOW_MINHEIGHT        (WINDOW_TITLEBAR_HEIGHT + 30)  // min window height
-#define WINDOW_APPPANEL_HEIGHT  31
+#define WINDOW_SYSMENU_HEIGHT   31
 
 // window color
 #define WINDOW_COLOR_BACKGROUND                 RGB(255, 255, 255)
@@ -190,6 +192,7 @@ typedef word Color;
 #define WINDOW_COLOR_TITLEBARBACKGROUNDACTIVE   RGB(33, 147, 176)
 #define WINDOW_COLOR_TITLEBARBACKGROUNDINACTIVE RGB(167, 173, 186)
 #define WINDOW_COLOR_TITLEBARTEXTACTIVE         RGB(255, 255, 255)
+#define WINDOW_COLOR_TITLEBARTEXTACTIVEWITHMENU RGB(0, 255, 0)
 #define WINDOW_COLOR_TITLEBARTEXTINACTIVE       RGB(255, 255, 255)
 #define WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE    RGB(33, 147, 176)
 #define WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE  RGB(167, 173, 186)
@@ -201,10 +204,10 @@ typedef word Color;
 #define WINDOW_COLOR_SYSBACKGROUNDMARKDARK      RGB(252, 182, 159)
 
 // background window title
-#define WINDOW_BACKGROUNDWINDOWTITLE "SYS_BACKGROUND"
+#define WINDOW_SYSBACKGROUND_TITLE "SYS_BACKGROUND"
 
 // button flags
-#define BUTTON_FLAGS_SHADOW 0x00000001 // shadow flag
+#define BUTTON_FLAGS_SHADOW 0x00000001 // 0: not draw shadow, 1: draw shadow
 
 /* event type */
 // unknown event
@@ -218,28 +221,32 @@ typedef word Color;
 #define EVENT_MOUSE_RBUTTONUP   5
 #define EVENT_MOUSE_MBUTTONDOWN 6
 #define EVENT_MOUSE_MBUTTONUP   7
+#define EVENT_MOUSE_OUT         8
 
 // window event
-#define EVENT_WINDOW_SELECT   8
-#define EVENT_WINDOW_DESELECT 9
-#define EVENT_WINDOW_MOVE     10
-#define EVENT_WINDOW_RESIZE   11
-#define EVENT_WINDOW_CLOSE    12
+#define EVENT_WINDOW_SELECT   9
+#define EVENT_WINDOW_DESELECT 10
+#define EVENT_WINDOW_MOVE     11
+#define EVENT_WINDOW_RESIZE   12
+#define EVENT_WINDOW_CLOSE    13
 
 // key event
-#define EVENT_KEY_DOWN 13
-#define EVENT_KEY_UP   14
+#define EVENT_KEY_DOWN 14
+#define EVENT_KEY_UP   15
+
+// top menu event
+#define EVENT_TOPMENU_CLICK 16
 
 // screen update event
-#define EVENT_SCREENUPDATE_BYID         15 // Window.area (screen coordinates)
-#define EVENT_SCREENUPDATE_BYWINDOWAREA 16 // ScreenUpdateEvent.area (window coordinates)
-#define EVENT_SCREENUPDATE_BYSCREENAREA 17 // ScreenUpdateEvent.area (screen coordinates)
+#define EVENT_SCREENUPDATE_BYID         17 // Window.area (screen coordinates)
+#define EVENT_SCREENUPDATE_BYWINDOWAREA 18 // ScreenUpdateEvent.area (window coordinates)
+#define EVENT_SCREENUPDATE_BYSCREENAREA 19 // ScreenUpdateEvent.area (screen coordinates)
 
 /* macro function */
 #define GETWINDOWOFFSET(windowId) ((windowId) & 0xFFFFFFFF) // get window offset (low 32 bits) of window.link.id (64 bits).
 
 //----------------------------------------------------------------------------------------------------
-// Macro from util.h ***/
+// Macro from util.h
 //----------------------------------------------------------------------------------------------------
 
 /* Macro Functions */
@@ -247,6 +254,31 @@ typedef word Color;
 #define MAX(x, y)     (((x) > (y)) ? (x) : (y))
 #define ABS(x)        (((x) >= 0) ? (x) : -(x))
 #define SWAP(x, y, t) ((t) = (x)), ((x) = (y)), ((y) = (t))
+
+//----------------------------------------------------------------------------------------------------
+// Macro from widgets.h
+//----------------------------------------------------------------------------------------------------
+/*** Menu Macros ***/
+#define MENU_TITLE            "WIDGET_MENU"
+#define MENU_ITEMWIDTHPADDING 12
+
+// menu item height
+#define MENU_ITEMHEIGHT_NORMAL   (FONT_DEFAULT_HEIGHT + 4)
+#define MENU_ITEMHEIGHT_TITLEBAR 21 // WINDOW_TITLEBAR_HEIGHT
+#define MENU_ITEMHEIGHT_SYSMENU  31 // WINDOW_SYSMENU_HEIGHT
+
+// menu default color
+#define MENU_COLOR_TEXT       RGB(255, 255, 255)
+#define MENU_COLOR_BACKGROUND RGB(33, 147, 176)
+#define MENU_COLOR_ACTIVE     RGB(222, 98, 98)
+
+// menu flags
+#define MENU_FLAGS_HORIZONTAL   0x00000001 // 0: vertical, 1: horizontal
+#define MENU_FLAGS_VISIBLE      0x00000002 // 0: start with invisible, 1: start with visible
+#define MENU_FLAGS_DRAWONPARENT 0x00000003 // 0: create new window, 1: draw menu on parent window
+#define MENU_FLAGS_BLOCKING     0x00000004 // 0: create non-blocking window, 1: create blocking window
+
+typedef void (*MenuFunc)(qword param);
 
 #pragma pack(push, 1)
 //----------------------------------------------------------------------------------------------------
@@ -305,12 +337,12 @@ typedef struct __FileDirHandle {
 // Struct from 2d_graphics.h
 //----------------------------------------------------------------------------------------------------
 
-typedef struct k_Point {
+typedef struct __Point {
 	int x; // x of point
 	int y; // y of point
 } Point;
 
-typedef struct k_Rect {
+typedef struct __Rect {
 	int x1; // x of start point (top-left)
 	int y1; // y of start point (top-left)
 	int x2; // x of end point (bottom-right)
@@ -320,22 +352,20 @@ typedef struct k_Rect {
 //----------------------------------------------------------------------------------------------------
 // Struct from window.h
 //----------------------------------------------------------------------------------------------------
-
 // mouse event: window manager -> window
-typedef struct k_MouseEvent {
+typedef struct __MouseEvent {
 	qword windowId;    // window ID to send event
-	                   //     : window ID is not necessarily required to declare here, because window has mouse event.
-	                   //       But, window ID is declared here for the management.
+	                   //   : window ID is not necessarily required for mouse event.
 	Point point;       // mouse point (window coordinates)
 	byte buttonStatus; // mouse button status
 } MouseEvent;
 
 // window event: window manager -> window
 // screen update event: window -> window manager
-typedef struct k_WindowEvent {
+typedef struct __WindowEvent {
 	qword windowId; // window ID to send event
-	                //     : window ID is not necessarily required for window event.
-	                //       But, window ID is necessarily required for screen update event.
+	                //   : window ID is not necessarily required for window event.
+	                //     But, window ID is necessarily required for screen update event.
 	Rect area;      // window area: - window event (screen coordinates)
 	                //              - screen update by ID event (not use this area, but use Window.area)
 	                //              - screen update by window area event (window coordinates)
@@ -343,27 +373,34 @@ typedef struct k_WindowEvent {
 } WindowEvent, ScreenUpdateEvent;
 
 // key event: window manager -> window
-typedef struct k_KeyEvent {
+typedef struct __KeyEvent {
 	qword windowId; // window ID to send event
-                    //     : window ID is not necessarily required to declare here, because window has key event.
-                    //       But, window ID is declared here for the management.
+                    //   : window ID is not necessarily required for key event.
 	byte scanCode;  // key scan code
 	byte asciiCode; // key ASCII code
 	byte flags;     // key flags
 } KeyEvent;
 
+// menu event: window manager -> window
+typedef struct __MenuEvent {
+	qword windowId; // window ID to send event
+	                //   : window ID is not necessarily required for menu event.
+	int index;      // menu item index
+} MenuEvent;
+
 // user event
-typedef struct k_UserEvent {
+typedef struct __UserEvent {
 	qword data[3]; // user data
 } UserEvent;
 
 // event
-typedef struct k_Event {
+typedef struct __Event {
 	qword type; // event type
 	union {
 		MouseEvent mouseEvent;               // mouse event
 		WindowEvent windowEvent;             // window event
 		KeyEvent keyEvent;                   // key event
+		MenuEvent menuEvent;                 // menu event
 		ScreenUpdateEvent screenUpdateEvent; // screen update event
 		UserEvent userEvent;                 // user event
 	};
@@ -373,7 +410,7 @@ typedef struct k_Event {
 // Struct from jpeg.h
 //----------------------------------------------------------------------------------------------------
 // huffman table
-typedef struct k_Huff {
+typedef struct __Huff {
 	int elem; // element count
 	unsigned short code[256];
 	unsigned char size[256];
@@ -381,7 +418,7 @@ typedef struct k_Huff {
 } Huff;
 
 // JPEG struct
-typedef struct k_Jpeg {
+typedef struct __Jpeg {
 	// SOF: start of frame
 	int width;
 	int height;
@@ -429,6 +466,36 @@ typedef struct k_Jpeg {
 	unsigned long bit_buff;
 	int bit_remain;
 } Jpeg;
+
+//----------------------------------------------------------------------------------------------------
+// Struct from widgets.h
+//----------------------------------------------------------------------------------------------------
+
+/*** Menu Structs ***/
+typedef struct k_MenuItem {
+	const char* const name;
+	const MenuFunc func;
+	const bool hasSubMenu;
+	qword param; // - Default param is parentId.
+	             // - If hasSubMenu == true, param must be the sub menu address.
+                 // - If hasSubMenu == false, param can be anything.
+	Rect area; // window coordinates
+} MenuItem;
+
+typedef struct k_Menu {
+	MenuItem* const table;
+	const int itemCount;
+	qword id;
+	bool visible;
+	int prevIndex;
+	int itemHeight;
+	int itemHeightPadding;
+	Color textColor;
+	Color backgroundColor;
+	Color activeColor;
+	qword parentId;
+	dword flags;
+} Menu;
 
 #pragma pack(pop)
 

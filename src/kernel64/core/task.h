@@ -111,7 +111,7 @@
 #define GETTASKOFFSET(taskId)            ((taskId) & 0xFFFFFFFF)                                 // get task offset (low 32 bits) of task.link.id (64 bits).
 #define GETTASKPRIORITY(flags)           ((flags) & 0xFF)                                        // get task priority (low 8 bits) of task.flags(64 bits).
 #define SETTASKPRIORITY(flags, priority) ((flags) = ((flags) & 0xFFFFFFFFFFFFFF00) | (priority)) // set task priority (low 8 bits) of task.flags(64 bits).
-#define GETTASKFROMTHREADLINK(x)         (Task*)((qword)(x) - offsetof(Task, threadLink))        // get task address using task.threadLink address.
+#define GETTASKFROMTHREADLINK(x)         ((Task*)((qword)(x) - offsetof(Task, threadLink)))      // get task address from task.threadLink address.
 // [REF] The group ID consists of group count (high 32 bits) and group index (low 32 bits).
 #define GETTASKGROUPINDEX(id) ((id) & 0xFFFFFFFF) // get group index (low 32 bits) of group ID (64 bits).
 

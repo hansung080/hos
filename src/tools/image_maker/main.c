@@ -18,9 +18,9 @@
 #define ARG_SRC2   argv[3]
 #define ARG_SRC3   argv[4]
 
-int copyFile(int srcfd, int targetfd);
-int adjustBySectorSize(int fd, int srcSize);
-void writeKernelInfo(int targetfd, int totalSectorCount, int kernel32SectorCount);
+static int copyFile(int srcfd, int targetfd);
+static int adjustBySectorSize(int fd, int srcSize);
+static void writeKernelInfo(int targetfd, int totalSectorCount, int kernel32SectorCount);
 
 int main(int argc, const char** argv) {
 	int targetfd;
@@ -91,7 +91,7 @@ int main(int argc, const char** argv) {
 	return 0;
 }
 
-int copyFile(int srcfd, int targetfd) {
+static int copyFile(int srcfd, int targetfd) {
 	int srcSize = 0;
 	int readSize;
 	int writeSize;
@@ -116,7 +116,7 @@ int copyFile(int srcfd, int targetfd) {
 	return srcSize;
 }
 
-int adjustBySectorSize(int fd, int srcSize) {
+static int adjustBySectorSize(int fd, int srcSize) {
 	int i;
 	int ajustSize;
 	char zero;
@@ -142,7 +142,7 @@ int adjustBySectorSize(int fd, int srcSize) {
 	return sectorCount;
 }
 
-void writeKernelInfo(int targetfd, int totalSectorCount, int kernel32SectorCount) {
+static void writeKernelInfo(int targetfd, int totalSectorCount, int kernel32SectorCount) {
 	unsigned short data;
 	long pos;
 	

@@ -1,13 +1,30 @@
-#ifndef __GUITASKS_APPPANEL_H__
-#define __GUITASKS_APPPANEL_H__
+#ifndef __GUITASKS_SYSTEMMENU_H__
+#define __GUITASKS_SYSTEMMENU_H__
 
 #include "../core/types.h"
 #include "../core/window.h"
 #include "../fonts/fonts.h"
 
+#if 0
+/* System Menu Macros */
+#define SYSMENU_TITLE      "SYS_MENU"
+#define SYSMENU_HEIGHT     WINDOW_SYSMENU_HEIGHT
+#define SYSMENU_CLOCKWIDTH (FONT_DEFAULT_WIDTH * 8) // clock ex) 09:00 AM
+
+// system menu color
+#define SYSMENU_COLOR_INNERLINE  RGB(33, 147, 176)
+#define SYSMENU_COLOR_BACKGROUND RGB(33, 147, 176)
+#define SYSMENU_COLOR_ACTIVE     RGB(222, 98, 98)
+
+void k_systemMenuTask(void);
+static bool k_createSystemMenu(void);
+static void k_drawDigitalClock(qword windowId);
+static bool k_processSystemMenuEvent(void);
+#endif
+
 // app panel-related macros
 #define APPPANEL_TITLE      "SYS_APPPANEL"
-#define APPPANEL_HEIGHT     WINDOW_APPPANEL_HEIGHT
+#define APPPANEL_HEIGHT     WINDOW_SYSMENU_HEIGHT
 #define APPPANEL_CLOCKWIDTH (FONT_DEFAULT_WIDTH * 8) // clock ex) 09:00 AM
 
 // app list-related macros
@@ -39,7 +56,7 @@ typedef struct k_AppPanelManager {
 
 #pragma pack(pop)
 
-void k_appPanelTask(void);
+void k_systemMenuTask(void);
 static bool k_createAppPanel(void);
 static void k_drawDigitalClock(qword windowId);
 static bool k_processAppPanelEvent(void);
@@ -48,4 +65,4 @@ static void k_drawAppItem(int index, bool mouseOver);
 static bool k_processAppListEvent(void);
 static int k_getMouseOverItemIndex(int mouseY);
 
-#endif // __GUITASKS_APPPANEL_H__
+#endif // __GUITASKS_SYSTEMMENU_H__

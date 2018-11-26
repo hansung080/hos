@@ -23,8 +23,8 @@
 #include "window_manager.h"
 #include "syscall.h"
 
-void k_mainForAp(void);
-bool k_switchToMultiprocessorMode(void);
+static void k_mainForAp(void);
+static bool k_switchToMultiprocessorMode(void);
 
 void k_main(void) {
 	// compare BSP flag.
@@ -155,7 +155,7 @@ void k_main(void) {
 	}
 }
 
-void k_mainForAp(void) {
+static void k_mainForAp(void) {
 	qword tickCount;
 	
 	// load GDT.
@@ -185,7 +185,7 @@ void k_mainForAp(void) {
 	k_idleTask();
 }
 
-bool k_switchToMultiprocessorMode(void) {
+static bool k_switchToMultiprocessorMode(void) {
 	MpConfigManager* mpManager;
 	bool interruptFlag;
 	int i;

@@ -4,7 +4,7 @@
 #include "mouse.h"
 #include "keyboard.h"
 #include "task.h"
-#include "../gui_tasks/app_panel.h"
+#include "../gui_tasks/system_menu.h"
 
 /**
   < Screen Update Performance Test >
@@ -49,7 +49,7 @@ void k_windowManagerTask(void) {
 	k_moveMouseCursor(mouseX, mouseY);
 
 	// create app panel task.
-	k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_appPanelTask, TASK_AFFINITY_LOADBALANCING);
+	k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_systemMenuTask, TASK_AFFINITY_LOADBALANCING);
 	
 	// get window manager.
 	windowManager = k_getWindowManager();
@@ -93,8 +93,8 @@ void k_windowManagerTask(void) {
 				
 		// If window manager event (screen update event) had occured, resize marker might have been cleared,
 		// so draw resize marker again.
-		if ((windowManagerResult == true) && (windowManager->windowResizing == true)) {
-			k_drawResizeMarker(&windowManager->resizingWindowArea, true);
+		if ((windowManagerResult == true) && (windowManager->resizing == true)) {
+			k_drawResizeMarker(&windowManager->resizingArea, true);
 		}
 
 		// If no data/events have been processed, switch task.
@@ -105,7 +105,7 @@ void k_windowManagerTask(void) {
 }
 
 static bool k_processMouseData(void) {
-	qword underMouseWindowId;
+	qword underMouseId;
 	byte buttonStatus;
 	int relativeX, relativeY;
 	int mouseX, mouseY;
@@ -114,8 +114,6 @@ static bool k_processMouseData(void) {
 	Rect windowArea;
 	WindowManager* windowManager;
 	int i;
-	bool mouseOverCloseButton = false;
-	bool mouseOverResizeButton = false;
 
 	windowManager = k_getWindowManager();
 
@@ -155,56 +153,58 @@ static bool k_processMouseData(void) {
 	}
 
 	/* process mouse data */
-
-	underMouseWindowId = k_findWindowByPoint(mouseX, mouseY);
+	underMouseId = k_findWindowByPoint(mouseX, mouseY);
 
 	/* left button changed */
 	if (changedButtonStatus & MOUSE_LBUTTONDOWN) {
 		/* left button down */
 		if (buttonStatus & MOUSE_LBUTTONDOWN) {
-			if (underMouseWindowId != windowManager->backgroundWindowId) {
-				k_moveWindowToTop(underMouseWindowId);
+			if (underMouseId != windowManager->backgroundId) {
+				k_moveWindowToTop(underMouseId);
 			}
 
-			if (k_isPointInTitleBar(underMouseWindowId, mouseX, mouseY) == true) {
-				if (k_isPointInCloseButton(underMouseWindowId, mouseX, mouseY) == true) {
-					k_sendWindowEventToWindow(underMouseWindowId, EVENT_WINDOW_CLOSE);
+			if (k_isPointInTitleBar(underMouseId, mouseX, mouseY) == true) {
+				if (k_isPointInCloseButton(underMouseId, mouseX, mouseY) == true) {
+					k_sendWindowEventToWindow(underMouseId, EVENT_WINDOW_CLOSE);
 
-				} else if (k_isPointInResizeButton(underMouseWindowId, mouseX, mouseY) == true) {
-					windowManager->windowResizing = true;
-					windowManager->resizingWindowId = underMouseWindowId;
-					k_getWindowArea(underMouseWindowId, &windowManager->resizingWindowArea);
-					k_drawResizeMarker(&windowManager->resizingWindowArea, true);
+				} else if (k_isPointInResizeButton(underMouseId, mouseX, mouseY) == true) {
+					windowManager->resizing = true;
+					windowManager->resizingId = underMouseId;
+					k_getWindowArea(underMouseId, &windowManager->resizingArea);
+					k_drawResizeMarker(&windowManager->resizingArea, true);
+
+				} else if (k_isPointInTopMenu(underMouseId, mouseX, mouseY) == true) {
+					k_sendMenuEventToWindow(underMouseId, EVENT_TOPMENU_CLICK, mouseX, mouseY);
 
 				} else {
-					windowManager->windowMoving = true;
-					windowManager->movingWindowId = underMouseWindowId;
+					windowManager->moving = true;
+					windowManager->movingId = underMouseId;
 				}
 
 			} else {
-				k_sendMouseEventToWindow(underMouseWindowId, EVENT_MOUSE_LBUTTONDOWN, mouseX, mouseY, buttonStatus);
+				k_sendMouseEventToWindow(underMouseId, EVENT_MOUSE_LBUTTONDOWN, mouseX, mouseY, buttonStatus);
 			}
 
 		/* left button up */
 		} else {
-			if (windowManager->windowMoving == true) {
-				windowManager->windowMoving = false;
-				windowManager->movingWindowId = WINDOW_INVALIDID;
+			if (windowManager->moving == true) {
+				windowManager->moving = false;
+				windowManager->movingId = WINDOW_INVALIDID;
 
-			} else if (windowManager->windowResizing == true) {
-				k_resizeWindow(windowManager->resizingWindowId
-							  ,windowManager->resizingWindowArea.x1
-							  ,windowManager->resizingWindowArea.y1
-							  ,k_getRectWidth(&windowManager->resizingWindowArea)
-							  ,k_getRectHeight(&windowManager->resizingWindowArea));
+			} else if (windowManager->resizing == true) {
+				k_resizeWindow(windowManager->resizingId
+							  ,windowManager->resizingArea.x1
+							  ,windowManager->resizingArea.y1
+							  ,k_getRectWidth(&windowManager->resizingArea)
+							  ,k_getRectHeight(&windowManager->resizingArea));
 
-				k_drawResizeMarker(&windowManager->resizingWindowArea, false);
+				k_drawResizeMarker(&windowManager->resizingArea, false);
 
-				windowManager->windowResizing = false;
-				windowManager->resizingWindowId = WINDOW_INVALIDID;
+				windowManager->resizing = false;
+				windowManager->resizingId = WINDOW_INVALIDID;
 
 			} else {
-				k_sendMouseEventToWindow(underMouseWindowId, EVENT_MOUSE_LBUTTONUP, mouseX, mouseY, buttonStatus);
+				k_sendMouseEventToWindow(underMouseId, EVENT_MOUSE_LBUTTONUP, mouseX, mouseY, buttonStatus);
 			}
 		}
 
@@ -212,84 +212,101 @@ static bool k_processMouseData(void) {
 	} else if (changedButtonStatus & MOUSE_RBUTTONDOWN) {
 		/* right button down */
 		if (buttonStatus & MOUSE_RBUTTONDOWN) {
-			k_sendMouseEventToWindow(underMouseWindowId, EVENT_MOUSE_RBUTTONDOWN, mouseX, mouseY, buttonStatus);
+			k_sendMouseEventToWindow(underMouseId, EVENT_MOUSE_RBUTTONDOWN, mouseX, mouseY, buttonStatus);
 
 		/* right button up */
 		} else {
-			k_sendMouseEventToWindow(underMouseWindowId, EVENT_MOUSE_RBUTTONUP, mouseX, mouseY, buttonStatus);
+			k_sendMouseEventToWindow(underMouseId, EVENT_MOUSE_RBUTTONUP, mouseX, mouseY, buttonStatus);
 		}
 
 	/* middle button changed */
 	} else if (changedButtonStatus & MOUSE_MBUTTONDOWN) {
 		/* middle button down */
 		if (buttonStatus & MOUSE_MBUTTONDOWN) {
-			k_sendMouseEventToWindow(underMouseWindowId, EVENT_MOUSE_MBUTTONDOWN, mouseX, mouseY, buttonStatus);
+			k_sendMouseEventToWindow(underMouseId, EVENT_MOUSE_MBUTTONDOWN, mouseX, mouseY, buttonStatus);
 
 		/* middle button up */
 		} else {
-			k_sendMouseEventToWindow(underMouseWindowId, EVENT_MOUSE_MBUTTONUP, mouseX, mouseY, buttonStatus);
+			k_sendMouseEventToWindow(underMouseId, EVENT_MOUSE_MBUTTONUP, mouseX, mouseY, buttonStatus);
 		}
 
 	/* no buttons changed */
 	} else {
-		k_sendMouseEventToWindow(underMouseWindowId, EVENT_MOUSE_MOVE, mouseX, mouseY, buttonStatus);
-
-		if (k_isPointInCloseButton(underMouseWindowId, mouseX, mouseY) == true) {
-			if (windowManager->overCloseWindowId == WINDOW_INVALIDID) {
-				windowManager->overCloseWindowId = underMouseWindowId;
-				k_updateCloseButton(underMouseWindowId, true);
+		k_sendMouseEventToWindow(underMouseId, EVENT_MOUSE_MOVE, mouseX, mouseY, buttonStatus);
+				
+		if (k_isPointInCloseButton(underMouseId, mouseX, mouseY) == true) {
+			if (windowManager->overCloseId == WINDOW_INVALIDID) {
+				windowManager->overCloseId = underMouseId;
+				k_updateCloseButton(underMouseId, true);
 			}
 
 		} else {
-			if (windowManager->overCloseWindowId != WINDOW_INVALIDID) {
-				k_updateCloseButton(windowManager->overCloseWindowId, false);
-				windowManager->overCloseWindowId = WINDOW_INVALIDID;				
+			if (windowManager->overCloseId != WINDOW_INVALIDID) {
+				k_updateCloseButton(windowManager->overCloseId, false);
+				windowManager->overCloseId = WINDOW_INVALIDID;				
 			}
 		}
 
-		if (k_isPointInResizeButton(underMouseWindowId, mouseX, mouseY) == true) {
-			if (windowManager->overResizeWindowId == WINDOW_INVALIDID) {
-				windowManager->overResizeWindowId = underMouseWindowId;
-				k_updateResizeButton(underMouseWindowId, true);			
+		if (k_isPointInResizeButton(underMouseId, mouseX, mouseY) == true) {
+			if (windowManager->overResizeId == WINDOW_INVALIDID) {
+				windowManager->overResizeId = underMouseId;
+				k_updateResizeButton(underMouseId, true);			
 			}
 
 		} else {
-			if (windowManager->overResizeWindowId != WINDOW_INVALIDID && windowManager->windowResizing == false) {
-				k_updateResizeButton(windowManager->overResizeWindowId, false);
-				windowManager->overResizeWindowId = WINDOW_INVALIDID;			
+			if (windowManager->overResizeId != WINDOW_INVALIDID && windowManager->resizing == false) {
+				k_updateResizeButton(windowManager->overResizeId, false);
+				windowManager->overResizeId = WINDOW_INVALIDID;			
+			}
+		}
+
+		if (k_isPointInTopMenu(underMouseId, mouseX, mouseY) == true) {
+			windowManager->overMenuId = underMouseId;
+			k_processTopMenuActivity(underMouseId, mouseX, mouseY);	
+
+		} else {
+			if (windowManager->overMenuId != WINDOW_INVALIDID) {
+				k_clearTopMenuActivity(windowManager->overMenuId, mouseX, mouseY);
+				windowManager->overMenuId = WINDOW_INVALIDID;
 			}
 		}
 	}
 
-	/* process window move */
-	if (windowManager->windowMoving == true) {
-		if (k_getWindowArea(windowManager->movingWindowId, &windowArea) == true) {
-			k_moveWindow(windowManager->movingWindowId, windowArea.x1 + mouseX - prevMouseX, windowArea.y1 + mouseY - prevMouseY);
+	/* process window moving */
+	if (windowManager->moving == true) {
+		if (k_getWindowArea(windowManager->movingId, &windowArea) == true) {
+			k_moveWindow(windowManager->movingId, windowArea.x1 + mouseX - prevMouseX, windowArea.y1 + mouseY - prevMouseY);
 
 		} else {
-			windowManager->windowMoving = false;
-			windowManager->movingWindowId = WINDOW_INVALIDID;
+			windowManager->moving = false;
+			windowManager->movingId = WINDOW_INVALIDID;
 		}
 
-	/* process window resize */
-	} else if (windowManager->windowResizing == true) {
-		k_drawResizeMarker(&windowManager->resizingWindowArea, false);
+	/* process window resizing */
+	} else if (windowManager->resizing == true) {
+		k_drawResizeMarker(&windowManager->resizingArea, false);
 
-		windowManager->resizingWindowArea.x2 += mouseX - prevMouseX;
-		windowManager->resizingWindowArea.y1 += mouseY - prevMouseY;
+		windowManager->resizingArea.x2 += mouseX - prevMouseX;
+		windowManager->resizingArea.y1 += mouseY - prevMouseY;
 
-		if ((windowManager->resizingWindowArea.x2 < windowManager->resizingWindowArea.x1) || (k_getRectWidth(&windowManager->resizingWindowArea) < WINDOW_MINWIDTH)) {
-			windowManager->resizingWindowArea.x2 = windowManager->resizingWindowArea.x1 + WINDOW_MINWIDTH - 1;	
+		if ((windowManager->resizingArea.x2 < windowManager->resizingArea.x1) || (k_getRectWidth(&windowManager->resizingArea) < WINDOW_MINWIDTH)) {
+			windowManager->resizingArea.x2 = windowManager->resizingArea.x1 + WINDOW_MINWIDTH - 1;	
 		}
 
-		if ((windowManager->resizingWindowArea.y2 < windowManager->resizingWindowArea.y1) || (k_getRectHeight(&windowManager->resizingWindowArea) < WINDOW_MINHEIGHT)) {
-			windowManager->resizingWindowArea.y1 = windowManager->resizingWindowArea.y2 - WINDOW_MINHEIGHT + 1;	
+		if ((windowManager->resizingArea.y2 < windowManager->resizingArea.y1) || (k_getRectHeight(&windowManager->resizingArea) < WINDOW_MINHEIGHT)) {
+			windowManager->resizingArea.y1 = windowManager->resizingArea.y2 - WINDOW_MINHEIGHT + 1;	
 		}
 
-		k_drawResizeMarker(&windowManager->resizingWindowArea, true);
+		k_drawResizeMarker(&windowManager->resizingArea, true);
 	}
 	
+	/* send mouse out event */	
+	if ((windowManager->prevUnderMouseId != WINDOW_INVALIDID) && (windowManager->prevUnderMouseId != underMouseId)) {
+		k_sendMouseEventToWindow(windowManager->prevUnderMouseId, EVENT_MOUSE_OUT, mouseX, mouseY, buttonStatus);	
+	}
+
 	windowManager->prevButtonStatus = buttonStatus;
+	windowManager->prevUnderMouseId = underMouseId;
 
 	return true;
 }

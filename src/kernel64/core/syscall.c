@@ -243,7 +243,7 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 		return (qword)true;
 
 	case SYSCALL_CREATEWINDOW:
-		return k_createWindow((int)PARAM(0), (int)PARAM(1), (int)PARAM(2), (int)PARAM(3), (dword)PARAM(4), (char*)PARAM(5));
+		return k_createWindow((int)PARAM(0), (int)PARAM(1), (int)PARAM(2), (int)PARAM(3), (dword)PARAM(4), (char*)PARAM(5), (Color)PARAM(6), (Menu*)PARAM(7), PARAM(8));
 
 	case SYSCALL_DELETEWINDOW:
 		return (qword)k_deleteWindow(PARAM(0));
@@ -263,6 +263,12 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 	case SYSCALL_GETTOPWINDOWID:
 		return k_getTopWindowId();
 
+	case SYSCALL_ISTOPWINDOW:
+		return (qword)k_isTopWindow(PARAM(0));
+
+	case SYSCALL_ISTOPWINDOWWITHCHILD:
+		return (qword)k_isTopWindowWithChild(PARAM(0));
+
 	case SYSCALL_MOVEWINDOWTOTOP:
 		return (qword)k_moveWindowToTop(PARAM(0));
 
@@ -275,11 +281,26 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 	case SYSCALL_ISPOINTINRESIZEBUTTON:
 		return (qword)k_isPointInResizeButton(PARAM(0), (int)PARAM(1), (int)PARAM(2));
 
+	case SYSCALL_ISPOINTINTOPMENU:
+		return (qword)k_isPointInTopMenu(PARAM(0), (int)PARAM(1), (int)PARAM(2));
+		
 	case SYSCALL_MOVEWINDOW:
 		return (qword)k_moveWindow(PARAM(0), (int)PARAM(1), (int)PARAM(2));
 
 	case SYSCALL_RESIZEWINDOW:
 		return (qword)k_resizeWindow(PARAM(0), (int)PARAM(1), (int)PARAM(2), (int)PARAM(3), (int)PARAM(4));
+
+	case SYSCALL_MOVECHILDWINDOWS:
+		k_moveChildWindows(PARAM(0), (int)PARAM(1), (int)PARAM(2));
+		return (qword)true;
+
+	case SYSCALL_SHOWCHILDWINDOWS:
+		k_showChildWindows(PARAM(0), (bool)PARAM(1), (dword)PARAM(2));
+		return (qword)true;
+
+	case SYSCALL_DELETECHILDWINDOWS:
+		k_deleteChildWindows(PARAM(0));
+		return (qword)true;
 
 	case SYSCALL_GETWINDOWAREA:
 		return (qword)k_getWindowArea(PARAM(0), (Rect*)PARAM(1));
@@ -306,10 +327,10 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 		return (qword)k_drawWindowFrame(PARAM(0));
 
 	case SYSCALL_DRAWWINDOWTITLEBAR:
-		return (qword)k_drawWindowTitleBar(PARAM(0), (char*)PARAM(1), (bool)PARAM(2));
+		return (qword)k_drawWindowTitleBar(PARAM(0), (bool)PARAM(1));
 
 	case SYSCALL_DRAWBUTTON:
-		return (qword)k_drawButton(PARAM(0), (Rect*)PARAM(1), (Color)PARAM(2), (char*)PARAM(3), (Color)PARAM(4), (dword)PARAM(5));
+		return (qword)k_drawButton(PARAM(0), (Rect*)PARAM(1), (Color)PARAM(2), (Color)PARAM(3), (char*)PARAM(4), (dword)PARAM(5));
 
 	case SYSCALL_DRAWPIXEL:
 		return (qword)k_drawPixel(PARAM(0), (int)PARAM(1), (int)PARAM(2), (Color)PARAM(3));
@@ -361,6 +382,13 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 	/*** Syscall from loader.h ***/
 	case SYSCALL_EXECUTEAPP:
 		return k_executeApp((char*)PARAM(0), (char*)PARAM(1), (byte)PARAM(2));
+
+	/*** Syscall from widgets.h ***/
+	case SYSCALL_CREATEMENU:
+		return (qword)k_createMenu((Menu*)PARAM(0), (int)PARAM(1), (int)PARAM(2), (int)PARAM(3), (Color*)PARAM(4), PARAM(5), (dword)PARAM(6));
+
+	case SYSCALL_PROCESSMENUEVENT:
+		return (qword)k_processMenuEvent((Menu*)PARAM(0));
 
 	/*** Syscall - test ***/
 	case SYSCALL_TEST:

@@ -93,19 +93,25 @@ byte k_getApicId(void);
 /*** Syscall from window.h ***/
 qword getBackgroundWindowId(void);
 void getScreenArea(Rect* screenArea);
-qword createWindow(int x, int y, int width, int height, dword flags, const char* title);
+qword createWindow(int x, int y, int width, int height, dword flags, const char* title, Color backgroundColor, Menu* topMenu, qword parentId);
 bool deleteWindow(qword windowId);
 bool showWindow(qword windowId, bool show);
 qword findWindowByPoint(int x, int y);
 qword findWindowByTitle(const char* title);
 bool existWindow(qword windowId);
 qword getTopWindowId(void);
+bool isTopWindow(qword windowId);
+bool isTopWindowWithChild(qword windowId);
 bool moveWindowToTop(qword windowId);
 bool isPointInTitleBar(qword windowId, int x, int y);
 bool isPointInCloseButton(qword windowId, int x, int y);
 bool isPointInResizeButton(qword windowId, int x, int y);
+bool isPointInTopMenu(qword windowId, int x, int y);
 bool moveWindow(qword windowId, int x, int y);
 bool resizeWindow(qword windowId, int x, int y, int width, int height);
+void moveChildWindows(qword windowId, int moveX, int moveY);
+void showChildWindows(qword windowId, bool show, dword flags);
+void deleteChildWindows(qword windowId);
 bool getWindowArea(qword windowId, Rect* area);
 bool sendEventToWindow(const Event* event, qword windowId);
 bool recvEventFromWindow(Event* event, qword windowId);
@@ -114,8 +120,8 @@ bool updateScreenByWindowArea(qword windowId, const Rect* area);
 bool updateScreenByScreenArea(const Rect* area);
 bool drawWindowBackground(qword windowId);
 bool drawWindowFrame(qword windowId);
-bool drawWindowTitleBar(qword windowId, const char* title, bool selected);
-bool drawButton(qword windowId, const Rect* buttonArea, Color backgroundColor, const char* text, Color textColor, dword flags);
+bool drawWindowTitleBar(qword windowId, bool selected);
+bool drawButton(qword windowId, const Rect* buttonArea, Color textColor, Color backgroundColor, const char* text, dword flags);
 bool drawPixel(qword windowId, int x, int y, Color color);
 bool drawLine(qword windowId, int x1, int y1, int x2, int y2, Color color);
 bool drawRect(qword windowId, int x1, int y1, int x2, int y2, Color color, bool fill);
@@ -137,5 +143,9 @@ bool isGraphicMode(void);
 
 /*** Syscall from loader.h ***/
 qword executeApp(const char* fileName, const char* args, byte affinity);
+
+/*** Syscall from widgets.h ***/
+bool createMenu(Menu* menu, int x, int y, int itemHeight, Color* colors, qword parentId, dword flags);
+bool processMenuEvent(Menu* menu);
 
 #endif // __SYSCALL_H__
