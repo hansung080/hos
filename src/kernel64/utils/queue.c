@@ -13,6 +13,7 @@ void k_initQueue(Queue* queue, void* array, int dataSize, int maxDataCount, bool
 	if (blocking == true) {
 		queue->waitGroupId = k_getTaskGroupId();
 	}
+	queue->epoll = null;
 }
 
 bool k_isQueueFull(const Queue* queue) {
@@ -44,6 +45,10 @@ bool k_putQueue(Queue* queue, const void* data) {
 		k_notifyOneInWaitGroup(queue->waitGroupId);
 	}
 	
+	if ((queue->epoll != null) && (queue->epoll->waiting == true)) {
+		k_notifyOneInWaitGroup(queue->epoll->id);
+	}
+
 	return true;
 }
 
@@ -70,4 +75,39 @@ void k_closeQueue(const Queue* queue) {
 	if (queue->blocking == true) {
 		k_returnTaskGroupId(queue->waitGroupId);
 	}
+}
+
+void k_initEpoll(Epoll* epoll, Queue** equeues, int len) {
+	int i;
+
+	epoll->equeues = equeues;
+	epoll->len = len;
+	epoll->id = k_getTaskGroupId();
+	epoll->waiting = false;
+
+	for (i = 0; i < len; i++) {
+		equeues[i]->epoll = epoll;
+	}
+}
+
+bool k_waitEpoll(Epoll* epoll, void* lock) {
+	int i;
+	bool exist = false;
+
+	for (i = 0; i < epoll->len; i++) {
+		if (k_isQueueEmpty(epoll->equeues[i]) == false) {
+			exist = true;
+			break;
+		}
+	}
+
+	if (exist == false) {
+		epoll->waiting = true;
+		k_waitGroup(epoll->id, lock);
+		epoll->waiting = false;
+	}
+}
+
+void k_closeEpoll(const Epoll* epoll) {
+	k_returnTaskGroupId(epoll->id);
 }

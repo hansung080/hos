@@ -3,6 +3,7 @@
 
 #include "../core/types.h"
 #include "../core/widgets.h"
+#include "../utils/queue.h"
 
 #define PROTOTYPE_TOPMENU_ANIMALS 0
 #define PROTOTYPE_TOPMENU_FRUITS  1
@@ -11,6 +12,7 @@
 #if __DEBUG__
 void k_prototypeTask(void);
 static bool k_createPrototypeMenus(Menu* topMenu, Menu* animalsMenu, Menu* fruitsMenu, Menu* mammalsMenu, Menu* reptilesMenu, Menu* amphibiansMenu, Menu* dogsMenu, Menu* catsMenu, qword parentId);
+static bool k_processPrototypeEvent(qword windowId, const Epoll* epoll);
 static void k_drawPrototypeMessage(qword windowId, const char* message);
 
 /* Animals Menu Functions */

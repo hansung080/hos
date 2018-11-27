@@ -19,7 +19,7 @@ typedef struct k_ListLink {
       } ListItem; // ListItem is a node of list.
 */
 
-// General Linked List
+// general linked list
 typedef struct k_List {
 	int count; // item count
 	void* head;

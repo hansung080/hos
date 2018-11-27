@@ -3,6 +3,8 @@
 #include "../utils/util.h"
 #include "../core/console.h"
 #include "../fonts/fonts.h"
+#include "../core/task.h"
+#include "../core/multiprocessor.h"
 
 #if __DEBUG__
 void k_prototypeTask(void) {
@@ -68,10 +70,9 @@ void k_prototypeTask(void) {
 	Menu dogsMenu = {dogsMenuTable, sizeof(dogsMenuTable) / sizeof(MenuItem)};
 	Menu catsMenu = {catsMenuTable, sizeof(catsMenuTable) / sizeof(MenuItem)};
 	int mouseX, mouseY;
-	qword windowId;	
-	Event event;
-	MenuEvent* menuEvent;
-	const char* message;
+	qword windowId;
+	Epoll epoll;
+	Queue* equeues[8];
 
 	/* check graphic mode */
 	if (k_isGraphicMode() == false) {
@@ -90,8 +91,22 @@ void k_prototypeTask(void) {
 	/* create prototype menus */
 	k_createPrototypeMenus(&topMenu, &animalsMenu, &fruitsMenu, &mammalsMenu, &reptilesMenu, &amphibiansMenu, &dogsMenu, &catsMenu, windowId);
 
+	/* initialize epoll */
+	equeues[0] = &k_getWindow(windowId)->eventQueue;
+	equeues[1] = &k_getWindow(animalsMenu.id)->eventQueue;
+	equeues[2] = &k_getWindow(fruitsMenu.id)->eventQueue;
+	equeues[3] = &k_getWindow(mammalsMenu.id)->eventQueue;
+	equeues[4] = &k_getWindow(reptilesMenu.id)->eventQueue;
+	equeues[5] = &k_getWindow(amphibiansMenu.id)->eventQueue;
+	equeues[6] = &k_getWindow(dogsMenu.id)->eventQueue;
+	equeues[7] = &k_getWindow(catsMenu.id)->eventQueue;
+
+	k_initEpoll(&epoll, equeues, 8);
+
 	/* event processing loop */
 	while (true) {
+		k_waitEpoll(&epoll, null);
+		k_processPrototypeEvent(windowId, &epoll);
 		k_processMenuEvent(&animalsMenu);
 		k_processMenuEvent(&fruitsMenu);
 		k_processMenuEvent(&mammalsMenu);
@@ -99,28 +114,9 @@ void k_prototypeTask(void) {
 		k_processMenuEvent(&amphibiansMenu);
 		k_processMenuEvent(&dogsMenu);
 		k_processMenuEvent(&catsMenu);
-
-		if (k_recvEventFromWindow(&event, windowId) == false) {
-			k_sleep(0);
-			continue;
-		}
-
-		switch (event.type) {
-		case EVENT_WINDOW_CLOSE:
-			k_deleteWindow(windowId);
-			return;
-
-		case EVENT_TOPMENU_CLICK:
-			menuEvent = &event.menuEvent;
-
-			if (menuEvent->index == PROTOTYPE_TOPMENU_ROBOT) {
-				message = "Robot was selected.";
-				k_drawPrototypeMessage(windowId, message);
-			}
-
-			break;
-		}
 	}
+
+	k_closeEpoll(&epoll);
 }
 
 static bool k_createPrototypeMenus(Menu* topMenu, Menu* animalsMenu, Menu* fruitsMenu, Menu* mammalsMenu, Menu* reptilesMenu, Menu* amphibiansMenu, Menu* dogsMenu, Menu* catsMenu, qword parentId) {
@@ -175,6 +171,38 @@ static bool k_createPrototypeMenus(Menu* topMenu, Menu* animalsMenu, Menu* fruit
 	animalsMenu->table[4].param = (qword)amphibiansMenu;
 	mammalsMenu->table[1].param = (qword)dogsMenu;
 	mammalsMenu->table[2].param = (qword)catsMenu;
+
+	return true;
+}
+
+static bool k_processPrototypeEvent(qword windowId, const Epoll* epoll) {
+	Event event;
+	MenuEvent* menuEvent;
+	const char* message;
+
+	while(true) {
+		if (k_recvEventFromWindow(&event, windowId) == false) {
+			return false;
+		}
+
+		switch (event.type) {
+		case EVENT_WINDOW_CLOSE:
+			k_deleteWindow(windowId);
+			k_closeEpoll(epoll);
+			k_exitTask();
+			return true;
+
+		case EVENT_TOPMENU_CLICK:
+			menuEvent = &event.menuEvent;
+
+			if (menuEvent->index == PROTOTYPE_TOPMENU_ROBOT) {
+				message = "Robot was selected.";
+				k_drawPrototypeMessage(windowId, message);
+			}
+
+			break;
+		}
+	}
 
 	return true;
 }
