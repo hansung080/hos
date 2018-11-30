@@ -44,8 +44,6 @@ void exit(int status);
 int getTaskCount(byte apicId);
 bool existTask(qword taskId);
 qword getProcessorLoad(byte apicId);
-qword getTaskGroupId(void);
-void returnTaskGroupId(qword groupId);
 bool waitGroup(qword groupId, void* lock);
 bool notifyOneInWaitGroup(qword groupId);
 bool notifyAllInWaitGroup(qword groupId);
@@ -110,7 +108,7 @@ bool isPointInTopMenu(qword windowId, int x, int y);
 bool moveWindow(qword windowId, int x, int y);
 bool resizeWindow(qword windowId, int x, int y, int width, int height);
 void moveChildWindows(qword windowId, int moveX, int moveY);
-void showChildWindows(qword windowId, bool show, dword flags);
+void showChildWindows(qword windowId, bool show, dword flags, bool parentToTop);
 void deleteChildWindows(qword windowId);
 bool getWindowArea(qword windowId, Rect* area);
 bool sendEventToWindow(const Event* event, qword windowId);
@@ -121,7 +119,6 @@ bool updateScreenByScreenArea(const Rect* area);
 bool drawWindowBackground(qword windowId);
 bool drawWindowFrame(qword windowId);
 bool drawWindowTitleBar(qword windowId, bool selected);
-bool drawButton(qword windowId, const Rect* buttonArea, Color textColor, Color backgroundColor, const char* text, dword flags);
 bool drawPixel(qword windowId, int x, int y, Color color);
 bool drawLine(qword windowId, int x1, int y1, int x2, int y2, Color color);
 bool drawRect(qword windowId, int x1, int y1, int x2, int y2, Color color, bool fill);
@@ -145,7 +142,16 @@ bool isGraphicMode(void);
 qword executeApp(const char* fileName, const char* args, byte affinity);
 
 /*** Syscall from widgets.h ***/
-bool createMenu(Menu* menu, int x, int y, int itemHeight, Color* colors, qword parentId, dword flags);
+bool createMenu(Menu* menu, int x, int y, int itemHeight, Color* colors, qword parentId, Menu* top, dword flags);
 bool processMenuEvent(Menu* menu);
+bool drawHansLogo(qword windowId, int x, int y, int width, int height, Color brightColor, Color darkColor);
+bool drawButton(qword windowId, const Rect* buttonArea, Color textColor, Color backgroundColor, const char* text, dword flags);
+void setClock(Clock* clock, qword windowId, int x, int y, Color textColor, Color backgroundColor, byte format, bool reset);
+void addClock(Clock* clock);
+Clock* removeClock(qword clockId);
+
+/*** Syscall from kid.h ***/
+qword allocKid(void);
+void freeKid(qword id);
 
 #endif // __SYSCALL_H__

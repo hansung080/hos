@@ -661,7 +661,8 @@ static void k_showCpuLoad(const char* paramBuffer) {
 static void k_showMatrix(const char* paramBuffer) {
 	Task* process;
 	
-	process = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_PROCESS, (void*)0xE00000, 0xE00000, (qword)k_matrixProcess, TASK_AFFINITY_LOADBALANCING);
+#define TASK_AFFINITY_LB 0xFF // load balancing (no affinity)
+	process = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_PROCESS, (void*)0xE00000, 0xE00000, (qword)k_matrixProcess, TASK_AFFINITY_LB);
 	if (process != null) {
 		k_printf("Matrix process creation success: 0x%q\n", process->link.id);
 		
@@ -679,7 +680,7 @@ static void k_matrixProcess(void) {
 	int i;
 	
 	for (i = 0; i < 300; i++) {
-		if (k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_charDropThread, TASK_AFFINITY_LOADBALANCING) == null) {
+		if (k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_charDropThread, TASK_AFFINITY_LB) == null) {
 			break;
 		}
 		
@@ -1498,7 +1499,7 @@ static void k_runApp(const char* paramBuffer) {
 
 	k_addFileExtension(fileName, "elf");
 
-	k_executeApp(fileName, args, TASK_AFFINITY_LOADBALANCING);
+	k_executeApp(fileName, args, TASK_AFFINITY_LB);
 }
 
 
@@ -1691,7 +1692,7 @@ static void k_createTestTask(const char* paramBuffer) {
 	switch (type) {
 	case 1: // test-task-1: border character
 		for (i = 0; i < count; i++) {
-			if (k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask1, TASK_AFFINITY_LOADBALANCING) == null) {
+			if (k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask1, TASK_AFFINITY_LB) == null) {
 				break;
 			}
 			
@@ -1703,7 +1704,7 @@ static void k_createTestTask(const char* paramBuffer) {
 		
 	case 2: // test-task-2: rotating pinwheel
 		for (i = 0; i < count; i++) {
-			if (k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask2, TASK_AFFINITY_LOADBALANCING) == null) {
+			if (k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask2, TASK_AFFINITY_LB) == null) {
 				break;
 			}
 			
@@ -1715,7 +1716,7 @@ static void k_createTestTask(const char* paramBuffer) {
 		
 	case 3: // test-task-3: core checker
 		for (i = 0; i < count; i++) {
-			if (k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask3, TASK_AFFINITY_LOADBALANCING) == null) {
+			if (k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask3, TASK_AFFINITY_LB) == null) {
 				break;
 			}
 			
@@ -1898,7 +1899,7 @@ static void k_testThread(const char* paramBuffer) {
 	Task* process;
 	
 	// create 1 process and 3 threads.
-	process = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_PROCESS, (void*)0xEEEEEEEE, 0x1000, (qword)k_threadCreationTask, TASK_AFFINITY_LOADBALANCING);
+	process = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_PROCESS, (void*)0xEEEEEEEE, 0x1000, (qword)k_threadCreationTask, TASK_AFFINITY_LB);
 	
 	if (process != null) {
 		k_printf("thread test success: 1 process (0x%q) and 3 threads have been created.\n", process->link.id);
@@ -1912,7 +1913,7 @@ static void k_threadCreationTask(void) {
 	int i;
 	
 	for (i = 0; i < 3; i++) {
-		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask2, TASK_AFFINITY_LOADBALANCING);
+		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_testTask2, TASK_AFFINITY_LB);
 	}
 	
 	while (true) {
@@ -1932,7 +1933,7 @@ static void k_testPi(const char* paramBuffer) {
 	
 	// create 100 tasks for calculating float numbers (rotating pinwheels).
 	for (i = 0; i < 100; i++) {
-		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_fpuTestTask, TASK_AFFINITY_LOADBALANCING);
+		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_fpuTestTask, TASK_AFFINITY_LB);
 	}
 }
 
@@ -2075,7 +2076,7 @@ static void k_testRandomAlloc(void) {
 	k_printf("*** Dynamic Memory Random Allocation Test ***\n");
 	
 	for (i = 0; i < 1000; i++) {
-		k_createTask(TASK_PRIORITY_LOWEST | TASK_FLAGS_THREAD, null, 0, (qword)k_randomAllocTask, TASK_AFFINITY_LOADBALANCING);
+		k_createTask(TASK_PRIORITY_LOWEST | TASK_FLAGS_THREAD, null, 0, (qword)k_randomAllocTask, TASK_AFFINITY_LB);
 	}
 }
 
@@ -2815,7 +2816,7 @@ static void k_testSyscall(const char* paramBuffer) {
 
 	k_memcpy(taskMem, k_syscallTestTask, 0x1000);
 
-	k_createTask(TASK_FLAGS_PROCESS | TASK_FLAGS_USER, taskMem, 0x1000, (qword)taskMem, TASK_AFFINITY_LOADBALANCING);
+	k_createTask(TASK_FLAGS_PROCESS | TASK_FLAGS_USER, taskMem, 0x1000, (qword)taskMem, TASK_AFFINITY_LB);
 }
 
 static void k_testWaitTask(const char* paramBuffer) {
@@ -2905,7 +2906,7 @@ static void k_testBlockingQueue(void) {
 	k_initQueue(&g_waitQueue, g_waitQueueBuffer, sizeof(int), MAXWAITQUEUECOUNT, true);
 
 	for (i = 0; i < 3; i++) {
-		taskIds[i] = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_blockingTask, TASK_AFFINITY_LOADBALANCING)->link.id;
+		taskIds[i] = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_blockingTask, TASK_AFFINITY_LB)->link.id;
 	}
 
 	for (i = 0; i < 10; i++) {
@@ -2963,7 +2964,7 @@ static void k_testNonblockingQueue(void) {
 	k_initQueue(&g_waitQueue, g_waitQueueBuffer, sizeof(int), MAXWAITQUEUECOUNT, false);
 
 	for (i = 0; i < 3; i++) {
-		taskIds[i] = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_nonblockingTask, TASK_AFFINITY_LOADBALANCING)->link.id;
+		taskIds[i] = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_nonblockingTask, TASK_AFFINITY_LB)->link.id;
 	}
 
 	for (i = 0; i < 10; i++) {

@@ -14,6 +14,7 @@ typedef struct k_Queue {
 	int getIndex; // get index: get data from head of array.
 	bool lastOperationPut;
 	bool blocking;
+	bool waiting;
 	qword waitGroupId;
 	struct k_Epoll* epoll;
 } Queue;

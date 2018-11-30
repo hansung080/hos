@@ -83,37 +83,31 @@
 #define TASK_MAXREADYLISTCOUNT 5
 
 // task priority (low 8 bits of task flags)
-#define TASK_PRIORITY_HIGHEST 0x00 // highest
-#define TASK_PRIORITY_HIGH    0x01 // high
-#define TASK_PRIORITY_MEDIUM  0x02 // medium
-#define TASK_PRIORITY_LOW     0x03 // low
-#define TASK_PRIORITY_LOWEST  0x04 // lowest
+#define TASK_PRIORITY_HIGHEST 0x00
+#define TASK_PRIORITY_HIGH    0x01
+#define TASK_PRIORITY_MEDIUM  0x02
+#define TASK_PRIORITY_LOW     0x03
+#define TASK_PRIORITY_LOWEST  0x04
 
 // task flags
-#define TASK_FLAGS_WAIT    0x8000000000000000 // wait task flag
-#define TASK_FLAGS_END     0x4000000000000000 // end task flag
-#define TASK_FLAGS_SYSTEM  0x2000000000000000 // system task flag
-#define TASK_FLAGS_PROCESS 0x1000000000000000 // processor flag
-#define TASK_FLAGS_THREAD  0x0800000000000000 // thread flag
-#define TASK_FLAGS_IDLE    0x0400000000000000 // idle task flag
-#define TASK_FLAGS_GUI     0x0200000000000000 // GUI task flag: set in k_createWindow.
-#define TASK_FLAGS_USER    0x0100000000000000 // user task flag
-#define TASK_FLAGS_JOIN    0x0080000000000000 // join task flag: set in k_joinGroup.
+#define TASK_FLAGS_WAIT    0x8000000000000000
+#define TASK_FLAGS_END     0x4000000000000000
+#define TASK_FLAGS_SYSTEM  0x2000000000000000
+#define TASK_FLAGS_PROCESS 0x1000000000000000
+#define TASK_FLAGS_THREAD  0x0800000000000000
+#define TASK_FLAGS_IDLE    0x0400000000000000
+#define TASK_FLAGS_GUI     0x0200000000000000
+#define TASK_FLAGS_USER    0x0100000000000000
+#define TASK_FLAGS_JOIN    0x0080000000000000
 
-// affinity
-#define TASK_AFFINITY_LOADBALANCING 0xFF // load balancing (no affinity)
-
-// max reusable group index count
-// - The real max reusable group index count is aligned with 8.
-#define TASK_MAXREUSABLEGROUPINDEXCOUNT 8192 
+// task affinity
+#define TASK_AFFINITY_LB 0xFF // load balancing (no affinity)
 
 /* macro functions */
 #define GETTASKOFFSET(taskId)            ((taskId) & 0xFFFFFFFF)                                 // get task offset (low 32 bits) of task.link.id (64 bits).
 #define GETTASKPRIORITY(flags)           ((flags) & 0xFF)                                        // get task priority (low 8 bits) of task.flags(64 bits).
 #define SETTASKPRIORITY(flags, priority) ((flags) = ((flags) & 0xFFFFFFFFFFFFFF00) | (priority)) // set task priority (low 8 bits) of task.flags(64 bits).
 #define GETTASKFROMTHREADLINK(x)         ((Task*)((qword)(x) - offsetof(Task, threadLink)))      // get task address from task.threadLink address.
-// [REF] The group ID consists of group count (high 32 bits) and group index (low 32 bits).
-#define GETTASKGROUPINDEX(id) ((id) & 0xFFFFFFFF) // get group index (low 32 bits) of group ID (64 bits).
 
 #pragma pack(push, 1)
 
@@ -128,16 +122,7 @@ typedef struct k_Task {
 	ListLink link;           // scheduler link: It consists of next task address (link.next) and task ID (link.id).
 	                         //                 task ID consists of allocated task count (high 32 bits) and task offset (low 32 bits).
 	                         //                 [NOTE] ListLink must be the first field.
-	qword flags;             // task flags: bit 0~7 : task priority
-	                         //             bit 63  : wait task flag
-							 //             bit 62  : end task flag
-	                         //             bit 61  : system task flag
-	                         //             bit 60  : processor flag
-	                         //             bit 59  : thread flag
-	                         //             bit 58  : idle task flag
-							 //             bit 57  : GUI task flag
-							 //             bit 56  : user task flag
-							 //             bit 55  : join task flag
+	qword flags;             // task flags
 	void* memAddr;           // start address of process memory area (code/data area)
 	qword memSize;           // size of process memory area (code/data area)
 	
@@ -246,9 +231,7 @@ void k_haltProcessorByLoad(byte apicId);
 qword k_getLastFpuUsedTaskId(byte apicId);
 void k_setLastFpuUsedTaskId(byte apicId, qword taskId);
 
-/* Task Group Functions */
-qword k_getTaskGroupId(void);
-void k_returnTaskGroupId(qword groupId);
+/* Wait Group Functions */
 bool k_waitGroup(qword groupId, void* lock);
 bool k_notifyOneInWaitGroup(qword groupId);
 bool k_notifyAllInWaitGroup(qword groupId);

@@ -1,6 +1,7 @@
 #include "queue.h"
 #include "util.h"
 #include "../core/task.h"
+#include "kid.h"
 
 void k_initQueue(Queue* queue, void* array, int dataSize, int maxDataCount, bool blocking) {
 	queue->dataSize = dataSize;
@@ -11,7 +12,7 @@ void k_initQueue(Queue* queue, void* array, int dataSize, int maxDataCount, bool
 	queue->lastOperationPut = false;
 	queue->blocking = blocking;
 	if (blocking == true) {
-		queue->waitGroupId = k_getTaskGroupId();
+		queue->waitGroupId = k_allocKid();
 	}
 	queue->epoll = null;
 }
@@ -41,7 +42,7 @@ bool k_putQueue(Queue* queue, const void* data) {
 	queue->putIndex = (queue->putIndex + 1) % queue->maxDataCount;
 	queue->lastOperationPut = true;
 	
-	if (queue->blocking == true) {
+	if ((queue->blocking == true) && (queue->waiting == true)) {
 		k_notifyOneInWaitGroup(queue->waitGroupId);
 	}
 	
@@ -55,7 +56,9 @@ bool k_putQueue(Queue* queue, const void* data) {
 bool k_getQueue(Queue* queue, void* data, void* lock) {
 	if (queue->blocking == true) {
 		while (k_isQueueEmpty(queue) == true) {
+			queue->waiting = true;
 			k_waitGroup(queue->waitGroupId, lock);
+			queue->waiting =  false;
 		}
 
 	} else {
@@ -73,7 +76,7 @@ bool k_getQueue(Queue* queue, void* data, void* lock) {
 
 void k_closeQueue(const Queue* queue) {
 	if (queue->blocking == true) {
-		k_returnTaskGroupId(queue->waitGroupId);
+		k_freeKid(queue->waitGroupId);
 	}
 }
 
@@ -82,7 +85,7 @@ void k_initEpoll(Epoll* epoll, Queue** equeues, int len) {
 
 	epoll->equeues = equeues;
 	epoll->len = len;
-	epoll->id = k_getTaskGroupId();
+	epoll->id = k_allocKid();
 	epoll->waiting = false;
 
 	for (i = 0; i < len; i++) {
@@ -109,5 +112,5 @@ bool k_waitEpoll(Epoll* epoll, void* lock) {
 }
 
 void k_closeEpoll(const Epoll* epoll) {
-	k_returnTaskGroupId(epoll->id);
+	k_freeKid(epoll->id);
 }

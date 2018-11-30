@@ -5,6 +5,7 @@
 #include "keyboard.h"
 #include "task.h"
 #include "../gui_tasks/system_menu.h"
+#include "widgets.h"
 
 /**
   < Screen Update Performance Test >
@@ -49,10 +50,13 @@ void k_windowManagerTask(void) {
 	k_moveMouseCursor(mouseX, mouseY);
 
 	// create app panel task.
-	k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_systemMenuTask, TASK_AFFINITY_LOADBALANCING);
+	k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_systemMenuTask, TASK_AFFINITY_LB);
 	
 	// get window manager.
 	windowManager = k_getWindowManager();
+
+	// initialize clock manager.
+	k_initClockManager();
 
 	#if __DEBUG__
 	/* Screen Update Performance Test */
@@ -90,13 +94,16 @@ void k_windowManagerTask(void) {
 		while (k_processWindowManagerEvent() == true) {
 			windowManagerResult = true;
 		}
-				
+		
 		// If window manager event (screen update event) had occured, resize marker might have been cleared,
 		// so draw resize marker again.
 		if ((windowManagerResult == true) && (windowManager->resizing == true)) {
 			k_drawResizeMarker(&windowManager->resizingArea, true);
 		}
 
+		// draw all clocks.
+		k_drawAllClocks();
+		
 		// If no data/events have been processed, switch task.
 		if ((mouseResult == false) && (keyResult == false) && (windowManagerResult == false)) {
 			k_sleep(0);
@@ -261,8 +268,10 @@ static bool k_processMouseData(void) {
 		}
 
 		if (k_isPointInTopMenu(underMouseId, mouseX, mouseY) == true) {
-			windowManager->overMenuId = underMouseId;
-			k_processTopMenuActivity(underMouseId, mouseX, mouseY);	
+			if ((windowManager->moving == false) && (windowManager->resizing == false)) {
+				windowManager->overMenuId = underMouseId;
+				k_processTopMenuActivity(underMouseId, mouseX, mouseY);			
+			}
 
 		} else {
 			if (windowManager->overMenuId != WINDOW_INVALIDID) {

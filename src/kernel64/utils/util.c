@@ -1,6 +1,7 @@
 #include "util.h"
 #include "../core/asm_util.h"
 #include "../core/vbe.h"
+#include "../core/sync.h"
 
 //====================================================================================================
 // k_memset, k_memcpy, k_memcmp (by 1 byte)

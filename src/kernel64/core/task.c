@@ -8,6 +8,7 @@
 #include "mp_config_table.h"
 #include "window.h"
 #include "dynamic_mem.h"
+#include "../utils/kid.h"
 
 static TaskPoolManager g_taskPoolManager;
 static Scheduler g_schedulers[MAXPROCESSORCOUNT];
@@ -178,8 +179,8 @@ Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAd
 	task->fpuUsed = false;
 	task->apicId = currentApicId;
 	task->affinity = affinity;
-	task->waitGroupId = 0;
-	task->joinGroupId = 0;
+	task->waitGroupId = KID_INVALID;
+	task->joinGroupId = KID_INVALID;
 	task->joinCount = 0;
 	
 	// add task to scheduler with load balancing.
@@ -273,8 +274,8 @@ void k_initScheduler(void) {
 	// They must not move to another core. Thus, their affinity is set to current APIC ID.
 	task->apicId = currentApicId;
 	task->affinity = currentApicId;
-	task->waitGroupId = 0;
-	task->joinGroupId = 0;
+	task->waitGroupId = KID_INVALID;
+	task->joinGroupId = KID_INVALID;
 	task->joinCount = 0;
 	
 	// If current core is BSP, the booting task will become the shell task in text mode or the window manager task in graphic mode.
@@ -496,10 +497,10 @@ static void k_addTaskToSchedulerWithLoadBalancing(Task* task) {
 	currentApicId = task->apicId;
 	
 	/* find target scheduler */
-	if ((g_schedulers[currentApicId].loadBalancing == true) && (task->affinity == TASK_AFFINITY_LOADBALANCING)) {
+	if ((g_schedulers[currentApicId].loadBalancing == true) && (task->affinity == TASK_AFFINITY_LB)) {
 		targetApicId = k_findSchedulerByMinTaskCount(task);
 		
-	} else if ((task->affinity != currentApicId) && (task->affinity != TASK_AFFINITY_LOADBALANCING)) {
+	} else if ((task->affinity != currentApicId) && (task->affinity != TASK_AFFINITY_LB)) {
 		targetApicId = task->affinity;
 		
 	} else {
@@ -1286,64 +1287,6 @@ void k_setLastFpuUsedTaskId(byte apicId, qword taskId) {
 	g_schedulers[apicId].lastFpuUsedTaskId = taskId;
 }
 
-// group ID global variables
-static byte g_groupIndexBitmap[(TASK_MAXREUSABLEGROUPINDEXCOUNT + 7) / 8];
-static bool g_firstGroupIndex = true;
-static dword g_maxGroupIndex = (TASK_MAXREUSABLEGROUPINDEXCOUNT + 0x7) & 0xFFFFFFF8;
-static dword g_groupCount = 0;
-
-qword k_getTaskGroupId(void) {
-	int i, j;
-	byte data;	
-	
-	if (g_groupCount == 0xFFFFFFFF) {
-		g_groupCount = 0;
-	}
-
-	g_groupCount++;
-
-	/* reusable index */
-	if (g_firstGroupIndex == true) {
-		g_firstGroupIndex = false;
-		k_memset(g_groupIndexBitmap, 0, sizeof(g_groupIndexBitmap));
-		g_groupIndexBitmap[0] |= 1;
-		return ((qword)g_groupCount << 32) | 0;
-	}
-
-	for (i = 0; i < ((TASK_MAXREUSABLEGROUPINDEXCOUNT + 7) / 8); i++) {
-		data = g_groupIndexBitmap[i];
-
-		for (j = 0; j < 8; j++) {
-			if (!(data & (1 << j))) {
-				data |= 1 << j;
-				g_groupIndexBitmap[i] = data;
-				return ((qword)g_groupCount << 32) | ((i * 8) + j);
-			}
-		}
-	}
-
-	/* not-reusable index */
-	if (g_maxGroupIndex == 0xFFFFFFFF) {
-		g_maxGroupIndex = (TASK_MAXREUSABLEGROUPINDEXCOUNT + 0x7) & 0xFFFFFFF8;
-	}
-
-	return ((qword)g_groupCount << 32) | (g_maxGroupIndex++);
-}
-
-void k_returnTaskGroupId(qword groupId) {
-	dword index;
-	byte data;
-	
-	index = GETTASKGROUPINDEX(groupId);
-	if (index >= g_maxGroupIndex) {
-		return;
-	}
-
-	data = g_groupIndexBitmap[index / 8];
-	data &= ~(1 << (index % 8));
-	g_groupIndexBitmap[index / 8] = data;
-}
-
 bool k_waitGroup(qword groupId, void* lock) {
 	Task* target;
 	bool result;
@@ -1357,7 +1300,7 @@ bool k_waitGroup(qword groupId, void* lock) {
 
 	result = k_waitTask(target->link.id);
 
-	target->waitGroupId = 0;
+	target->waitGroupId = KID_INVALID;
 
 	if (lock != null) {
 		k_lockAny(lock);
@@ -1414,7 +1357,7 @@ bool k_joinGroup(qword* taskIds, int count) {
 	Task* waitTask;
 	bool result;
 
-	groupId = k_getTaskGroupId();
+	groupId = k_allocKid();
 
 	for (i = 0; i < count; i++) {
 		joinTask = k_getTaskFromPool(GETTASKOFFSET(taskIds[i]));
@@ -1428,10 +1371,10 @@ bool k_joinGroup(qword* taskIds, int count) {
 
 	result = k_waitTask(waitTask->link.id);
 
-	waitTask->joinGroupId = 0;
+	waitTask->joinGroupId = KID_INVALID;
 	waitTask->joinCount = 0;
 
-	k_returnTaskGroupId(groupId);
+	k_freeKid(groupId);
 
 	return result;
 }

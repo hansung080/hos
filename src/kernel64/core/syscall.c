@@ -14,6 +14,7 @@
 #include "loader.h"
 #include "mp_config_table.h"
 #include "multiprocessor.h"
+#include "../utils/kid.h"
 
 /**
   < SYSCALL/SYSRET Initialization Registers >
@@ -127,13 +128,6 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 
 	case SYSCALL_GETPROCESSORLOAD:
 		return k_getProcessorLoad((byte)PARAM(0));
-
-	case SYSCALL_GETTASKGROUPID:
-		return k_getTaskGroupId();
-
-	case SYSCALL_RETURNTASKGROUPID:
-		k_returnTaskGroupId(PARAM(0));
-		return (qword)true;
 
 	case SYSCALL_WAITGROUP:
 		return (qword)k_waitGroup(PARAM(0), (void*)PARAM(1));
@@ -295,7 +289,7 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 		return (qword)true;
 
 	case SYSCALL_SHOWCHILDWINDOWS:
-		k_showChildWindows(PARAM(0), (bool)PARAM(1), (dword)PARAM(2));
+		k_showChildWindows(PARAM(0), (bool)PARAM(1), (dword)PARAM(2), (bool)PARAM(3));
 		return (qword)true;
 
 	case SYSCALL_DELETECHILDWINDOWS:
@@ -328,9 +322,6 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 
 	case SYSCALL_DRAWWINDOWTITLEBAR:
 		return (qword)k_drawWindowTitleBar(PARAM(0), (bool)PARAM(1));
-
-	case SYSCALL_DRAWBUTTON:
-		return (qword)k_drawButton(PARAM(0), (Rect*)PARAM(1), (Color)PARAM(2), (Color)PARAM(3), (char*)PARAM(4), (dword)PARAM(5));
 
 	case SYSCALL_DRAWPIXEL:
 		return (qword)k_drawPixel(PARAM(0), (int)PARAM(1), (int)PARAM(2), (Color)PARAM(3));
@@ -385,10 +376,35 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 
 	/*** Syscall from widgets.h ***/
 	case SYSCALL_CREATEMENU:
-		return (qword)k_createMenu((Menu*)PARAM(0), (int)PARAM(1), (int)PARAM(2), (int)PARAM(3), (Color*)PARAM(4), PARAM(5), (dword)PARAM(6));
+		return (qword)k_createMenu((Menu*)PARAM(0), (int)PARAM(1), (int)PARAM(2), (int)PARAM(3), (Color*)PARAM(4), PARAM(5), (Menu*)PARAM(6), (dword)PARAM(7));
 
 	case SYSCALL_PROCESSMENUEVENT:
 		return (qword)k_processMenuEvent((Menu*)PARAM(0));
+
+	case SYSCALL_DRAWHANSLOGO:
+		return (qword)k_drawHansLogo(PARAM(0), (int)PARAM(1), (int)PARAM(2), (int)PARAM(3), (int)PARAM(4), (Color)PARAM(5), (Color)PARAM(6));
+
+	case SYSCALL_DRAWBUTTON:
+		return (qword)k_drawButton(PARAM(0), (Rect*)PARAM(1), (Color)PARAM(2), (Color)PARAM(3), (char*)PARAM(4), (dword)PARAM(5));
+
+	case SYSCALL_SETCLOCK:
+		k_setClock((Clock*)PARAM(0), PARAM(1), (int)PARAM(2), (int)PARAM(3), (Color)PARAM(4), (Color)PARAM(5), (byte)PARAM(6), (bool)PARAM(7));
+		return (qword)true;
+
+	case SYSCALL_ADDCLOCK:
+		k_addClock((Clock*)PARAM(0));
+		return (qword)true;
+
+	case SYSCALL_REMOVECLOCK:
+		return (qword)k_removeClock(PARAM(0));
+
+	/*** Syscall from kid.h ***/
+	case SYSCALL_ALLOCKID:
+		return k_allocKid();
+
+	case SYSCALL_FREEKID:	
+		k_freeKid(PARAM(0));
+		return (qword)true;
 
 	/*** Syscall - test ***/
 	case SYSCALL_TEST:

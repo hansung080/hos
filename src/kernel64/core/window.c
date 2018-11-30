@@ -159,7 +159,7 @@ void k_initGuiSystem(void) {
 	// set 0 to flags in order not to show. After drawing background color, It will show.
 	backgroundId = k_createWindow(0, 0, vbeMode->xResolution, vbeMode->yResolution, 0, WINDOW_SYSBACKGROUND_TITLE, WINDOW_COLOR_SYSBACKGROUND, null, WINDOW_INVALIDID);
 	g_windowManager.backgroundId = backgroundId;
-	k_drawBackgroundMark();
+	k_drawHansLogo(g_windowManager.backgroundId, (k_getRectWidth(&g_windowManager.screenArea) - 60) / 2, (k_getRectHeight(&g_windowManager.screenArea) - 60) / 2, 60, 60, WINDOW_COLOR_SYSBACKGROUNDLOGOBRIGHT, WINDOW_COLOR_SYSBACKGROUNDLOGODARK);
 	//k_drawBackgroundImage();
 	k_showWindow(backgroundId, true);
 }
@@ -268,7 +268,7 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 	}
 
 	if (topMenu != null) {
-		k_createMenu(topMenu, (FONT_DEFAULT_WIDTH * k_strlen(title)) + (MENU_ITEMWIDTHPADDING * 2), 0, MENU_ITEMHEIGHT_TITLEBAR, null, window->link.id, MENU_FLAGS_HORIZONTAL | MENU_FLAGS_DRAWONPARENT);
+		k_createMenu(topMenu, (FONT_DEFAULT_WIDTH * k_strlen(title)) + (MENU_ITEMWIDTHPADDING * 2), 0, MENU_ITEMHEIGHT_TITLEBAR, null, window->link.id, topMenu, MENU_FLAGS_HORIZONTAL | MENU_FLAGS_DRAWONPARENT);
 	}
 
 	if (flags & WINDOW_FLAGS_DRAWTITLEBAR) {
@@ -1020,7 +1020,7 @@ bool k_moveWindowToTop(qword windowId) {
 
 		/* not show all child windows */
 		if (flags & WINDOW_FLAGS_HASCHILD) {
-			k_showChildWindows(windowId, false, 0);
+			k_showChildWindows(windowId, false, 0, true);
 		}
 
 		return true;
@@ -1111,7 +1111,7 @@ static bool k_updateWindowTitleBar(qword windowId, bool selected) {
 		}
 
 		if ((window->flags & WINDOW_FLAGS_HASCHILD) && (selected == false)) {
-			k_showChildWindows(window->link.id, false, 0);
+			k_showChildWindows(window->link.id, false, 0, false);
 		}
 	}
 
@@ -1291,7 +1291,7 @@ void k_moveChildWindows(qword windowId, int moveX, int moveY) {
 	k_unlock(&window->mutex);
 }
 
-void k_showChildWindows(qword windowId, bool show, dword flags) {
+void k_showChildWindows(qword windowId, bool show, dword flags, bool parentToTop) {
 	Window* window;
 	void* childLink;
 	Window* child;
@@ -1305,6 +1305,15 @@ void k_showChildWindows(qword windowId, bool show, dword flags) {
 	childLink = k_getHeadFromList(&window->childList);
 	while (childLink != null) {
 		child = GETWINDOWFROMCHILDLINK(childLink);
+
+		if ((child->flags & WINDOW_FLAGS_VISIBLE) && (show == false) && (window->flags & WINDOW_FLAGS_SHOW)) {
+			if (parentToTop == true) {
+				k_moveWindowToTop(child->link.id);
+			}
+			
+			childLink = k_getNextFromList(&window->childList, childLink);
+			continue;
+		}
 
 		// If flags == 0, process all child windows.
 		// If flags == WINDOW_FLAGS_MENU, process only menu child windows.
@@ -1943,60 +1952,6 @@ static bool k_drawResizeButton(qword windowId, bool selected, bool mouseOver) {
 	return true;
 }
 
-bool k_drawButton(qword windowId, const Rect* buttonArea, Color textColor, Color backgroundColor, const char* text, dword flags) {
-	Window* window;
-	int width;
-	Rect area;
-	int textLen;
-	int textX;
-	int textY;
-	Color brighterColor;
-
-	window = k_getWindowWithLock(windowId);
-	if (window == null) {
-		return false;
-	}
-
-	// get width and set clipping area on window coordinates.
-	width = k_getRectWidth(&window->area);
-	k_setRect(&area, 0, 0, width - 1, k_getRectHeight(&window->area) - 1);
-
-	// draw a button background.
-	__k_drawRect(window->buffer, &area, buttonArea->x1, buttonArea->y1, buttonArea->x2, buttonArea->y2, backgroundColor, true);	
-
-	// get text length.
-	textLen = k_strlen(text);
-
-	// draw a text in the center.
-	textX = (buttonArea->x1 + k_getRectWidth(buttonArea) / 2) - (textLen * FONT_DEFAULT_WIDTH) / 2;
-	textY = (buttonArea->y1 + k_getRectHeight(buttonArea) / 2) - FONT_DEFAULT_HEIGHT / 2;
-	__k_drawText(window->buffer, &area, textX, textY, textColor, backgroundColor, text, textLen);
-	
-	if (flags & BUTTON_FLAGS_SHADOW) {
-		brighterColor = k_changeColorBrightness2(backgroundColor, 30, 30, 30);
-
-		// draw top lines (2 pixels-thick) of the button with bright color in order to make it 3-dimensional.
-		__k_drawLine(window->buffer, &area, buttonArea->x1, buttonArea->y1, buttonArea->x2, buttonArea->y1, brighterColor);
-		__k_drawLine(window->buffer, &area, buttonArea->x1, buttonArea->y1 + 1, buttonArea->x2 - 1, buttonArea->y1 + 1, brighterColor);
-
-		// draw left lines (2 pixels-thick) of the button with bright color in order to make it 3-dimensional.
-		__k_drawLine(window->buffer, &area, buttonArea->x1, buttonArea->y1, buttonArea->x1, buttonArea->y2, brighterColor);
-		__k_drawLine(window->buffer, &area, buttonArea->x1 + 1, buttonArea->y1, buttonArea->x1 + 1, buttonArea->y2 - 1, brighterColor);
-		
-		// draw bottom lines (2 pixels-thick) of the button with dark color in order to make it 3-dimensional.
-		__k_drawLine(window->buffer, &area, buttonArea->x1 + 1, buttonArea->y2, buttonArea->x2, buttonArea->y2, WINDOW_COLOR_BUTTONDARK);
-		__k_drawLine(window->buffer, &area, buttonArea->x1 + 2, buttonArea->y2 - 1, buttonArea->x2, buttonArea->y2 - 1, WINDOW_COLOR_BUTTONDARK);
-
-		// draw right lines (2 pixels-thick) of the button with dark color in order to make it 3-dimensional.
-		__k_drawLine(window->buffer, &area, buttonArea->x2, buttonArea->y1 + 1, buttonArea->x2, buttonArea->y2, WINDOW_COLOR_BUTTONDARK);
-		__k_drawLine(window->buffer, &area, buttonArea->x2 - 1, buttonArea->y1 + 2, buttonArea->x2 - 1, buttonArea->y2, WINDOW_COLOR_BUTTONDARK);
-	}
-
-	k_unlock(&window->mutex);
-
-	return true;
-}
-
 bool k_drawPixel(qword windowId, int x, int y, Color color) {
 	Window* window;
 	Rect area;
@@ -2150,51 +2105,6 @@ bool k_bitblt(qword windowId, int x, int y, const Color* buffer, int width, int 
 	k_unlock(&window->mutex);
 
 	return true;
-}
-
-static void k_drawBackgroundMark(void) {
-	int startX, startY;
-
-	startX = (k_getRectWidth(&g_windowManager.screenArea) - 60) / 2;
-	startY = (k_getRectHeight(&g_windowManager.screenArea) - 60) / 2;
-
-	/* draw dark shadow of mark */
-	k_drawLine(g_windowManager.backgroundId, startX + 19, startY, startX + 19, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-	k_drawLine(g_windowManager.backgroundId, startX + 20, startY, startX + 20, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-
-	k_drawLine(g_windowManager.backgroundId, startX + 19, startY + 40, startX + 19, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-	k_drawLine(g_windowManager.backgroundId, startX + 20, startY + 40, startX + 20, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);	
-	
-	k_drawLine(g_windowManager.backgroundId, startX, startY + 59, startX + 20, startY + 59, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-	k_drawLine(g_windowManager.backgroundId, startX, startY + 60, startX + 20, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-
-	k_drawLine(g_windowManager.backgroundId, startX + 20, startY + 39, startX + 40, startY + 39, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-	k_drawLine(g_windowManager.backgroundId, startX + 20, startY + 40, startX + 40, startY + 40, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-
-	k_drawLine(g_windowManager.backgroundId, startX + 59, startY, startX + 59, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-	k_drawLine(g_windowManager.backgroundId, startX + 60, startY, startX + 60, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-
-	k_drawLine(g_windowManager.backgroundId, startX + 40, startY + 59, startX + 60, startY + 59, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-	k_drawLine(g_windowManager.backgroundId, startX + 40, startY + 60, startX + 60, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKDARK);
-
-	/* draw bright shadow of mark */
-	k_drawLine(g_windowManager.backgroundId, startX, startY, startX + 20, startY, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-	k_drawLine(g_windowManager.backgroundId, startX, startY + 1, startX + 20, startY + 1, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-
-	k_drawLine(g_windowManager.backgroundId, startX, startY, startX, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-	k_drawLine(g_windowManager.backgroundId, startX + 1, startY, startX + 1, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-
-	k_drawLine(g_windowManager.backgroundId, startX + 20, startY + 20, startX + 40, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-	k_drawLine(g_windowManager.backgroundId, startX + 20, startY + 21, startX + 40, startY + 21, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-
-	k_drawLine(g_windowManager.backgroundId, startX + 40, startY, startX + 60, startY, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-	k_drawLine(g_windowManager.backgroundId, startX + 40, startY + 1, startX + 60, startY + 1, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-
-	k_drawLine(g_windowManager.backgroundId, startX + 40, startY, startX + 40, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-	k_drawLine(g_windowManager.backgroundId, startX + 41, startY, startX + 41, startY + 20, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-
-	k_drawLine(g_windowManager.backgroundId, startX + 40, startY + 40, startX + 40, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
-	k_drawLine(g_windowManager.backgroundId, startX + 41, startY + 40, startX + 41, startY + 60, WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT);
 }
 
 static void k_drawBackgroundImage(void) {

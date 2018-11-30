@@ -39,22 +39,23 @@
 #define WINDOW_INVALIDID      0xFFFFFFFFFFFFFFFF
 
 // window flags
-#define WINDOW_FLAGS_SHOW         0x00000001 // show flag
-#define WINDOW_FLAGS_DRAWFRAME    0x00000002 // draw frame flag
-#define WINDOW_FLAGS_DRAWTITLEBAR 0x00000004 // draw title bar flag
-#define WINDOW_FLAGS_RESIZABLE    0x00000008 // resizable flag
-#define WINDOW_FLAGS_BLOCKING     0x00000010 // blocking flag
-#define WINDOW_FLAGS_HASCHILD     0x00000020 // has child flag: set in k_createWindow.
-#define WINDOW_FLAGS_CHILD        0x00000040 // child flag
-#define WINDOW_FLAGS_MENU         0x00000080 // menu flag: set in k_createMenu. The top menu is not a menu.
+#define WINDOW_FLAGS_SHOW         0x00000001
+#define WINDOW_FLAGS_DRAWFRAME    0x00000002
+#define WINDOW_FLAGS_DRAWTITLEBAR 0x00000004
+#define WINDOW_FLAGS_RESIZABLE    0x00000008
+#define WINDOW_FLAGS_BLOCKING     0x00000010
+#define WINDOW_FLAGS_HASCHILD     0x00000020
+#define WINDOW_FLAGS_CHILD        0x00000040
+#define WINDOW_FLAGS_VISIBLE      0x00000080
+#define WINDOW_FLAGS_MENU         0x00000100
 #define WINDOW_FLAGS_DEFAULT      (WINDOW_FLAGS_SHOW | WINDOW_FLAGS_DRAWFRAME | WINDOW_FLAGS_DRAWTITLEBAR)
 
 // window size
-#define WINDOW_TITLEBAR_HEIGHT  21 // title bar height
-#define WINDOW_XBUTTON_SIZE     19 // close button and resize button size
-#define WINDOW_MINWIDTH         (WINDOW_XBUTTON_SIZE * 2 + 30) // min window width
-#define WINDOW_MINHEIGHT        (WINDOW_TITLEBAR_HEIGHT + 30)  // min window height
-#define WINDOW_SYSMENU_HEIGHT   31
+#define WINDOW_TITLEBAR_HEIGHT 21 // title bar height
+#define WINDOW_XBUTTON_SIZE    19 // close button and resize button size
+#define WINDOW_MINWIDTH        (WINDOW_XBUTTON_SIZE * 2 + 30) // min window width
+#define WINDOW_MINHEIGHT       (WINDOW_TITLEBAR_HEIGHT + 30)  // min window height
+#define WINDOW_SYSMENU_HEIGHT  24
 
 // window color
 #define WINDOW_COLOR_BACKGROUND                 RGB(255, 255, 255)
@@ -66,21 +67,18 @@
 #define WINDOW_COLOR_TITLEBARTEXTINACTIVE       RGB(255, 255, 255)
 #define WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE    RGB(33, 147, 176)
 #define WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE  RGB(167, 173, 186)
-#define WINDOW_COLOR_XBUTTONMARKACTIVE          RGB(222, 98, 98)          
+#define WINDOW_COLOR_XBUTTONMARKACTIVE          RGB(222, 98, 98)
 #define WINDOW_COLOR_XBUTTONMARKINACTIVE        RGB(255, 255, 255)
 #define WINDOW_COLOR_BUTTONDARK                 RGB(86, 86, 86)
 #define WINDOW_COLOR_SYSBACKGROUND              RGB(255, 236, 210)
-#define WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT    RGB(255, 255, 255)
-#define WINDOW_COLOR_SYSBACKGROUNDMARKDARK      RGB(252, 182, 159)
+#define WINDOW_COLOR_SYSBACKGROUNDLOGOBRIGHT    RGB(255, 255, 255)
+#define WINDOW_COLOR_SYSBACKGROUNDLOGODARK      RGB(252, 182, 159)
 
 // background window title
 #define WINDOW_SYSBACKGROUND_TITLE "SYS_BACKGROUND"
 
 // max copied area array count
 #define WINDOW_MAXCOPIEDAREAARRAYCOUNT 20
-
-// button flags
-#define BUTTON_FLAGS_SHADOW 0x00000001 // 0: not draw shadow, 1: draw shadow
 
 // mouse cursor width and height
 #define MOUSE_CURSOR_WIDTH  10
@@ -105,6 +103,7 @@
   - mouse event
   - window event
   - key event
+  - menu event
   - user event
 
   @ window manager event
@@ -223,14 +222,7 @@ typedef struct k_Window {
 	Rect area;          // window area (screen coordinates)
 	Color* buffer;      // window buffer (window coordinates) address
 	qword taskId;       // window-creating task ID
-	dword flags;        // window flags: bit 0 : show flag
-	                    //               bit 1 : draw frame flag
-	                    //               bit 2 : draw title bar flag
-	                    //               bit 3 : resizable flag
-						//               bit 4 : blocking flag
-	                    //               bit 5 : has child flag
-	                    //               bit 6 : child flag
-	                    //               bit 7 : menu flag
+	dword flags;        // window flags
 	Queue eventQueue;   // event queue for mouse, window, key, user event
 	Event* eventBuffer; // event buffer
 	char title[WINDOW_MAXTITLELENGTH + 1]; // window title: include last null character
@@ -319,7 +311,7 @@ bool k_updateResizeButton(qword windowId, bool mouseOver);
 bool k_moveWindow(qword windowId, int x, int y);
 bool k_resizeWindow(qword windowId, int x, int y, int width, int height);
 void k_moveChildWindows(qword windowId, int moveX, int moveY);
-void k_showChildWindows(qword windowId, bool show, dword flags);
+void k_showChildWindows(qword windowId, bool show, dword flags, bool parentToTop);
 void k_deleteChildWindows(qword windowId);
 
 /* Coordinates Conversion Functions */
@@ -354,14 +346,12 @@ bool k_drawWindowFrame(qword windowId);
 bool k_drawWindowTitleBar(qword windowId, bool selected);
 static bool k_drawCloseButton(qword windowId, bool selected, bool mouseOver);
 static bool k_drawResizeButton(qword windowId, bool selected, bool mouseOver);
-bool k_drawButton(qword windowId, const Rect* buttonArea, Color textColor, Color backgroundColor, const char* text, dword flags);
 bool k_drawPixel(qword windowId, int x, int y, Color color);
 bool k_drawLine(qword windowId, int x1, int y1, int x2, int y2, Color color);
 bool k_drawRect(qword windowId, int x1, int y1, int x2, int y2, Color color, bool fill);
 bool k_drawCircle(qword windowId, int x, int y, int radius, Color color, bool fill);
 bool k_drawText(qword windowId, int x, int y, Color textColor, Color backgroundColor, const char* str, int len);
 bool k_bitblt(qword windowId, int x, int y, const Color* buffer, int width, int height);
-static void k_drawBackgroundMark(void);
 static void k_drawBackgroundImage(void);
 
 /* Mouse Cursor Functions */

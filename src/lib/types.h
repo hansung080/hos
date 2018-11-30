@@ -81,25 +81,25 @@
 #define TASK_INVALIDID 0xFFFFFFFFFFFFFFFF
 
 // task priority (low 8 bits of task flags)
-#define TASK_PRIORITY_HIGHEST 0x00 // highest
-#define TASK_PRIORITY_HIGH    0x01 // high
-#define TASK_PRIORITY_MEDIUM  0x02 // medium
-#define TASK_PRIORITY_LOW     0x03 // low
-#define TASK_PRIORITY_LOWEST  0x04 // lowest
+#define TASK_PRIORITY_HIGHEST 0x00
+#define TASK_PRIORITY_HIGH    0x01
+#define TASK_PRIORITY_MEDIUM  0x02
+#define TASK_PRIORITY_LOW     0x03
+#define TASK_PRIORITY_LOWEST  0x04
 
 // task flags
-#define TASK_FLAGS_WAIT    0x8000000000000000 // wait task flag
-#define TASK_FLAGS_END     0x4000000000000000 // end task flag
-#define TASK_FLAGS_SYSTEM  0x2000000000000000 // system task flag
-#define TASK_FLAGS_PROCESS 0x1000000000000000 // processor flag
-#define TASK_FLAGS_THREAD  0x0800000000000000 // thread flag
-#define TASK_FLAGS_IDLE    0x0400000000000000 // idle task flag
-#define TASK_FLAGS_GUI     0x0200000000000000 // GUI task flag: set in k_createWindow.
-#define TASK_FLAGS_USER    0x0100000000000000 // user task flag
-#define TASK_FLAGS_JOIN    0x0080000000000000 // join task flag: set in k_joinGroup.
+#define TASK_FLAGS_WAIT    0x8000000000000000
+#define TASK_FLAGS_END     0x4000000000000000
+#define TASK_FLAGS_SYSTEM  0x2000000000000000
+#define TASK_FLAGS_PROCESS 0x1000000000000000
+#define TASK_FLAGS_THREAD  0x0800000000000000
+#define TASK_FLAGS_IDLE    0x0400000000000000
+#define TASK_FLAGS_GUI     0x0200000000000000
+#define TASK_FLAGS_USER    0x0100000000000000
+#define TASK_FLAGS_JOIN    0x0080000000000000
 
-// affinity
-#define TASK_AFFINITY_LOADBALANCING 0xFF // load balancing (no affinity)
+// task affinity
+#define TASK_AFFINITY_LB 0xFF // load balancing (no affinity)
 
 /* macro functions */
 #define GETTASKOFFSET(taskId)            ((taskId) & 0xFFFFFFFF)                                 // get task offset (low 32 bits) of task.link.id (64 bits).
@@ -169,22 +169,23 @@ typedef word Color;
 #define WINDOW_INVALIDID      0xFFFFFFFFFFFFFFFF
 
 // window flags
-#define WINDOW_FLAGS_SHOW         0x00000001 // show flag
-#define WINDOW_FLAGS_DRAWFRAME    0x00000002 // draw frame flag
-#define WINDOW_FLAGS_DRAWTITLEBAR 0x00000004 // draw title bar flag
-#define WINDOW_FLAGS_RESIZABLE    0x00000008 // resizable flag
-#define WINDOW_FLAGS_BLOCKING     0x00000010 // blocking flag
-#define WINDOW_FLAGS_HASCHILD     0x00000020 // has child flag: set in k_createWindow.
-#define WINDOW_FLAGS_CHILD        0x00000040 // child flag
-#define WINDOW_FLAGS_MENU         0x00000080 // menu flag: set in k_createMenu. The top menu is not a menu.
+#define WINDOW_FLAGS_SHOW         0x00000001
+#define WINDOW_FLAGS_DRAWFRAME    0x00000002
+#define WINDOW_FLAGS_DRAWTITLEBAR 0x00000004
+#define WINDOW_FLAGS_RESIZABLE    0x00000008
+#define WINDOW_FLAGS_BLOCKING     0x00000010
+#define WINDOW_FLAGS_HASCHILD     0x00000020
+#define WINDOW_FLAGS_CHILD        0x00000040
+#define WINDOW_FLAGS_VISIBLE      0x00000080
+#define WINDOW_FLAGS_MENU         0x00000100
 #define WINDOW_FLAGS_DEFAULT      (WINDOW_FLAGS_SHOW | WINDOW_FLAGS_DRAWFRAME | WINDOW_FLAGS_DRAWTITLEBAR)
 
 // window size
-#define WINDOW_TITLEBAR_HEIGHT  21 // title bar height
-#define WINDOW_XBUTTON_SIZE     19 // close button and resize button size
-#define WINDOW_MINWIDTH         (WINDOW_XBUTTON_SIZE * 2 + 30) // min window width
-#define WINDOW_MINHEIGHT        (WINDOW_TITLEBAR_HEIGHT + 30)  // min window height
-#define WINDOW_SYSMENU_HEIGHT   31
+#define WINDOW_TITLEBAR_HEIGHT 21 // title bar height
+#define WINDOW_XBUTTON_SIZE    19 // close button and resize button size
+#define WINDOW_MINWIDTH        (WINDOW_XBUTTON_SIZE * 2 + 30) // min window width
+#define WINDOW_MINHEIGHT       (WINDOW_TITLEBAR_HEIGHT + 30)  // min window height
+#define WINDOW_SYSMENU_HEIGHT  24
 
 // window color
 #define WINDOW_COLOR_BACKGROUND                 RGB(255, 255, 255)
@@ -196,18 +197,15 @@ typedef word Color;
 #define WINDOW_COLOR_TITLEBARTEXTINACTIVE       RGB(255, 255, 255)
 #define WINDOW_COLOR_XBUTTONBACKGROUNDACTIVE    RGB(33, 147, 176)
 #define WINDOW_COLOR_XBUTTONBACKGROUNDINACTIVE  RGB(167, 173, 186)
-#define WINDOW_COLOR_XBUTTONMARKACTIVE          RGB(222, 98, 98)          
+#define WINDOW_COLOR_XBUTTONMARKACTIVE          RGB(222, 98, 98)
 #define WINDOW_COLOR_XBUTTONMARKINACTIVE        RGB(255, 255, 255)
 #define WINDOW_COLOR_BUTTONDARK                 RGB(86, 86, 86)
 #define WINDOW_COLOR_SYSBACKGROUND              RGB(255, 236, 210)
-#define WINDOW_COLOR_SYSBACKGROUNDMARKBRIGHT    RGB(255, 255, 255)
-#define WINDOW_COLOR_SYSBACKGROUNDMARKDARK      RGB(252, 182, 159)
+#define WINDOW_COLOR_SYSBACKGROUNDLOGOBRIGHT    RGB(255, 255, 255)
+#define WINDOW_COLOR_SYSBACKGROUNDLOGODARK      RGB(252, 182, 159)
 
 // background window title
 #define WINDOW_SYSBACKGROUND_TITLE "SYS_BACKGROUND"
-
-// button flags
-#define BUTTON_FLAGS_SHADOW 0x00000001 // 0: not draw shadow, 1: draw shadow
 
 /* event type */
 // unknown event
@@ -258,6 +256,7 @@ typedef word Color;
 //----------------------------------------------------------------------------------------------------
 // Macro from widgets.h
 //----------------------------------------------------------------------------------------------------
+
 /*** Menu Macros ***/
 #define MENU_TITLE            "WIDGET_MENU"
 #define MENU_ITEMWIDTHPADDING 12
@@ -265,7 +264,7 @@ typedef word Color;
 // menu item height
 #define MENU_ITEMHEIGHT_NORMAL   (FONT_DEFAULT_HEIGHT + 4)
 #define MENU_ITEMHEIGHT_TITLEBAR 21 // WINDOW_TITLEBAR_HEIGHT
-#define MENU_ITEMHEIGHT_SYSMENU  31 // WINDOW_SYSMENU_HEIGHT
+#define MENU_ITEMHEIGHT_SYSMENU  24 // WINDOW_SYSMENU_HEIGHT
 
 // menu default color
 #define MENU_COLOR_TEXT       RGB(255, 255, 255)
@@ -274,13 +273,43 @@ typedef word Color;
 
 // menu flags
 #define MENU_FLAGS_HORIZONTAL   0x00000001 // 0: vertical, 1: horizontal
-#define MENU_FLAGS_VISIBLE      0x00000002 // 0: start with invisible, 1: start with visible
-#define MENU_FLAGS_DRAWONPARENT 0x00000003 // 0: create new window, 1: draw menu on parent window
+#define MENU_FLAGS_DRAWONPARENT 0x00000002 // 0: create new window, 1: draw menu on parent window
 #define MENU_FLAGS_BLOCKING     0x00000004 // 0: create non-blocking window, 1: create blocking window
+#define MENU_FLAGS_VISIBLE      0x00000008 // 0: create invisible window, 1: create visible window
+
+/*** Button Macros ***/
+// button flags
+#define BUTTON_FLAGS_SHADOW 0x00000001 // 0: not draw shadow, 1: draw shadow
+
+/*** Clock Macros ***/
+// clock size
+#define CLOCK_MAXWIDTH (FONT_DEFAULT_WIDTH * 11)
+#define CLOCK_HEIGHT   FONT_DEFAULT_HEIGHT
+
+// clock format
+#define CLOCK_FORMAT_H    1 // hh
+#define CLOCK_FORMAT_HA   2 // hh AM
+#define CLOCK_FORMAT_HM   3 // hh:mm
+#define CLOCK_FORMAT_HMA  4 // hh:mm AM
+#define CLOCK_FORMAT_HMS  5 // hh:mm:ss
+#define CLOCK_FORMAT_HMSA 6 // hh:mm:ss AM
 
 typedef void (*MenuFunc)(qword param);
 
+//----------------------------------------------------------------------------------------------------
+// Macro from widgets.h
+//----------------------------------------------------------------------------------------------------
+#define KID_INVALID 0
+
 #pragma pack(push, 1)
+//----------------------------------------------------------------------------------------------------
+// Struct from list.h
+//----------------------------------------------------------------------------------------------------
+typedef struct k_ListLink {
+	void* next;
+	qword id;
+} ListLink;
+
 //----------------------------------------------------------------------------------------------------
 // Struct from keyboard.h
 //----------------------------------------------------------------------------------------------------
@@ -472,17 +501,17 @@ typedef struct __Jpeg {
 //----------------------------------------------------------------------------------------------------
 
 /*** Menu Structs ***/
-typedef struct k_MenuItem {
+typedef struct __MenuItem {
 	const char* const name;
 	const MenuFunc func;
 	const bool hasSubMenu;
 	qword param; // - Default param is parentId.
 	             // - If hasSubMenu == true, param must be the sub menu address.
                  // - If hasSubMenu == false, param can be anything.
-	Rect area; // window coordinates
+	Rect area;   // window coordinates
 } MenuItem;
 
-typedef struct k_Menu {
+typedef struct __Menu {
 	MenuItem* const table;
 	const int itemCount;
 	qword id;
@@ -494,8 +523,20 @@ typedef struct k_Menu {
 	Color backgroundColor;
 	Color activeColor;
 	qword parentId;
+	struct k_Menu* top;
 	dword flags;
 } Menu;
+
+/*** Clock Structs ***/
+typedef struct __Clock {
+	ListLink link;
+	qword windowId;
+	Rect area; // window coordinates 
+	Color textColor;
+	Color backgroundColor;
+	byte format;
+	char formatStr[12];
+} Clock;
 
 #pragma pack(pop)
 

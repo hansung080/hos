@@ -151,18 +151,6 @@ qword getProcessorLoad(byte apicId) {
 	return executeSyscall(SYSCALL_GETPROCESSORLOAD, &paramTable);
 }
 
-qword getTaskGroupId(void) {
-	return executeSyscall(SYSCALL_GETTASKGROUPID, null);
-}
-
-void returnTaskGroupId(qword groupId) {
-	ParamTable paramTable;
-
-	PARAM(0) = groupId;
-
-	executeSyscall(SYSCALL_RETURNTASKGROUPID, &paramTable);
-}
-
 bool waitGroup(qword groupId, void* lock) {
 	ParamTable paramTable;
 
@@ -577,12 +565,13 @@ void moveChildWindows(qword windowId, int moveX, int moveY) {
 	executeSyscall(SYSCALL_MOVECHILDWINDOWS, &paramTable);
 }
 
-void showChildWindows(qword windowId, bool show, dword flags) {
+void showChildWindows(qword windowId, bool show, dword flags, bool parentToTop) {
 	ParamTable paramTable;
 
 	PARAM(0) = windowId;
 	PARAM(1) = (qword)show;
 	PARAM(2) = (qword)flags;
+	PARAM(3) = (qword)parentToTop;
 
 	executeSyscall(SYSCALL_SHOWCHILDWINDOWS, &paramTable);
 }
@@ -670,19 +659,6 @@ bool drawWindowTitleBar(qword windowId, bool selected) {
 	PARAM(1) = (qword)selected;
 
 	return (bool)executeSyscall(SYSCALL_DRAWWINDOWTITLEBAR, &paramTable);
-}
-
-bool drawButton(qword windowId, const Rect* buttonArea, Color textColor, Color backgroundColor, const char* text, dword flags) {
-	ParamTable paramTable;
-
-	PARAM(0) = windowId;
-	PARAM(1) = (qword)buttonArea;
-	PARAM(2) = (qword)backgroundColor;
-	PARAM(3) = (qword)text;
-	PARAM(4) = (qword)textColor;
-	PARAM(5) = (qword)flags;
-
-	return (bool)executeSyscall(SYSCALL_DRAWBUTTON, &paramTable);
 }
 
 bool drawPixel(qword windowId, int x, int y, Color color) {
@@ -831,7 +807,7 @@ qword executeApp(const char* fileName, const char* args, byte affinity) {
 	return executeSyscall(SYSCALL_EXECUTEAPP, &paramTable);
 }
 
-bool createMenu(Menu* menu, int x, int y, int itemHeight, Color* colors, qword parentId, dword flags) {
+bool createMenu(Menu* menu, int x, int y, int itemHeight, Color* colors, qword parentId, Menu* top, dword flags) {
 	ParamTable paramTable;
 
 	PARAM(0) = (qword)menu;
@@ -840,7 +816,8 @@ bool createMenu(Menu* menu, int x, int y, int itemHeight, Color* colors, qword p
 	PARAM(3) = (qword)itemHeight;
 	PARAM(4) = (qword)colors;
 	PARAM(5) = parentId;
-	PARAM(6) = (qword)flags;
+	PARAM(6) = (qword)top;
+	PARAM(7) = (qword)flags;
 
 	return (bool)executeSyscall(SYSCALL_CREATEMENU, &paramTable);
 }
@@ -851,4 +828,74 @@ bool processMenuEvent(Menu* menu) {
 	PARAM(0) = (qword)menu;
 
 	return (bool)executeSyscall(SYSCALL_PROCESSMENUEVENT, &paramTable);
+}
+
+bool drawHansLogo(qword windowId, int x, int y, int width, int height, Color brightColor, Color darkColor) {
+	ParamTable paramTable;
+
+	PARAM(0) = windowId;
+	PARAM(1) = x;
+	PARAM(2) = y;
+	PARAM(3) = width;
+	PARAM(4) = height;
+	PARAM(5) = brightColor;
+	PARAM(6) = darkColor;
+
+	return (bool)executeSyscall(SYSCALL_DRAWHANSLOGO, &paramTable);
+}
+
+bool drawButton(qword windowId, const Rect* buttonArea, Color textColor, Color backgroundColor, const char* text, dword flags) {
+	ParamTable paramTable;
+
+	PARAM(0) = windowId;
+	PARAM(1) = (qword)buttonArea;
+	PARAM(2) = (qword)backgroundColor;
+	PARAM(3) = (qword)text;
+	PARAM(4) = (qword)textColor;
+	PARAM(5) = (qword)flags;
+
+	return (bool)executeSyscall(SYSCALL_DRAWBUTTON, &paramTable);
+}
+
+void setClock(Clock* clock, qword windowId, int x, int y, Color textColor, Color backgroundColor, byte format, bool reset) {
+	ParamTable paramTable;
+
+	PARAM(0) = (qword)clock;
+	PARAM(1) = windowId;
+	PARAM(2) = (qword)x;
+	PARAM(3) = (qword)y;
+	PARAM(4) = (qword)textColor;
+	PARAM(5) = (qword)backgroundColor;
+	PARAM(6) = (qword)format;
+	PARAM(7) = (qword)reset;
+
+	executeSyscall(SYSCALL_SETCLOCK, &paramTable);
+}
+
+void addClock(Clock* clock) {
+	ParamTable paramTable;
+
+	PARAM(0) = (qword)clock;
+
+	executeSyscall(SYSCALL_ADDCLOCK, &paramTable);
+}
+
+Clock* removeClock(qword clockId) {
+	ParamTable paramTable;
+
+	PARAM(0) = clockId;
+
+	return (Clock*)executeSyscall(SYSCALL_REMOVECLOCK, &paramTable);
+}
+
+qword allocKid(void) {
+	return executeSyscall(SYSCALL_ALLOCKID, null);
+}
+
+void freeKid(qword id) {
+	ParamTable paramTable;
+
+	PARAM(0) = id;
+
+	executeSyscall(SYSCALL_FREEKID, &paramTable);
 }

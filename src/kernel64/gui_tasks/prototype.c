@@ -100,7 +100,6 @@ void k_prototypeTask(void) {
 	equeues[5] = &k_getWindow(amphibiansMenu.id)->eventQueue;
 	equeues[6] = &k_getWindow(dogsMenu.id)->eventQueue;
 	equeues[7] = &k_getWindow(catsMenu.id)->eventQueue;
-
 	k_initEpoll(&epoll, equeues, 8);
 
 	/* event processing loop */
@@ -123,43 +122,43 @@ static bool k_createPrototypeMenus(Menu* topMenu, Menu* animalsMenu, Menu* fruit
 	Rect itemArea;
 
 	k_convertRectWindowToScreen(topMenu->id, &topMenu->table[0].area, &itemArea);
-	if (k_createMenu(animalsMenu, itemArea.x1, itemArea.y2 + 1, MENU_ITEMHEIGHT_NORMAL, null, parentId, 0) == false) {
+	if (k_createMenu(animalsMenu, itemArea.x1, itemArea.y2 + 1, MENU_ITEMHEIGHT_NORMAL, null, parentId, topMenu, 0) == false) {
 		k_printf("[prototype error] animals menu creation failure\n");
 		return false;
 	}
 
 	k_convertRectWindowToScreen(topMenu->id, &topMenu->table[1].area, &itemArea);
-	if (k_createMenu(fruitsMenu, itemArea.x1, itemArea.y2 + 1, MENU_ITEMHEIGHT_NORMAL, null, parentId, 0) == false) {
+	if (k_createMenu(fruitsMenu, itemArea.x1, itemArea.y2 + 1, MENU_ITEMHEIGHT_NORMAL, null, parentId, topMenu, 0) == false) {
 		k_printf("[prototype error] fruits menu creation failure\n");
 		return false;
 	}
 
 	k_convertRectWindowToScreen(animalsMenu->id, &animalsMenu->table[0].area, &itemArea);
-	if (k_createMenu(mammalsMenu, itemArea.x2 + 1, itemArea.y1, MENU_ITEMHEIGHT_NORMAL, null, parentId, 0) == false) {
+	if (k_createMenu(mammalsMenu, itemArea.x2 + 1, itemArea.y1, MENU_ITEMHEIGHT_NORMAL, null, parentId, topMenu, 0) == false) {
 		k_printf("[prototype error] mammals menu creation failure\n");
 		return false;
 	}
 
 	k_convertRectWindowToScreen(animalsMenu->id, &animalsMenu->table[3].area, &itemArea);
-	if (k_createMenu(reptilesMenu, itemArea.x2 + 1, itemArea.y1, MENU_ITEMHEIGHT_NORMAL, null, parentId, 0) == false) {
+	if (k_createMenu(reptilesMenu, itemArea.x2 + 1, itemArea.y1, MENU_ITEMHEIGHT_NORMAL, null, parentId, topMenu, 0) == false) {
 		k_printf("[prototype error] reptiles menu creation failure\n");
 		return false;
 	}
 
 	k_convertRectWindowToScreen(animalsMenu->id, &animalsMenu->table[4].area, &itemArea);
-	if (k_createMenu(amphibiansMenu, itemArea.x2 + 1, itemArea.y1, MENU_ITEMHEIGHT_NORMAL, null, parentId, 0) == false) {
+	if (k_createMenu(amphibiansMenu, itemArea.x2 + 1, itemArea.y1, MENU_ITEMHEIGHT_NORMAL, null, parentId, topMenu, 0) == false) {
 		k_printf("[prototype error] amphibians menu creation failure\n");
 		return false;
 	}	
 
 	k_convertRectWindowToScreen(mammalsMenu->id, &mammalsMenu->table[1].area, &itemArea);
-	if (k_createMenu(dogsMenu, itemArea.x2 + 1, itemArea.y1, MENU_ITEMHEIGHT_NORMAL, null, parentId, 0) == false) {
+	if (k_createMenu(dogsMenu, itemArea.x2 + 1, itemArea.y1, MENU_ITEMHEIGHT_NORMAL, null, parentId, topMenu, 0) == false) {
 		k_printf("[prototype error] dogs menu creation failure\n");
 		return false;
 	}
 
 	k_convertRectWindowToScreen(mammalsMenu->id, &mammalsMenu->table[2].area, &itemArea);
-	if (k_createMenu(catsMenu, itemArea.x2 + 1, itemArea.y1, MENU_ITEMHEIGHT_NORMAL, null, parentId, 0) == false) {
+	if (k_createMenu(catsMenu, itemArea.x2 + 1, itemArea.y1, MENU_ITEMHEIGHT_NORMAL, null, parentId, topMenu, 0) == false) {
 		k_printf("[prototype error] cats menu creation failure\n");
 		return false;
 	}	

@@ -22,6 +22,7 @@
 #include "io_apic.h"
 #include "window_manager.h"
 #include "syscall.h"
+#include "../utils/kid.h"
 
 static void k_mainForAp(void);
 static bool k_switchToMultiprocessorMode(void);
@@ -145,6 +146,9 @@ void k_main(void) {
 	k_initSyscall();
 	k_printf("pass\n");
 
+	// initialize KID manager.
+	k_initKidManager();
+	
 	// If it's text mode, run shell task.
 	if (k_isGraphicMode() == false) {
 		k_shellTask();
