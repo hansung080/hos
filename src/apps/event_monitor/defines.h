@@ -1,7 +1,10 @@
 #ifndef __DEFINES_H__
 #define __DEFINES_H__
 
-// event monitor color
+// title
+#define TITLE "Event Monitor"
+
+// color
 #define COLOR_BUTTONACTIVE RGB(109, 213, 237)
 
 // user event: set bit 31 to 1 in order not to duplicate with the already defined events.

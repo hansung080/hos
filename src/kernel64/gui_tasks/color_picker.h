@@ -4,12 +4,15 @@
 #include "../core/types.h"
 #include "../core/2d_graphics.h"
 
-// color
-#define COLPKR_COLOR_VALAREABORDER RGB(167, 173, 186)
+// title
+#define COLPKR_TITLE "Color Picker"
 
 // size
 #define COLPKR_WIDTH  450
 #define COLPKR_HEIGHT 450
+
+// color
+#define COLPKR_COLOR_VALAREABORDER RGB(167, 173, 186)
 
 // focus
 #define COLPKR_FOCUS_RGAREA   1

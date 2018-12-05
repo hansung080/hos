@@ -3,6 +3,10 @@
 
 #include <hanslib.h>
 
+// title
+#define TITLE "Text Viewer"
+
+// etc
 #define MAXLINECOUNT 262144 // 256 * 1024 lines
 #define MARGIN       5      // 5 pixels
 #define TABSIZE      4      // 4 spaces

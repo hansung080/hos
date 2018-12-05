@@ -535,7 +535,7 @@ static void k_killTask(const char* paramBuffer) {
 	}
 	
 	shellTaskId = k_getRunningTask(k_getApicId())->link.id;
-	guiShellTaskId = k_getWindow(g_guiShellWindowId)->taskId;
+	guiShellTaskId = k_getWindow(g_guiShellId)->taskId;
 
 	/* kill all tasks (except system tasks) */
 	if (k_equalStr(taskId_, "all") == true) {
@@ -1509,7 +1509,7 @@ static void k_exitShell(const char* paramBuffer) {
 		return;
 	}
 
-	k_sendWindowEventToWindow(g_guiShellWindowId, EVENT_WINDOW_CLOSE);
+	k_sendWindowEventToWindow(g_guiShellId, EVENT_WINDOW_CLOSE);
 }
 
 #if __DEBUG__

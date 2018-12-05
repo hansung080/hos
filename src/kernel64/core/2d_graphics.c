@@ -164,6 +164,20 @@ inline bool k_getOverlappedRect(const Rect* rect1, const Rect* rect2, Rect* over
 	return true;
 }
 
+inline void k_setCircle(Circle* circle, int x, int y, int radius) {
+	circle->x = x;
+	circle->y = y;
+	circle->radius = radius;
+}
+
+inline bool k_isPointInCircle(const Circle* circle, int x, int y) {
+	if (((x - circle->x) * (x - circle->x) + (y - circle->y) * (y - circle->y)) <= (circle->radius * circle->radius)) {
+		return true;
+	}
+
+	return false;
+}
+
 inline void __k_drawPixel(Color* outBuffer, const Rect* area, int x, int y, Color color) {
 	int width;
 

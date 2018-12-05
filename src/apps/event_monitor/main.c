@@ -77,8 +77,8 @@ int main(const char* args) {
 	getMouseCursorPos(&mouseX, &mouseY);
 	windowWidth = 500;
 	windowHeight = 200;
-	sprintf(tempBuffer, "Event Monitor %d", ++windowCount);
-	windowId = createWindow(mouseX - 10, mouseY - WINDOW_TITLEBAR_HEIGHT / 2, windowWidth, windowHeight, windowFlags, tempBuffer, WINDOW_COLOR_BACKGROUND, null, WINDOW_INVALIDID);
+	sprintf(tempBuffer, "%s %d", TITLE, ++windowCount);
+	windowId = createWindow(mouseX - 10, mouseY - WINDOW_TITLEBAR_HEIGHT / 2, windowWidth, windowHeight, windowFlags, tempBuffer, WINDOW_COLOR_BACKGROUND, null, null, WINDOW_INVALIDID);
 	if (windowId == WINDOW_INVALIDID) {
 		return -1;
 	}

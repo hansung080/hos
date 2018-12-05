@@ -237,10 +237,13 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 		return (qword)true;
 
 	case SYSCALL_CREATEWINDOW:
-		return k_createWindow((int)PARAM(0), (int)PARAM(1), (int)PARAM(2), (int)PARAM(3), (dword)PARAM(4), (char*)PARAM(5), (Color)PARAM(6), (Menu*)PARAM(7), PARAM(8));
+		return k_createWindow((int)PARAM(0), (int)PARAM(1), (int)PARAM(2), (int)PARAM(3), (dword)PARAM(4), (char*)PARAM(5), (Color)PARAM(6), (Menu*)PARAM(7), (void*)PARAM(8), PARAM(9));
 
 	case SYSCALL_DELETEWINDOW:
 		return (qword)k_deleteWindow(PARAM(0));
+
+	case SYSCALL_ISWINDOWSHOWN:
+		return (qword)k_isWindowShown(PARAM(0));
 
 	case SYSCALL_SHOWWINDOW:
 		return (qword)k_showWindow(PARAM(0), (bool)PARAM(1));
@@ -295,6 +298,9 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 	case SYSCALL_DELETECHILDWINDOWS:
 		k_deleteChildWindows(PARAM(0));
 		return (qword)true;
+
+	case SYSCALL_GETNTHCHILDWIDGET:
+		return (qword)k_getNthChildWidget(PARAM(0), (int)PARAM(1));
 
 	case SYSCALL_GETWINDOWAREA:
 		return (qword)k_getWindowArea(PARAM(0), (Rect*)PARAM(1));

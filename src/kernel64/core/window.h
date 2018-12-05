@@ -48,14 +48,17 @@
 #define WINDOW_FLAGS_CHILD        0x00000040
 #define WINDOW_FLAGS_VISIBLE      0x00000080
 #define WINDOW_FLAGS_MENU         0x00000100
+#define WINDOW_FLAGS_PANEL        0x00000200
 #define WINDOW_FLAGS_DEFAULT      (WINDOW_FLAGS_SHOW | WINDOW_FLAGS_DRAWFRAME | WINDOW_FLAGS_DRAWTITLEBAR)
 
 // window size
-#define WINDOW_TITLEBAR_HEIGHT 21 // title bar height
-#define WINDOW_XBUTTON_SIZE    19 // close button and resize button size
-#define WINDOW_MINWIDTH        (WINDOW_XBUTTON_SIZE * 2 + 30) // min window width
-#define WINDOW_MINHEIGHT       (WINDOW_TITLEBAR_HEIGHT + 30)  // min window height
-#define WINDOW_SYSMENU_HEIGHT  24
+#define WINDOW_TITLEBAR_HEIGHT          21
+#define WINDOW_XBUTTON_SIZE             19
+#define WINDOW_MINWIDTH                 (WINDOW_XBUTTON_SIZE * 2 + 30)
+#define WINDOW_MINHEIGHT                (WINDOW_TITLEBAR_HEIGHT + 30)
+#define WINDOW_SYSMENU_HEIGHT           24
+#define WINDOW_SYSBACKGROUND_LOGOWIDTH  60
+#define WINDOW_SYSBACKGROUND_LOGOHEIGHT 60
 
 // window color
 #define WINDOW_COLOR_BACKGROUND                 RGB(255, 255, 255)
@@ -233,6 +236,7 @@ typedef struct k_Window {
 	// Child-related Fields
 	//--------------------------------------------------
 	ListLink childLink; // child link
+	void* widget;       // child window widget
 	qword parentId;     // parent ID: Only child window has valid parent ID.
 	List childList;     // child list: [NOTE] Child window has no title bar.
 } Window; // Window is ListItem.
@@ -281,12 +285,13 @@ void k_initGuiSystem(void);
 WindowManager* k_getWindowManager(void);
 qword k_getBackgroundWindowId(void);
 void k_getScreenArea(Rect* screenArea);
-qword k_createWindow(int x, int y, int width, int height, dword flags, const char* title, Color backgroundColor, Menu* topMenu, qword parentId);
+qword k_createWindow(int x, int y, int width, int height, dword flags, const char* title, Color backgroundColor, Menu* topMenu, void* widget, qword parentId);
 bool k_deleteWindow(qword windowId);
 bool k_deleteWindowsByTask(qword taskId);
 bool k_closeWindowsByTask(qword taskId);
 Window* k_getWindow(qword windowId);
 Window* k_getWindowWithLock(qword windowId);
+bool k_isWindowShown(qword windowId);
 bool k_showWindow(qword windowId, bool show);
 bool k_redrawWindowByArea(qword windowId, const Rect* area); // screen coordinates
 static void k_copyWindowBufferToVideoMem(const Window* window, ScreenBitmap* bitmap);
@@ -313,6 +318,7 @@ bool k_resizeWindow(qword windowId, int x, int y, int width, int height);
 void k_moveChildWindows(qword windowId, int moveX, int moveY);
 void k_showChildWindows(qword windowId, bool show, dword flags, bool parentToTop);
 void k_deleteChildWindows(qword windowId);
+void* k_getNthChildWidget(qword windowId, int n);
 
 /* Coordinates Conversion Functions */
 bool k_getWindowArea(qword windowId, Rect* area);

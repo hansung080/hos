@@ -33,7 +33,7 @@ void k_imageViewerTask(void) {
 	windowWidth = FONT_DEFAULT_WIDTH * FS_MAXFILENAMELENGTH + 165;
 	windowHeight = WINDOW_TITLEBAR_HEIGHT + 40;
 
-	windowId = k_createWindow((screenArea.x2 - windowWidth) / 2, screenArea.y1 + WINDOW_SYSMENU_HEIGHT, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW | WINDOW_FLAGS_BLOCKING, "Image Viewer", WINDOW_COLOR_BACKGROUND, null, WINDOW_INVALIDID);
+	windowId = k_createWindow((screenArea.x2 - windowWidth) / 2, screenArea.y1 + WINDOW_SYSMENU_HEIGHT, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW | WINDOW_FLAGS_BLOCKING, IMGVWR_TITLE, WINDOW_COLOR_BACKGROUND, null, null, WINDOW_INVALIDID);
 	if (windowId == WINDOW_INVALIDID) {
 		return;
 	}
@@ -230,7 +230,7 @@ static bool k_showImage(qword mainWindowId, const char* fileName) {
 	}
 
 	k_getScreenArea(&screenArea);
-	windowId = k_createWindow((screenArea.x2 - jpeg->width) / 2, (screenArea.y2 - jpeg->height) / 2, jpeg->width, jpeg->height + WINDOW_TITLEBAR_HEIGHT, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW | WINDOW_FLAGS_RESIZABLE | WINDOW_FLAGS_BLOCKING, fileName, WINDOW_COLOR_BACKGROUND, null, WINDOW_INVALIDID);
+	windowId = k_createWindow((screenArea.x2 - jpeg->width) / 2, (screenArea.y2 - jpeg->height) / 2, jpeg->width, jpeg->height + WINDOW_TITLEBAR_HEIGHT, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW | WINDOW_FLAGS_RESIZABLE | WINDOW_FLAGS_BLOCKING, fileName, WINDOW_COLOR_BACKGROUND, null, null, WINDOW_INVALIDID);
 	if (windowId == WINDOW_INVALIDID) {
 		k_printf("[image viewer error] image viewer creation failure\n");
 		k_freeMem(imageBuffer);

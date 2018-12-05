@@ -74,7 +74,7 @@ bool k_createMenu(Menu* menu, int x, int y, int itemHeight, Color* colors, qword
 			optionalFlags |= WINDOW_FLAGS_VISIBLE;
 		}
 
-		windowId = k_createWindow(x, y, windowWidth, windowHeight, WINDOW_FLAGS_CHILD | WINDOW_FLAGS_MENU | optionalFlags, MENU_TITLE, menu->backgroundColor, null, parentId);
+		windowId = k_createWindow(x, y, windowWidth, windowHeight, WINDOW_FLAGS_CHILD | WINDOW_FLAGS_MENU | optionalFlags, MENU_TITLE, menu->backgroundColor, null, menu, parentId);
 		if (windowId == WINDOW_INVALIDID) {
 			return false;
 		}	
@@ -139,10 +139,10 @@ bool k_processMenuEvent(Menu* menu) {
 }
 
 static void k_processMenuActivity(Menu* menu, int mouseX, int mouseY) {
-	int currentIndex;
+	int index;
 
-	currentIndex = k_getMenuItemIndex(menu, mouseX, mouseY);
-	if ((currentIndex == -1) || (currentIndex == menu->prevIndex)) {
+	index = k_getMenuItemIndex(menu, mouseX, mouseY);
+	if ((index == -1) || (index == menu->prevIndex)) {
 		return;
 	}
 
@@ -153,27 +153,27 @@ static void k_processMenuActivity(Menu* menu, int mouseX, int mouseY) {
 		}
 	}
 
-	k_drawMenuItem(menu, currentIndex, true, menu->textColor, menu->backgroundColor, menu->activeColor);
-	if (menu->table[currentIndex].hasSubMenu == true) {
-		k_changeMenuVisibility((Menu*)menu->table[currentIndex].param, true);
+	k_drawMenuItem(menu, index, true, menu->textColor, menu->backgroundColor, menu->activeColor);
+	if (menu->table[index].hasSubMenu == true) {
+		k_changeMenuVisibility((Menu*)menu->table[index].param, true);
 	}
 
-	menu->prevIndex = currentIndex;
+	menu->prevIndex = index;
 }
 
 static void k_processMenuFunction(Menu* menu, int mouseX, int mouseY) {
-	int currentIndex;
+	int index;
 
-	currentIndex = k_getMenuItemIndex(menu, mouseX, mouseY);
-	if (currentIndex == -1) {
+	index = k_getMenuItemIndex(menu, mouseX, mouseY);
+	if (index == -1) {
 		return;
 	}
 
-	if (menu->table[currentIndex].hasSubMenu == true) {
-		k_toggleMenuVisibility((Menu*)menu->table[currentIndex].param, menu, currentIndex);
+	if (menu->table[index].hasSubMenu == true) {
+		k_toggleMenuVisibility((Menu*)menu->table[index].param, menu, index);
 
 	} else {
-		k_drawMenuItem(menu, currentIndex, false, menu->textColor, menu->backgroundColor, menu->activeColor);
+		k_drawMenuItem(menu, index, false, menu->textColor, menu->backgroundColor, menu->activeColor);
 
 		if (menu->parentId != WINDOW_INVALIDID) {
 			k_showChildWindows(menu->parentId, false, WINDOW_FLAGS_MENU, false);
@@ -184,8 +184,8 @@ static void k_processMenuFunction(Menu* menu, int mouseX, int mouseY) {
 		}
 	}
 
-	if (menu->table[currentIndex].func != null) {
-		menu->table[currentIndex].func(menu->table[currentIndex].param);
+	if (menu->table[index].func != null) {
+		menu->table[index].func(menu->table[index].param);
 	}
 }
 
@@ -208,9 +208,9 @@ static void k_clearMenuActivity(Menu* menu, int mouseX, int mouseY) {
 		if (menu->table[menu->prevIndex].hasSubMenu == true) {
 			k_changeMenuVisibility(sub, false);
 		}
-	}
 
-	menu->prevIndex = -1;
+		menu->prevIndex = -1;	
+	}
 }
 
 void k_changeMenuVisibility(Menu* sub, bool visible) {

@@ -4,7 +4,10 @@
 #include "../core/types.h"
 #include "../core/window.h"
 
-// image viewer color
+// title
+#define IMGVWR_TITLE "Image Viewer"
+
+// color
 #define IMGVWR_COLOR_BUTTONACTIVE RGB(109, 213, 237)
 
 void k_imageViewerTask(void);

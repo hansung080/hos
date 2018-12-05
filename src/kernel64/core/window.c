@@ -157,9 +157,9 @@ void k_initGuiSystem(void) {
 
 	/* create background window */
 	// set 0 to flags in order not to show. After drawing background color, It will show.
-	backgroundId = k_createWindow(0, 0, vbeMode->xResolution, vbeMode->yResolution, 0, WINDOW_SYSBACKGROUND_TITLE, WINDOW_COLOR_SYSBACKGROUND, null, WINDOW_INVALIDID);
+	backgroundId = k_createWindow(0, 0, vbeMode->xResolution, vbeMode->yResolution, 0, WINDOW_SYSBACKGROUND_TITLE, WINDOW_COLOR_SYSBACKGROUND, null, null, WINDOW_INVALIDID);
 	g_windowManager.backgroundId = backgroundId;
-	k_drawHansLogo(g_windowManager.backgroundId, (k_getRectWidth(&g_windowManager.screenArea) - 60) / 2, (k_getRectHeight(&g_windowManager.screenArea) - 60) / 2, 60, 60, WINDOW_COLOR_SYSBACKGROUNDLOGOBRIGHT, WINDOW_COLOR_SYSBACKGROUNDLOGODARK);
+	k_drawHansLogo(g_windowManager.backgroundId, (vbeMode->xResolution - WINDOW_SYSBACKGROUND_LOGOWIDTH) / 2, (vbeMode->yResolution - WINDOW_SYSBACKGROUND_LOGOHEIGHT) / 2, WINDOW_SYSBACKGROUND_LOGOWIDTH, WINDOW_SYSBACKGROUND_LOGOHEIGHT, WINDOW_COLOR_SYSBACKGROUNDLOGOBRIGHT, WINDOW_COLOR_SYSBACKGROUNDLOGODARK);
 	//k_drawBackgroundImage();
 	k_showWindow(backgroundId, true);
 }
@@ -176,7 +176,7 @@ void k_getScreenArea(Rect* screenArea) {
 	k_memcpy(screenArea, &g_windowManager.screenArea, sizeof(Rect));
 }
 
-qword k_createWindow(int x, int y, int width, int height, dword flags, const char* title, Color backgroundColor, Menu* topMenu, qword parentId) {
+qword k_createWindow(int x, int y, int width, int height, dword flags, const char* title, Color backgroundColor, Menu* topMenu, void* widget, qword parentId) {
 	Window* window;
 	Window* parent;
 	Task* task;
@@ -244,6 +244,7 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 	window->flags = flags;
 	window->backgroundColor = backgroundColor;
 	window->topMenu = topMenu;
+	window->widget = widget;
 
 	k_initList(&window->childList);
 
@@ -268,7 +269,7 @@ qword k_createWindow(int x, int y, int width, int height, dword flags, const cha
 	}
 
 	if (topMenu != null) {
-		k_createMenu(topMenu, (FONT_DEFAULT_WIDTH * k_strlen(title)) + (MENU_ITEMWIDTHPADDING * 2), 0, MENU_ITEMHEIGHT_TITLEBAR, null, window->link.id, topMenu, MENU_FLAGS_HORIZONTAL | MENU_FLAGS_DRAWONPARENT);
+		k_createMenu(topMenu, (FONT_DEFAULT_WIDTH * k_strlen(title)) + (MENU_ITEMWIDTHPADDING * 2), 0, MENU_ITEMHEIGHT_TITLEBAR, null, window->link.id, null, MENU_FLAGS_HORIZONTAL | MENU_FLAGS_DRAWONPARENT);
 	}
 
 	if (flags & WINDOW_FLAGS_DRAWTITLEBAR) {
@@ -449,6 +450,21 @@ Window* k_getWindowWithLock(qword windowId) {
 	}
 
 	return window;
+}
+
+bool k_isWindowShown(qword windowId) {
+	Window* window;
+
+	window = k_getWindow(windowId);
+	if (window == null) {
+		return false;
+	}
+
+	if (window->flags & WINDOW_FLAGS_SHOW) {
+		return true;
+	}
+
+	return false;
 }
 
 bool k_showWindow(qword windowId, bool show) {
@@ -1226,6 +1242,7 @@ bool k_resizeWindow(qword windowId, int x, int y, int width, int height) {
 	/* change window buffer */
 	newBuffer = (Color*)k_allocMem(sizeof(Color) * width * height);
 	if (newBuffer == null) {
+		k_unlock(&window->mutex);
 		return false;
 	}
 
@@ -1361,6 +1378,34 @@ void k_deleteChildWindows(qword windowId) {
 	}
 
 	k_unlock(&window->mutex);
+}
+
+void* k_getNthChildWidget(qword windowId, int n) {
+	Window* window;
+	void* childLink;
+	Window* child;
+	int count = 0;
+
+	window = k_getWindowWithLock(windowId);
+	if (window == null) {
+		return null;
+	}
+
+	childLink = k_getHeadFromList(&window->childList);
+	while (childLink != null) {
+		child = GETWINDOWFROMCHILDLINK(childLink);
+		if (count == n) {
+			k_unlock(&window->mutex);
+			return child->widget;
+		}
+
+		childLink = k_getNextFromList(&window->childList, childLink);
+		count++;
+	}
+
+	k_unlock(&window->mutex);
+
+	return null;	
 }
 
 bool k_getWindowArea(qword windowId, Rect* area) {

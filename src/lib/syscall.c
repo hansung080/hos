@@ -407,7 +407,7 @@ void getScreenArea(Rect* screenArea) {
 	executeSyscall(SYSCALL_GETSCREENAREA, &paramTable);
 }
 
-qword createWindow(int x, int y, int width, int height, dword flags, const char* title, Color backgroundColor, Menu* topMenu, qword parentId) {
+qword createWindow(int x, int y, int width, int height, dword flags, const char* title, Color backgroundColor, Menu* topMenu, void* widget, qword parentId) {
 	ParamTable paramTable;
 
 	PARAM(0) = (qword)x;
@@ -418,7 +418,8 @@ qword createWindow(int x, int y, int width, int height, dword flags, const char*
 	PARAM(5) = (qword)title;
 	PARAM(6) = (qword)backgroundColor;
 	PARAM(7) = (qword)topMenu;
-	PARAM(8) = parentId;
+	PARAM(8) = (qword)widget;
+	PARAM(9) = parentId;
 
 	return executeSyscall(SYSCALL_CREATEWINDOW, &paramTable);
 }
@@ -429,6 +430,14 @@ bool deleteWindow(qword windowId) {
 	PARAM(0) = windowId;
 
 	return (bool)executeSyscall(SYSCALL_DELETEWINDOW, &paramTable);
+}
+
+bool isWindowShown(qword windowId) {
+	ParamTable paramTable;
+
+	PARAM(0) = windowId;
+
+	return (bool)executeSyscall(SYSCALL_ISWINDOWSHOWN, &paramTable);
 }
 
 bool showWindow(qword windowId, bool show) {
@@ -582,6 +591,15 @@ void deleteChildWindows(qword windowId) {
 	PARAM(0) = windowId;
 
 	executeSyscall(SYSCALL_DELETECHILDWINDOWS, &paramTable);
+}
+
+void* k_getNthChildWidget(qword windowId, int n) {
+	ParamTable paramTable;
+
+	PARAM(0) = windowId;
+	PARAM(1) = (qword)n;
+
+	return (void*)executeSyscall(SYSCALL_GETNTHCHILDWIDGET, &paramTable);
 }
 
 bool getWindowArea(qword windowId, Rect* area) {

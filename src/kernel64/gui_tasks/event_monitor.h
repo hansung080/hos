@@ -4,7 +4,10 @@
 #include "../core/types.h"
 #include "../core/2d_graphics.h"
 
-// event monitor color
+// title
+#define EVTMTR_TITLE "Event Monitor"
+
+// color
 #define EVTMTR_COLOR_BUTTONACTIVE RGB(109, 213, 237)
 
 // user event: set bit 31 to 1 in order not to duplicate with the already defined events.

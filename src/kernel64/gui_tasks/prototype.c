@@ -82,7 +82,7 @@ void k_prototypeTask(void) {
 
 	/* create window */
 	k_getMouseCursorPos(&mouseX, &mouseY);
-	windowId = k_createWindow(mouseX + 50, mouseY + 50, 400, 200, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_RESIZABLE, "Prototype", WINDOW_COLOR_BACKGROUND, &topMenu, WINDOW_INVALIDID);
+	windowId = k_createWindow(mouseX + 50, mouseY + 50, 400, 200, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_RESIZABLE, PROTOTYPE_TITLE, WINDOW_COLOR_BACKGROUND, &topMenu, null, WINDOW_INVALIDID);
 	if (windowId == WINDOW_INVALIDID) {
 		k_printf("[prototype error] window creation failure\n");
 		return;

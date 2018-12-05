@@ -20,7 +20,7 @@ void k_colorPickerTask(void) {
 
 	/* create window */
 	k_getScreenArea(&screenArea);
-	cp.windowId = k_createWindow(screenArea.x2 - COLPKR_WIDTH, screenArea.y1 + WINDOW_SYSMENU_HEIGHT, COLPKR_WIDTH, COLPKR_HEIGHT, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_BLOCKING, "Color Picker", WINDOW_COLOR_BACKGROUND, null, WINDOW_INVALIDID);
+	cp.windowId = k_createWindow(screenArea.x2 - COLPKR_WIDTH, screenArea.y1 + WINDOW_SYSMENU_HEIGHT, COLPKR_WIDTH, COLPKR_HEIGHT, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_BLOCKING, COLPKR_TITLE, WINDOW_COLOR_BACKGROUND, null, null, WINDOW_INVALIDID);
 	if (cp.windowId == WINDOW_INVALIDID) {
 		return;
 	}

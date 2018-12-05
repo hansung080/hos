@@ -91,8 +91,9 @@ byte k_getApicId(void);
 /*** Syscall from window.h ***/
 qword getBackgroundWindowId(void);
 void getScreenArea(Rect* screenArea);
-qword createWindow(int x, int y, int width, int height, dword flags, const char* title, Color backgroundColor, Menu* topMenu, qword parentId);
+qword createWindow(int x, int y, int width, int height, dword flags, const char* title, Color backgroundColor, Menu* topMenu, void* widget, qword parentId);
 bool deleteWindow(qword windowId);
+bool isWindowShown(qword windowId);
 bool showWindow(qword windowId, bool show);
 qword findWindowByPoint(int x, int y);
 qword findWindowByTitle(const char* title);
@@ -110,6 +111,7 @@ bool resizeWindow(qword windowId, int x, int y, int width, int height);
 void moveChildWindows(qword windowId, int moveX, int moveY);
 void showChildWindows(qword windowId, bool show, dword flags, bool parentToTop);
 void deleteChildWindows(qword windowId);
+void* getNthChildWidget(qword windowId, int n);
 bool getWindowArea(qword windowId, Rect* area);
 bool sendEventToWindow(const Event* event, qword windowId);
 bool recvEventFromWindow(Event* event, qword windowId);

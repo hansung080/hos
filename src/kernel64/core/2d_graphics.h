@@ -31,6 +31,12 @@ typedef struct k_Rect {
 	int y2; // y of end point (bottom-right)
 } Rect;
 
+typedef struct k_Circle {
+	int x;      // x of origin
+	int y;      // y of origin
+	int radius; // radius
+} Circle;
+
 #pragma pack(pop)
 
 /* Color Functions */
@@ -44,6 +50,10 @@ int k_getRectHeight(const Rect* rect);
 bool k_isPointInRect(const Rect* rect, int x, int y);
 bool k_isRectOverlapped(const Rect* rect1, const Rect* rect2);
 bool k_getOverlappedRect(const Rect* rect1, const Rect* rect2, Rect* overRect);
+
+/* Circle Functions */
+void k_setCircle(Circle* circle, int x, int y, int radius);
+bool k_isPointInCircle(const Circle* circle, int x, int y);
 
 /* Drawing Functions */
 void __k_drawPixel(Color* outBuffer, const Rect* area, int x, int y, Color color);

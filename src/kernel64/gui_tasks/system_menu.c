@@ -4,7 +4,10 @@
 #include "../utils/queue.h"
 #include "../core/rtc.h"
 #include "../core/task.h"
+#include "app_panel.h"
 #include "shell.h"
+
+Menu* g_systemMenu = null;
 
 void k_systemMenuTask(void) {
 	MenuItem systemMenuTable[] = {
@@ -46,14 +49,14 @@ void k_systemMenuTask(void) {
 
 	/* create window */
 	windowManager = k_getWindowManager();
-	windowId = k_createWindow(0, 0, windowManager->screenArea.x2 + 1, SYSMENU_HEIGHT, 0, SYSMENU_TITLE, SYSMENU_COLOR_BACKGROUND, null, WINDOW_INVALIDID);
+	windowId = k_createWindow(0, 0, windowManager->screenArea.x2 + 1, SYSMENU_HEIGHT, 0, SYSMENU_TITLE, SYSMENU_COLOR_BACKGROUND, null, null, WINDOW_INVALIDID);
 	if (windowId == WINDOW_INVALIDID) {
 		k_printf("[system menu error] window creation failure\n");
 		return;
 	}
 
 	/* create menus */
-	if (k_createMenu(&systemMenu, 10, 0, MENU_ITEMHEIGHT_SYSMENU, null, windowId, &systemMenu, MENU_FLAGS_HORIZONTAL | MENU_FLAGS_VISIBLE) == false) {
+	if (k_createMenu(&systemMenu, 10, 0, MENU_ITEMHEIGHT_SYSMENU, null, windowId, null, MENU_FLAGS_HORIZONTAL | MENU_FLAGS_VISIBLE) == false) {
 		k_printf("[system menu error] system menu creation failure\n");
 		return;
 	}
@@ -65,6 +68,7 @@ void k_systemMenuTask(void) {
 	}
 
 	systemMenu.table[0].param = (qword)&hansosMenu;
+	g_systemMenu = &systemMenu;
 
 	/* draw clock */
 	k_setClock(&clock, windowId, windowManager->screenArea.x2 - CLOCK_MAXWIDTH - 10, (SYSMENU_HEIGHT - CLOCK_HEIGHT) / 2, RGB(255, 255, 255), SYSMENU_COLOR_BACKGROUND, CLOCK_FORMAT_HMA, false);
@@ -97,6 +101,7 @@ void k_systemMenuTask(void) {
 		k_processMenuEvent(&clockMenu);
 	}
 	
+	g_systemMenu = null;
 	k_closeEpoll(&epoll);
 	k_removeClock(clock.link.id);
 }
@@ -126,7 +131,12 @@ static bool k_processSystemMenuEvent(qword windowId, Clock* clock, Menu* clockMe
 }
 
 static void k_funcApps(qword parentId) {
+	if (g_appPanel == null) {
+		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_appPanelTask, TASK_AFFINITY_LB);
 
+	} else {
+		k_togglePanelVisibility(g_appPanel, g_systemMenu, SYSMENU_INDEX_APPS);
+	}
 }
 
 static void k_funcShell(qword parentId) {

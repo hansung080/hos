@@ -5,6 +5,10 @@
 #include "../core/widgets.h"
 #include "../utils/queue.h"
 
+// title
+#define PROTOTYPE_TITLE "Prototype"
+
+// top menu index
 #define PROTOTYPE_TOPMENU_ANIMALS 0
 #define PROTOTYPE_TOPMENU_FRUITS  1
 #define PROTOTYPE_TOPMENU_ROBOT   2

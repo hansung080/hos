@@ -47,8 +47,8 @@ void k_eventMonitorTask(void) {
 	k_getMouseCursorPos(&mouseX, &mouseY);
 	windowWidth = 500;
 	windowHeight = 200;
-	k_sprintf(tempBuffer, "Event Monitor %d", ++windowCount);
-	windowId = k_createWindow(mouseX - 10, mouseY - WINDOW_TITLEBAR_HEIGHT / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_BLOCKING, tempBuffer, WINDOW_COLOR_BACKGROUND, null, WINDOW_INVALIDID);
+	k_sprintf(tempBuffer, "%s %d", EVTMTR_TITLE, ++windowCount);
+	windowId = k_createWindow(mouseX - 10, mouseY - WINDOW_TITLEBAR_HEIGHT / 2, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_BLOCKING, tempBuffer, WINDOW_COLOR_BACKGROUND, null, null, WINDOW_INVALIDID);
 	if (windowId == WINDOW_INVALIDID) {
 		return;
 	}

@@ -39,7 +39,7 @@ void k_systemMonitorTask(void) {
 		windowWidth += 40;
 	}
 
-	windowId = k_createWindow(windowManager->screenArea.x2 - windowWidth, windowManager->screenArea.y1 + WINDOW_SYSMENU_HEIGHT, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW, "System Monitor", WINDOW_COLOR_BACKGROUND, null, WINDOW_INVALIDID);
+	windowId = k_createWindow(windowManager->screenArea.x2 - windowWidth, windowManager->screenArea.y1 + WINDOW_SYSMENU_HEIGHT, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW, SYSMTR_TITLE, WINDOW_COLOR_BACKGROUND, null, null, WINDOW_INVALIDID);
 	if (windowId == WINDOW_INVALIDID) {
 		return;
 	}

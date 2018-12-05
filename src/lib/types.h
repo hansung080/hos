@@ -178,14 +178,17 @@ typedef word Color;
 #define WINDOW_FLAGS_CHILD        0x00000040
 #define WINDOW_FLAGS_VISIBLE      0x00000080
 #define WINDOW_FLAGS_MENU         0x00000100
+#define WINDOW_FLAGS_PANEL        0x00000200
 #define WINDOW_FLAGS_DEFAULT      (WINDOW_FLAGS_SHOW | WINDOW_FLAGS_DRAWFRAME | WINDOW_FLAGS_DRAWTITLEBAR)
 
 // window size
-#define WINDOW_TITLEBAR_HEIGHT 21 // title bar height
-#define WINDOW_XBUTTON_SIZE    19 // close button and resize button size
-#define WINDOW_MINWIDTH        (WINDOW_XBUTTON_SIZE * 2 + 30) // min window width
-#define WINDOW_MINHEIGHT       (WINDOW_TITLEBAR_HEIGHT + 30)  // min window height
-#define WINDOW_SYSMENU_HEIGHT  24
+#define WINDOW_TITLEBAR_HEIGHT          21
+#define WINDOW_XBUTTON_SIZE             19
+#define WINDOW_MINWIDTH                 (WINDOW_XBUTTON_SIZE * 2 + 30)
+#define WINDOW_MINHEIGHT                (WINDOW_TITLEBAR_HEIGHT + 30)
+#define WINDOW_SYSMENU_HEIGHT           24
+#define WINDOW_SYSBACKGROUND_LOGOWIDTH  60
+#define WINDOW_SYSBACKGROUND_LOGOHEIGHT 60
 
 // window color
 #define WINDOW_COLOR_BACKGROUND                 RGB(255, 255, 255)

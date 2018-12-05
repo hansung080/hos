@@ -8,7 +8,7 @@
 #include "../core/multiprocessor.h"
 
 static Char g_prevScreenBuffer[CONSOLE_WIDTH * CONSOLE_HEIGHT];
-volatile qword g_guiShellWindowId = WINDOW_INVALIDID;
+volatile qword g_guiShellId = WINDOW_INVALIDID;
 
 void k_guiShellTask(void) {
 	Rect screenArea;
@@ -28,8 +28,8 @@ void k_guiShellTask(void) {
 
 	// GUI shell window had better exist only one,
 	// even though user executes shell app many times.
-	if (g_guiShellWindowId != WINDOW_INVALIDID) {
-		k_moveWindowToTop(g_guiShellWindowId);
+	if (g_guiShellId != WINDOW_INVALIDID) {
+		k_moveWindowToTop(g_guiShellId);
 		return;
 	}
 
@@ -41,8 +41,8 @@ void k_guiShellTask(void) {
 	windowWidth = FONT_DEFAULT_WIDTH * CONSOLE_WIDTH + 4;
 	windowHeight = FONT_DEFAULT_HEIGHT * CONSOLE_HEIGHT + WINDOW_TITLEBAR_HEIGHT + 2;
 
-	g_guiShellWindowId = k_createWindow(screenArea.x1, screenArea.y2 - windowHeight, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT, "Shell", GUISH_COLOR_BACKGROUND, null, WINDOW_INVALIDID);
-	if (g_guiShellWindowId == WINDOW_INVALIDID) {
+	g_guiShellId = k_createWindow(screenArea.x1, screenArea.y2 - windowHeight, windowWidth, windowHeight, WINDOW_FLAGS_DEFAULT, GUISH_TITLE, GUISH_COLOR_BACKGROUND, null, null, WINDOW_INVALIDID);
+	if (g_guiShellId == WINDOW_INVALIDID) {
 		return;
 	}
 
@@ -51,7 +51,7 @@ void k_guiShellTask(void) {
 
 	shellTask = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_shellTask, TASK_AFFINITY_LB);
 	if (shellTask == null) {
-		k_deleteWindow(g_guiShellWindowId);
+		k_deleteWindow(g_guiShellId);
 		return;
 	}
 
@@ -61,9 +61,9 @@ void k_guiShellTask(void) {
 	
 	/* event processing loop */
 	while (true) {
-		k_processConsoleScreenBuffer(g_guiShellWindowId);
+		k_processConsoleScreenBuffer(g_guiShellId);
 
-		if (k_recvEventFromWindow(&event, g_guiShellWindowId) == false) {
+		if (k_recvEventFromWindow(&event, g_guiShellId) == false) {
 			k_sleep(0);
 			continue;
 		}
@@ -75,9 +75,8 @@ void k_guiShellTask(void) {
 				k_sleep(1);
 			}
 
-			k_deleteWindow(g_guiShellWindowId);
-			g_guiShellWindowId = WINDOW_INVALIDID;
-
+			k_deleteWindow(g_guiShellId);
+			g_guiShellId = WINDOW_INVALIDID;
 			return;
 
 		case EVENT_KEY_DOWN:
@@ -89,13 +88,14 @@ void k_guiShellTask(void) {
 			key.flags = keyEvent->flags;
 
 			k_putKeyToConsoleKeyQueue(&key);
-
 			break;
 
 		default:
 			break;
 		}
 	}
+
+	g_guiShellId = WINDOW_INVALIDID;
 }
 
 static void k_processConsoleScreenBuffer(qword windowId) {

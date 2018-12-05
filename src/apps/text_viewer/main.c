@@ -43,7 +43,7 @@ int main(const char* args) {
 	x = (getRectWidth(&screenArea) - width) / 2;
 	y = (getRectHeight(&screenArea) - height) / 2;
 
-	windowId = createWindow(x, y, width, height, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_RESIZABLE | WINDOW_FLAGS_BLOCKING, "Text Viewer", WINDOW_COLOR_BACKGROUND, null, WINDOW_INVALIDID);
+	windowId = createWindow(x, y, width, height, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_RESIZABLE | WINDOW_FLAGS_BLOCKING, TITLE, WINDOW_COLOR_BACKGROUND, null, null, WINDOW_INVALIDID);
 	if (windowId == WINDOW_INVALIDID) {
 		printf("[text viewer error] window creation failure\n");
 		return -1;

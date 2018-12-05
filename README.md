@@ -36,7 +36,7 @@ on your computer or QEMU.
 - serial port driver
 - multi-core processing: process interrupt load balancing and task load balancing.
 - GUI system: consist of 2D graphics libraries, mouse driver, window, window manager, event queue
-- GUI tasks: base, event-monitor, app-panel, system-monitor, shell, image-viewer, color-picker
+- GUI tasks: prototype, event-monitor, system-menu, app-panel, system-monitor, shell, image-viewer, color-picker
 - system call and user libraries
 - applications: event-monitor, test-elf, text-viewer
 
@@ -152,6 +152,7 @@ on your computer or QEMU.
 < Window Color >
 - reference site
 https://digitalsynopsis.com/
+https://digitalsynopsis.com/design/beautiful-color-schemes-combinations-palettes/
 https://webgradients.com/
 
 - blue: RGB(109, 213, 237) #6dd5ed -> graph bar, button clicked
