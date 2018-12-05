@@ -747,6 +747,20 @@ bool getOverlappedRect(const Rect* rect1, const Rect* rect2, Rect* overRect) {
 	return true;
 }
 
+void k_setCircle(Circle* circle, int x, int y, int radius) {
+	circle->x = x;
+	circle->y = y;
+	circle->radius = radius;
+}
+
+bool k_isPointInCircle(const Circle* circle, int x, int y) {
+	if (((x - circle->x) * (x - circle->x) + (y - circle->y) * (y - circle->y)) <= (circle->radius * circle->radius)) {
+		return true;
+	}
+
+	return false;
+}
+
 bool convertPointScreenToWindow(qword windowId, const Point* screenPoint, Point* windowPoint) {
 	Rect area;
 

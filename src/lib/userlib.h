@@ -66,6 +66,8 @@ int getRectHeight(const Rect* rect);
 bool isPointInRect(const Rect* rect, int x, int y);
 bool isRectOverlapped(const Rect* rect1, const Rect* rect2);
 bool getOverlappedRect(const Rect* rect1, const Rect* rect2, Rect* overRect);
+void setCircle(Circle* circle, int x, int y, int radius);
+bool isPointInCircle(const Circle* circle, int x, int y);
 
 /* Window Functions */
 bool convertPointScreenToWindow(qword windowId, const Point* screenPoint, Point* windowPoint);

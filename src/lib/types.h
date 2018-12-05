@@ -381,6 +381,12 @@ typedef struct __Rect {
 	int y2; // y of end point (bottom-right)
 } Rect;
 
+typedef struct __Circle {
+	int x;      // x of origin
+	int y;      // y of origin
+	int radius; // radius
+} Circle;
+
 //----------------------------------------------------------------------------------------------------
 // Struct from window.h
 //----------------------------------------------------------------------------------------------------
