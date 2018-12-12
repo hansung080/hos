@@ -1,8 +1,9 @@
-#include "loader.h"
+#include "app_manager.h"
 #include "file_system.h"
 #include "console.h"
 #include "dynamic_mem.h"
 #include "../utils/util.h"
+#include "../gui_tasks/app_panel.h"
 
 qword k_executeApp(const char* fileName, const char* args, byte affinity) {
 	dword fileSize;
@@ -34,26 +35,26 @@ qword k_executeApp(const char* fileName, const char* args, byte affinity) {
 	closedir(dir);
 
 	if (fileSize == 0) {
-		k_printf("loader error: %s does not exist or is zero-sized.\n", fileName);
+		k_printf("app manager error: %s does not exist or is zero-sized.\n", fileName);
 		return TASK_INVALIDID;
 	}
 
 	/* read file */
 	fileBuffer = (byte*)k_allocMem(fileSize);
 	if (fileBuffer == null) {
-		k_printf("loader error: file buffer allocation failure\n");
+		k_printf("app manager error: file buffer allocation failure\n");
 		return TASK_INVALIDID;
 	}
 
 	file = fopen(fileName, "r");
 	if (file == null) {
-		k_printf("loader error: %s opening failure\n", fileName);
+		k_printf("app manager error: %s opening failure\n", fileName);
 		k_freeMem(fileBuffer);
 		return TASK_INVALIDID;
 	}
 
 	if (fread(fileBuffer, 1, fileSize, file) != fileSize) {
-		k_printf("loader error: %s reading failure\n", fileName);
+		k_printf("app manager error: %s reading failure\n", fileName);
 		fclose(file);
 		k_freeMem(fileBuffer);
 		return TASK_INVALIDID;
@@ -63,7 +64,7 @@ qword k_executeApp(const char* fileName, const char* args, byte affinity) {
 
 	/* load and relocate sections */
 	if (k_loadSections(fileBuffer, &appMemAddr, &appMemSize, &entryPointAddr) == false) {
-		k_printf("loader error: sections loading or relocation failure\n");
+		k_printf("app manager error: sections loading or relocation failure\n");
 		k_freeMem(fileBuffer);
 		return TASK_INVALIDID;
 	}
@@ -71,13 +72,13 @@ qword k_executeApp(const char* fileName, const char* args, byte affinity) {
 	k_freeMem(fileBuffer);
 
 	#if __DEBUG__
-	k_printf("loader debug: execute '%s' with args: '%s'\n", fileName, args);
+	k_printf("app manager debug: execute '%s' with args: '%s'\n", fileName, args);
 	#endif // __DEBUG__
 
 	/* create task and add argument string to task */
 	task = k_createTask(TASK_FLAGS_PROCESS | TASK_FLAGS_USER, (void*)appMemAddr, appMemSize, entryPointAddr, affinity);
 	if (task == null) {
-		k_printf("loader error: task creation failure\n");
+		k_printf("app manager error: task creation failure\n");
 		k_freeMem((void*)appMemAddr);
 		return TASK_INVALIDID;
 	}
@@ -122,7 +123,7 @@ static bool k_loadSections(const byte* fileBuffer, qword* appMemAddr, qword* app
 		(eh->e_ident[EI_CLASS] != ELFCLASS64) ||
 		(eh->e_ident[EI_DATA] != ELFDATA2LSB) ||
 		(eh->e_type != ET_REL)) {
-		k_printf("loader error: invalid ELF file\n");
+		k_printf("app manager error: invalid ELF file\n");
 		return false;
 	}
 
@@ -140,7 +141,7 @@ static bool k_loadSections(const byte* fileBuffer, qword* appMemAddr, qword* app
 	
 	memAddr = (byte*)k_allocMem(memSize);
 	if (memAddr == null) {
-		k_printf("loader error: application memory allocation failure\n");
+		k_printf("app manager error: application memory allocation failure\n");
 		return false;
 	}
 
@@ -167,19 +168,19 @@ static bool k_loadSections(const byte* fileBuffer, qword* appMemAddr, qword* app
 			k_memcpy((void*)sh[i].sh_addr, fileBuffer + sh[i].sh_offset, sh[i].sh_size);
 		}
 
-		//k_printf("loader info: section %d loading: from file 0x%q to memory 0x%q, size 0x%q\n", i, sh[i].sh_offset, sh[i].sh_addr, sh[i].sh_size);
+		//k_printf("app manager info: section %d loading: from file 0x%q to memory 0x%q, size 0x%q\n", i, sh[i].sh_offset, sh[i].sh_addr, sh[i].sh_size);
 	}
 
-	//k_printf("loader info: sections loading success\n");
+	//k_printf("app manager info: sections loading success\n");
 
 	/* relocate sections */
 	if (k_relocateSections(fileBuffer) == false) {
-		k_printf("loader error: sections relocation failure\n");
+		k_printf("app manager error: sections relocation failure\n");
 		k_freeMem(memAddr);	
 		return false;
 	}
 
-	//k_printf("loader info: sections relocation success\n");
+	//k_printf("app manager info: sections relocation success\n");
 
 	/* copy results */
 	*appMemAddr = (qword)memAddr;
@@ -250,7 +251,7 @@ static bool k_relocateSections(const byte* fileBuffer) {
 				continue;
 
 			} else if (symdef_shndx == SHN_COMMON) {
-				k_printf("loader error: common symbol not supported\n");
+				k_printf("app manager error: common symbol not supported\n");
 				return false;
 			}
 
@@ -285,7 +286,7 @@ static bool k_relocateSections(const byte* fileBuffer) {
 				break;
 
 			default:
-				k_printf("loader error: invalid relocation type: %d\n", REL_TYPE(r_info));
+				k_printf("app manager error: invalid relocation type: %d\n", REL_TYPE(r_info));
 				return false;
 			}
 
@@ -320,7 +321,7 @@ static bool k_relocateSections(const byte* fileBuffer) {
 				break;
 
 			default:
-				k_printf("loader error: invalid relocation type: %d\n", REL_TYPE(r_info));
+				k_printf("app manager error: invalid relocation type: %d\n", REL_TYPE(r_info));
 				return false;
 			}
 
@@ -343,7 +344,7 @@ static bool k_relocateSections(const byte* fileBuffer) {
 				break;
 
 			default:
-				k_printf("loader error: invalid relocation size: %d bytes\n", r_size);
+				k_printf("app manager error: invalid relocation size: %d bytes\n", r_size);
 				return false;
 			}
 		}
@@ -362,8 +363,8 @@ static void k_addArgsToTask(Task* task, const char* args) {
 
 	} else {
 		len = k_strlen(args);
-		if (len > LOADER_MAXARGSLENGTH) {
-			len = LOADER_MAXARGSLENGTH;
+		if (len > APPMGR_MAXARGSLENGTH) {
+			len = APPMGR_MAXARGSLENGTH;
 		}
 	}
 
@@ -376,4 +377,32 @@ static void k_addArgsToTask(Task* task, const char* args) {
 	task->context.registers[TASK_INDEX_RSP] = rsp;
 	task->context.registers[TASK_INDEX_RBP] = rsp;
 	task->context.registers[TASK_INDEX_RDI] = rsp; // RDI (first parameter)
+}
+
+bool k_installApp(const char* fileName) {
+	if (g_appPanel != null) {
+		if (g_appPanel->itemCount >= APPPANEL_MAXITEMCOUNT) {
+			return false;
+		}
+		
+		if (k_addPanelItem(g_appPanel, fileName, k_funcUserApp, k_getUserAppColor(), (qword)g_appPanel->table[g_appPanel->itemCount].name) == false) {
+			return false;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+bool k_uninstallApp(const char* fileName) {
+	if (g_appPanel != null) {
+		if (k_removePanelItem(g_appPanel, fileName) == false) {
+			return false;
+		}
+
+		return true;
+	}
+
+	return false;
 }

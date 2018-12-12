@@ -125,7 +125,7 @@ static bool k_processMouseData(void) {
 	windowManager = k_getWindowManager();
 
 	/* integrate mouse data: integrate only mouse movement data */
-	for (i = 0; i < WINDOWMANAGER_DATAINTEGRATIONCOUNT; i++) {
+	for (i = 0; i < WINMGR_DATAINTEGRATIONCOUNT; i++) {
 		if (k_getMouseDataFromMouseQueue(&buttonStatus, &relativeX, &relativeY) == false) {
 			if (i == 0) {
 				return false;
@@ -333,7 +333,7 @@ static bool k_processKey(void) {
 }
 
 static bool k_processWindowManagerEvent(void) {
-	Event events[WINDOWMANAGER_DATAINTEGRATIONCOUNT];
+	Event events[WINMGR_DATAINTEGRATIONCOUNT];
 	int eventCount;
 	ScreenUpdateEvent* screenUpdateEvent;
 	ScreenUpdateEvent* nextScreenUpdateEvent;
@@ -341,7 +341,7 @@ static bool k_processWindowManagerEvent(void) {
 	int i, j;
 
 	/* accumulate window manager event */
-	for (i = 0; i < WINDOWMANAGER_DATAINTEGRATIONCOUNT; i++) {
+	for (i = 0; i < WINMGR_DATAINTEGRATIONCOUNT; i++) {
 		if (k_recvEventFromWindowManager(&events[i]) == false) {
 			if (i == 0) {
 				return false;

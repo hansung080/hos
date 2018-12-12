@@ -3,6 +3,11 @@
 
 #include "../core/types.h"
 #include "../core/window.h"
+#include "../core/file_system.h"
+
+// app panel item count
+#define APPPANEL_MAXITEMCOUNT   128
+#define APPPANEL_SYSTEMAPPCOUNT 30
 
 // app panel item size
 #define APPPANEL_ITEMSIZE   80
@@ -42,11 +47,11 @@
 
 /* Panel Macros */
 // panel title
-#define PANEL_TITLE       "WIDGET_PANEL"
+#define PANEL_TITLE "WIDGET_PANEL"
 
 // panel size
-#define PANEL_LOGOWIDTH   WINDOW_SYSBACKGROUND_LOGOWIDTH
-#define PANEL_LOGOHEIGHT  WINDOW_SYSBACKGROUND_LOGOHEIGHT
+#define PANEL_LOGOWIDTH  WINDOW_SYSBACKGROUND_LOGOWIDTH
+#define PANEL_LOGOHEIGHT WINDOW_SYSBACKGROUND_LOGOHEIGHT
 
 // panel color
 #define PANEL_COLOR_TEXT       RGB(255, 255, 255)
@@ -56,10 +61,11 @@
 #define PANEL_COLOR_LOGODARK   RGB(150, 230, 161)
 
 // panel flags
-#define PANEL_FLAGS_DRAWLOGO 0x00000001 // 0: not draw logo, 1: draw logo
-#define PANEL_FLAGS_BLOCKING 0x00000002 // 0: create non-blocking window, 1: create blocking window
-#define PANEL_FLAGS_VISIBLE  0x00000004 // 0: create invisible window, 1: create visible window
-#define PANEL_FLAGS_APPPANEL 0x00000008 // 0: not app panel, 1: app panel (temporary flag)
+#define PANEL_FLAGS_DRAWLOGO         0x00000001 // 0: not draw logo, 1: draw logo
+#define PANEL_FLAGS_BLOCKING         0x00000002 // 0: create non-blocking window, 1: create blocking window
+#define PANEL_FLAGS_VISIBLE          0x00000004 // 0: create invisible window, 1: create visible window
+#define PANEL_FLAGS_COPYWITHOUTPARAM 0x00000008 // 0: copy with param, 1: copy without param
+#define PANEL_FLAGS_APPPANEL         0x00000010 // 0: not app panel, 1: app panel (temporary flag)
 
 typedef void (*PanelFunc)(qword param);
 
@@ -67,19 +73,21 @@ typedef void (*PanelFunc)(qword param);
 
 /* Panel Structs */
 typedef struct k_PanelItem {
-	const char* const name1;
-	const char* const name2;
-	const PanelFunc func;
-	const Color color;
+	char name[FS_MAXFILENAMELENGTH];
+	PanelFunc func;
+	Color color;
 	qword param; // Default param is panel ID.
 	Circle area; // window coordinates
 } PanelItem;
 
 typedef struct k_Panel {
 	PanelItem* const table;
-	const int itemCount;
+	int itemCount;
 	qword id;
-	int itemSize; // item size with margin
+	int width;
+	int height;
+	int itemSize;
+	int itemMargin;
 	int columns;
 	int rows;
 	bool visible;
@@ -96,6 +104,8 @@ void k_appPanelTask(void);
 
 /* Panel Functions */
 bool k_createPanel(Panel* panel, int x, int y, int width, int height, int itemSize, int itemMargin, Color* colors, dword flags);
+bool k_addPanelItem(Panel* panel, const char* name, PanelFunc func, Color color, qword param);
+bool k_removePanelItem(Panel* panel, const char* name);
 bool k_processPanelEvent(Panel* panel);
 static void k_processPanelActivity(Panel* panel, int index);
 static void k_processPanelFunction(Panel* panel, int index);
@@ -104,9 +114,12 @@ void k_changePanelVisibility(Panel* panel, Menu* menu, int index, bool visible);
 void k_togglePanelVisibility(Panel* panel, Menu* menu, int index);
 int k_getPanelItemIndex(const Panel* panel, int mouseX, int mouseY); // window coordinates
 bool k_drawPanelItem(const Panel* panel, int index, bool active);
+static void splitPanelItemName(const char* name, char* name1, char* name2);
+Color k_getUserAppColor(void);
 
 /* System App Panel Function */
 static void k_funcSystemApp(qword entryPoint);
+void k_funcUserApp(qword fileName_);
 
 extern Panel* g_appPanel;
 

@@ -126,7 +126,7 @@ void k_initGuiSystem(void) {
 	k_initList(&g_windowManager.windowList);
 
 	// allocate event buffer.
-	g_windowManager.eventBuffer = (Event*)k_allocMem(sizeof(Event) * EVENTQUEUE_WINDOWMANAGER_MAXCOUNT);
+	g_windowManager.eventBuffer = (Event*)k_allocMem(sizeof(Event) * EVENTQUEUE_WINMGR_MAXCOUNT);
 	if (g_windowManager.eventBuffer == null) {
 		k_printf("window error: window manager event buffer allocation failure\n");
 		while (true) {
@@ -134,7 +134,7 @@ void k_initGuiSystem(void) {
 		}
 	}
 
-	k_initQueue(&g_windowManager.eventQueue, g_windowManager.eventBuffer, sizeof(Event), EVENTQUEUE_WINDOWMANAGER_MAXCOUNT, false);
+	k_initQueue(&g_windowManager.eventQueue, g_windowManager.eventBuffer, sizeof(Event), EVENTQUEUE_WINMGR_MAXCOUNT, false);
 
 	// allocate screen bitmap.
 	g_windowManager.screenBitmap = (byte*)k_allocMem((vbeMode->xResolution * vbeMode->yResolution + 7) / 8);

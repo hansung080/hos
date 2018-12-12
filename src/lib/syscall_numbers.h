@@ -121,7 +121,7 @@
 #define SYSCALL_SLEEP           1302
 #define SYSCALL_ISGRAPHICMODE   1303
 
-/*** Syscall from loader.h ***/
+/*** Syscall from app_manager.h ***/
 #define SYSCALL_EXECUTEAPP 1400
 
 /*** Syscall from widgets.h ***/

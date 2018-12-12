@@ -867,9 +867,9 @@ bool drawButton(qword windowId, const Rect* buttonArea, Color textColor, Color b
 
 	PARAM(0) = windowId;
 	PARAM(1) = (qword)buttonArea;
-	PARAM(2) = (qword)backgroundColor;
-	PARAM(3) = (qword)text;
-	PARAM(4) = (qword)textColor;
+	PARAM(2) = (qword)textColor;
+	PARAM(3) = (qword)backgroundColor;
+	PARAM(4) = (qword)text;
 	PARAM(5) = (qword)flags;
 
 	return (bool)executeSyscall(SYSCALL_DRAWBUTTON, &paramTable);

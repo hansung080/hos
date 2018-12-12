@@ -3,6 +3,7 @@
 #include "../core/console.h"
 #include "../fonts/fonts.h"
 #include "../core/task.h"
+#include "../core/app_manager.h"
 #include "system_menu.h"
 #include "prototype.h"
 #include "event_monitor.h"
@@ -11,43 +12,43 @@
 #include "image_viewer.h"
 #include "color_picker.h"
 
+static PanelItem g_appPanelTable[APPPANEL_MAXITEMCOUNT] = {
+	{"Prototype", k_funcSystemApp, APPPANEL_COLOR_ITEM_PROTOTYPE},
+	{"Event Monitor", k_funcSystemApp, APPPANEL_COLOR_ITEM_EVENTMONITOR},
+	{"System Monitor", k_funcSystemApp, APPPANEL_COLOR_ITEM_SYSTEMMONITOR},
+	{"Shell", k_funcSystemApp, APPPANEL_COLOR_ITEM_SHELL},
+	{"Image Viewer", k_funcSystemApp, APPPANEL_COLOR_ITEM_IMAGEVIEWER},
+	{"Color Picker", k_funcSystemApp, APPPANEL_COLOR_ITEM_COLORPICKER},
+	{"Test0", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER0},
+	{"Test1", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER1},
+	{"Test2", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER2},
+	{"Test3", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER3},
+	{"Test4", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER4},
+	{"Test5", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER5},
+	{"Test6", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER6},
+	{"Test7", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER7},
+	{"Test8", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER8},
+	{"Test9", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER9},
+	{"Test10", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER10},
+	{"Test11", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER11},
+	{"Test12", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER12},
+	{"Test13", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER13},
+	{"Test14", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER14},
+	{"Test15", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER15},
+	{"Test16", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER16},
+	{"Test17", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER17},
+	{"Test18", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER18},
+	{"Test19", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER19},
+	{"Test20", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER20},
+	{"Test21", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER21},
+	{"Test22", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER22},
+	{"Test23", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER23}
+};
+
 Panel* g_appPanel = null;
 
 void k_appPanelTask(void) {
-	PanelItem appPanelTable[] = {
-		{"Prototype", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_PROTOTYPE},
-		{"Event", "Monitor", k_funcSystemApp, APPPANEL_COLOR_ITEM_EVENTMONITOR},
-		{"System", "Monitor", k_funcSystemApp, APPPANEL_COLOR_ITEM_SYSTEMMONITOR},
-		{"Shell", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_SHELL},
-		{"Image", "Viewer", k_funcSystemApp, APPPANEL_COLOR_ITEM_IMAGEVIEWER},
-		{"Color", "Picker", k_funcSystemApp, APPPANEL_COLOR_ITEM_COLORPICKER},
-		{"Test0", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER0},
-		{"Test1", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER1},
-		{"Test2", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER2},
-		{"Test3", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER3},
-		{"Test4", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER4},
-		{"Test5", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER5},
-		{"Test6", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER6},
-		{"Test7", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER7},
-		{"Test8", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER8},
-		{"Test9", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER9},
-		{"Test10", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER10},
-		{"Test11", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER11},
-		{"Test12", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER12},
-		{"Test13", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER13},
-		{"Test14", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER14},
-		{"Test15", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER15},
-		{"Test16", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER16},
-		{"Test17", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER17},
-		{"Test18", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER18},
-		{"Test19", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER19},
-		{"Test20", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER20},
-		{"Test21", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER21},
-		{"Test22", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER22},
-		{"Test23", null, k_funcSystemApp, APPPANEL_COLOR_ITEM_USER23}
-	};
-
-	Panel appPanel = {appPanelTable, sizeof(appPanelTable) / sizeof(PanelItem)};
+	Panel appPanel = {g_appPanelTable, APPPANEL_SYSTEMAPPCOUNT};
 	Rect screenArea;
 	int screenWidth, screenHeight;
 	Event event;
@@ -69,7 +70,7 @@ void k_appPanelTask(void) {
 	screenWidth = k_getRectWidth(&screenArea);
 	screenHeight = k_getRectHeight(&screenArea);
 
-	if (k_createPanel(&appPanel, 0, WINDOW_SYSMENU_HEIGHT, screenWidth, screenHeight - WINDOW_SYSMENU_HEIGHT, APPPANEL_ITEMSIZE, APPPANEL_ITEMMARGIN, null, PANEL_FLAGS_DRAWLOGO | PANEL_FLAGS_BLOCKING | PANEL_FLAGS_VISIBLE | PANEL_FLAGS_APPPANEL) == false) {
+	if (k_createPanel(&appPanel, 0, WINDOW_SYSMENU_HEIGHT, screenWidth, screenHeight - WINDOW_SYSMENU_HEIGHT, APPPANEL_ITEMSIZE, APPPANEL_ITEMMARGIN, null, PANEL_FLAGS_DRAWLOGO | PANEL_FLAGS_BLOCKING | PANEL_FLAGS_VISIBLE | PANEL_FLAGS_COPYWITHOUTPARAM | PANEL_FLAGS_APPPANEL) == false) {
 		k_printf("[app panel error] app panel creation failure\n");
 		return;
 	}
@@ -98,8 +99,8 @@ void k_appPanelTask(void) {
 
 bool k_createPanel(Panel* panel, int x, int y, int width, int height, int itemSize, int itemMargin, Color* colors, dword flags) {
 	dword optionalFlags = 0;
-	int radius;
 	int originX, originY;
+	int radius;
 	int i;
 
 	if (colors == null) {
@@ -135,7 +136,10 @@ bool k_createPanel(Panel* panel, int x, int y, int width, int height, int itemSi
 		panel->visible = true;
 	}
 
-	panel->itemSize = itemSize + (itemMargin * 2);
+	panel->width = width;
+	panel->height = height;
+	panel->itemSize = itemSize;
+	panel->itemMargin = itemMargin;
 	panel->prevIndex = -1;
 	panel->flags = flags;
 
@@ -161,6 +165,91 @@ bool k_createPanel(Panel* panel, int x, int y, int width, int height, int itemSi
 			panel->rows++;
 		}
 	}
+
+	return true;
+}
+
+bool k_addPanelItem(Panel* panel, const char* name, PanelFunc func, Color color, qword param) {
+	int originX, originY;
+	int radius;
+
+	if (panel->itemCount >= APPPANEL_MAXITEMCOUNT) {
+		return false;
+	}
+
+	/* add item to panel table */
+	k_strcpy(panel->table[panel->itemCount].name, name);
+	panel->table[panel->itemCount].func = func;
+	panel->table[panel->itemCount].color = color;
+	panel->table[panel->itemCount].param = param;
+	
+	/* calculate item area */	
+	originX = panel->table[panel->itemCount - 1].area.x;
+	originY = panel->table[panel->itemCount - 1].area.y;
+	radius = panel->itemSize / 2;
+
+	originX += (panel->itemMargin + radius) * 2;
+	if ((originX + radius) >= panel->width) {
+		originX = panel->itemMargin + radius;
+		originY += (panel->itemMargin + radius) * 2;
+		if (panel->rows == 1) {
+			panel->columns = panel->itemCount + 1;
+		}
+
+		panel->rows++;
+	}
+
+	k_setCircle(&panel->table[panel->itemCount].area, originX, originY, radius);
+
+	/* draw panel item */
+	k_drawPanelItem(panel, panel->itemCount, false);
+
+	/* increase item count */
+	panel->itemCount++;
+
+	return true;
+}
+
+bool k_removePanelItem(Panel* panel, const char* name) {
+	int i;
+	int index = -1;
+	const Circle* itemArea;
+	Rect clearArea;
+
+	/* find remove index by name */
+	for (i == 0; i < panel->itemCount; i++) {
+		if (k_strcmp(panel->table[i].name, name) == 0) {
+			index = i;
+			break;
+		}
+	}
+
+	if (index == -1) {
+		return false;
+	}
+
+	/* decrease item count */
+	panel->itemCount--;
+
+	/* draw panel items */
+	for (i = index; i < panel->itemCount; i++) {
+		// copy panel item without area.
+		k_strcpy(panel->table[i].name, panel->table[i + 1].name);
+		panel->table[i].func = panel->table[i + 1].func;
+		panel->table[i].color = panel->table[i + 1].color;
+		if ((panel->flags & PANEL_FLAGS_COPYWITHOUTPARAM) != PANEL_FLAGS_COPYWITHOUTPARAM) {
+			panel->table[i].param = panel->table[i + 1].param;	
+		}	
+
+		// draw panel item.
+		k_drawPanelItem(panel, i, false);
+	}
+
+	/* clear last panel item */
+	itemArea = &panel->table[panel->itemCount].area;
+	k_setRect(&clearArea, itemArea->x - itemArea->radius, itemArea->y - itemArea->radius, itemArea->x + itemArea->radius, itemArea->y + itemArea->radius);
+	k_drawRect(panel->id, clearArea.x1, clearArea.y1, clearArea.x2, clearArea.y2, panel->backgroundColor, true);	
+	k_updateScreenByWindowArea(panel->id, &clearArea);
 
 	return true;
 }
@@ -352,8 +441,10 @@ void k_togglePanelVisibility(Panel* panel, Menu* menu, int index) {
 
 int k_getPanelItemIndex(const Panel* panel, int mouseX, int mouseY) {
 	int index;
+	int itemSize; // item size with margin
 
-	index = (mouseY / panel->itemSize) * panel->columns + (mouseX / panel->itemSize);
+	itemSize = panel->itemSize + (panel->itemMargin * 2);
+	index = (mouseY / itemSize) * panel->columns + (mouseX / itemSize);
 	if ((index < 0) || (index >= panel->itemCount)) {
 		return -1;
 	}
@@ -371,6 +462,8 @@ bool k_drawPanelItem(const Panel* panel, int index, bool active) {
 	const Circle* itemArea;
 	Rect updateArea;
 	Color textColor;
+	char name1[FS_MAXFILENAMELENGTH] = {'\0', };
+	char name2[FS_MAXFILENAMELENGTH] = {'\0', };
 	int len1;
 	int len2;
 
@@ -382,8 +475,10 @@ bool k_drawPanelItem(const Panel* panel, int index, bool active) {
 	// set clipping area on window coordinates.
 	k_setRect(&area, 0, 0, window->area.x2 - window->area.x1, window->area.y2 - window->area.y1);
 
+	splitPanelItemName(panel->table[index].name, name1, name2);
+
 	itemArea = &panel->table[index].area;
-	len1 = k_strlen(panel->table[index].name1);
+	len1 = k_strlen(name1);
 	
 	__k_drawCircle(window->buffer, &area, itemArea->x, itemArea->y, itemArea->radius, panel->table[index].color, true);
 
@@ -396,13 +491,13 @@ bool k_drawPanelItem(const Panel* panel, int index, bool active) {
 		textColor = panel->textColor;
 	}
 
-	if (panel->table[index].name2 == null) {
-		__k_drawText(window->buffer, &area, itemArea->x - ((FONT_DEFAULT_WIDTH * len1) / 2), itemArea->y - (FONT_DEFAULT_HEIGHT / 2), textColor, panel->table[index].color, panel->table[index].name1, len1);
+	if (name2[0] == '\0') {
+		__k_drawText(window->buffer, &area, itemArea->x - ((FONT_DEFAULT_WIDTH * len1) / 2), itemArea->y - (FONT_DEFAULT_HEIGHT / 2), textColor, panel->table[index].color, name1, len1);
 
 	} else {
-		len2 = k_strlen(panel->table[index].name2);
-		__k_drawText(window->buffer, &area, itemArea->x - ((FONT_DEFAULT_WIDTH * len1) / 2), itemArea->y - FONT_DEFAULT_HEIGHT - 1, textColor, panel->table[index].color, panel->table[index].name1, len1);
-		__k_drawText(window->buffer, &area, itemArea->x - ((FONT_DEFAULT_WIDTH * len2) / 2), itemArea->y + 1, textColor, panel->table[index].color, panel->table[index].name2, len2);
+		len2 = k_strlen(name2);
+		__k_drawText(window->buffer, &area, itemArea->x - ((FONT_DEFAULT_WIDTH * len1) / 2), itemArea->y - FONT_DEFAULT_HEIGHT - 1, textColor, panel->table[index].color, name1, len1);
+		__k_drawText(window->buffer, &area, itemArea->x - ((FONT_DEFAULT_WIDTH * len2) / 2), itemArea->y + 1, textColor, panel->table[index].color, name2, len2);
 	}
 		
 	k_unlock(&window->mutex);
@@ -411,6 +506,74 @@ bool k_drawPanelItem(const Panel* panel, int index, bool active) {
 	k_updateScreenByWindowArea(panel->id, &updateArea);
 }
 
+static void splitPanelItemName(const char* name, char* name1, char* name2) {
+	int i, j;
+
+	for (i = 0; name[i] != '\0'; i++) {
+		if ((name[i] == ' ') || (name[i] == '-') || (name[i] == '_') || (name[i] == '.')) {
+			break;
+		}
+
+		name1[i] = name[i];
+	}
+
+	name1[i] = '\0';
+
+	if ((name[i] != '.') && (name[i] != '\0')) {
+		j = 0;
+		for ( ; name[i] != '\0'; i++) {
+			if (name[i] == '.') {
+				break;
+			}
+
+			name2[j++] = name[i];
+		}
+
+		name2[j] = '\0';
+	}
+}
+
+static Color g_userAppColors[] = {
+	APPPANEL_COLOR_ITEM_USER0,
+	APPPANEL_COLOR_ITEM_USER1,
+	APPPANEL_COLOR_ITEM_USER2,
+	APPPANEL_COLOR_ITEM_USER3,
+	APPPANEL_COLOR_ITEM_USER4,
+	APPPANEL_COLOR_ITEM_USER5,
+	APPPANEL_COLOR_ITEM_USER6,
+	APPPANEL_COLOR_ITEM_USER7,
+	APPPANEL_COLOR_ITEM_USER8,
+	APPPANEL_COLOR_ITEM_USER9,
+	APPPANEL_COLOR_ITEM_USER10,
+	APPPANEL_COLOR_ITEM_USER11,
+	APPPANEL_COLOR_ITEM_USER12,
+	APPPANEL_COLOR_ITEM_USER13,
+	APPPANEL_COLOR_ITEM_USER14,
+	APPPANEL_COLOR_ITEM_USER15,
+	APPPANEL_COLOR_ITEM_USER16,
+	APPPANEL_COLOR_ITEM_USER17,
+	APPPANEL_COLOR_ITEM_USER18,
+	APPPANEL_COLOR_ITEM_USER19,
+	APPPANEL_COLOR_ITEM_USER20,
+	APPPANEL_COLOR_ITEM_USER21,
+	APPPANEL_COLOR_ITEM_USER22,
+	APPPANEL_COLOR_ITEM_USER23
+};
+
+Color k_getUserAppColor(void) {
+	static int index = 0;
+
+	if (index >= (sizeof(g_userAppColors) / sizeof(Color))) {
+		index = 0;
+	}
+
+	return g_userAppColors[index++];
+}
+
 static void k_funcSystemApp(qword entryPoint) {
 	k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, entryPoint, TASK_AFFINITY_LB);
+}
+
+void k_funcUserApp(qword fileName_) {
+	k_executeApp((char*)fileName_, null, TASK_AFFINITY_LB);
 }

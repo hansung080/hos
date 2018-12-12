@@ -11,7 +11,7 @@
 #include "window.h"
 #include "../utils/jpeg.h"
 #include "../utils/util.h"
-#include "loader.h"
+#include "app_manager.h"
 #include "mp_config_table.h"
 #include "multiprocessor.h"
 #include "../utils/kid.h"
@@ -376,7 +376,7 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 	case SYSCALL_ISGRAPHICMODE:
 		return (qword)k_isGraphicMode();
 
-	/*** Syscall from loader.h ***/
+	/*** Syscall from app_manager.h ***/
 	case SYSCALL_EXECUTEAPP:
 		return k_executeApp((char*)PARAM(0), (char*)PARAM(1), (byte)PARAM(2));
 

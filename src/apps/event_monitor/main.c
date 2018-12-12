@@ -20,7 +20,7 @@ int main(const char* args) {
 	qword foundWindowId;
 	Event sendEvent;
 	int i;	
-	char* eventStrs[] = {
+	const char* eventStrs[] = {
 		"UNKNOWN",
 		"MOUSE_MOVE",
 		"MOUSE_LBUTTONDOWN",
@@ -29,13 +29,15 @@ int main(const char* args) {
 		"MOUSE_RBUTTONUP",
 		"MOUSE_MBUTTONDOWN",
 		"MOUSE_MBUTTONUP",
+		"MOUSE_OUT"
 		"WINDOW_SELECT",
 		"WINDOW_DESELECT",
 		"WINDOW_MOVE",
 		"WINDOW_RESIZE",
 		"WINDOW_CLOSE",
 		"KEY_DOWN",
-		"KEY_UP"
+		"KEY_UP",
+		"TOPMENU_CLICK"
 	};
 
 	/* check graphic mode */
@@ -117,6 +119,8 @@ int main(const char* args) {
 		case EVENT_MOUSE_RBUTTONUP:
 		case EVENT_MOUSE_MBUTTONDOWN:
 		case EVENT_MOUSE_MBUTTONUP:
+		case EVENT_MOUSE_OUT:
+
 			mouseEvent = &event.mouseEvent;
 
 			// print event type.
@@ -205,9 +209,6 @@ int main(const char* args) {
 			sprintf(tempBuffer, "- data: 0x%q, 0x%q, 0x%q", userEvent->data[0], userEvent->data[1], userEvent->data[2]);
 			drawText(windowId, 20, y + 40, RGB(0, 0, 0), WINDOW_COLOR_BACKGROUND, tempBuffer, strlen(tempBuffer));
 
-			break;			
-
-		default:
 			break;
 		}
 

@@ -140,7 +140,7 @@ qword getTickCount(void);
 void sleep(qword millisecond);
 bool isGraphicMode(void);
 
-/*** Syscall from loader.h ***/
+/*** Syscall from app_manager.h ***/
 qword executeApp(const char* fileName, const char* args, byte affinity);
 
 /*** Syscall from widgets.h ***/

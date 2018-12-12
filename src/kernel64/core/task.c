@@ -47,7 +47,7 @@ static Task* k_allocTask(void) {
 		k_unlockSpin(&(g_taskPoolManager.spinlock));
 		return null;
 	}
-	
+
 	for (i = 0; i < g_taskPoolManager.maxCount; i++) {
 		// If allocated task count (high 32 bits) of task ID == 0, it's not allocated.
 		if ((g_taskPoolManager.startAddr[i].link.id >> 32) == 0) {
@@ -118,7 +118,7 @@ Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAd
 	byte currentApicId;
 	
 	currentApicId = k_getApicId();
-	
+
 	// allocate task.
 	task = k_allocTask();
 	if (task == null) {
@@ -133,7 +133,7 @@ Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAd
 	}
 
 	k_lockSpin(&(g_schedulers[currentApicId].spinlock));
-	
+
 	// get process with running task in it.
 	process = k_getProcessByThread(k_getRunningTask(currentApicId));
 	if (process == null) {
@@ -229,7 +229,6 @@ static void k_setTask(Task* task, qword flags, qword entryPointAddr, void* stack
 	//   [Ref] IOPL: input/output privilege level
 	task->context.registers[TASK_INDEX_RFLAGS] |= 0x3200;
 	
-
 	// set etc
 	task->stackAddr = stackAddr;
 	task->stackSize = stackSize;
@@ -668,10 +667,10 @@ bool k_schedule(void) {
 		k_setInterruptFlag(interruptFlag);
 		return false;
 	}
-	
+		
 	runningTask = g_schedulers[currentApicId].runningTask;
 	g_schedulers[currentApicId].runningTask = nextTask;
-	
+
 	// If it's switched from idle task, increase processor time used by idle task.
 	if (runningTask->flags & TASK_FLAGS_IDLE) {
 		g_schedulers[currentApicId].processorTimeInIdleTask += (TASK_PROCESSORTIME - g_schedulers[currentApicId].processorTime);
@@ -684,7 +683,7 @@ bool k_schedule(void) {
 	} else {
 		k_clearTs();
 	}
-	
+
 	/**
 	  < Context Switching in Task >
 	  - save context: registers -> running task (by k_switchContext)
@@ -734,6 +733,7 @@ bool k_scheduleInInterrupt(void) {
 	k_lockSpin(&(g_schedulers[currentApicId].spinlock));
 	
 	nextTask = k_getNextTaskToRun(currentApicId);
+
 	if (nextTask == null) {
 		k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
 		return false;
@@ -1136,10 +1136,9 @@ void k_idleTask(void) {
 	lastSpendTickInIdleTask = g_schedulers[currentApicId].processorTimeInIdleTask;
 	lastMeasureTickCount = k_getTickCount();
 	
-	// infinite loop
+	// idle task loop
 	while (true) {
 		/* 1. calculate processor load */
-		
 		currentMeasureTickCount = k_getTickCount();
 		currentSpendTickInIdleTask = g_schedulers[currentApicId].processorTimeInIdleTask;
 		
@@ -1155,12 +1154,10 @@ void k_idleTask(void) {
 		lastSpendTickInIdleTask = currentSpendTickInIdleTask;
 		
 		/* 2. halt processor by processor load */
-		
 		// halt processor by processor load.
 		k_haltProcessorByLoad(currentApicId);
 		
 		/* 3. completely end the end tasks in end list */
-		
 		// If end task exists in end list, remove end task from end list, free memory of end task.
 		if (k_getListCount(&(g_schedulers[currentApicId].endList)) > 0) {
 			while (true) {
@@ -1264,7 +1261,6 @@ void k_idleTask(void) {
 }
 
 void k_haltProcessorByLoad(byte apicId) {
-	
 	if (g_schedulers[apicId].processorLoad < 40) {
 		k_halt();
 		k_halt();

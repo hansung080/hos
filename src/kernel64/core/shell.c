@@ -22,7 +22,7 @@
 #include "../gui_tasks/shell.h"
 #include "window_manager.h"
 #include "syscall.h"
-#include "loader.h"
+#include "app_manager.h"
 #include "../utils/queue.h"
 
 static ShellCommandEntry g_commandTable[] = {
@@ -40,8 +40,8 @@ static ShellCommandEntry g_commandTable[] = {
 		{"matrix", "show Matrix", k_showMatrix},
 		{"dmem", "show dynamic memory info", k_showDynamicMemInfo},
 		{"hdd", "show HDD info", k_showHddInfo},
-		{"format", "format HDD", k_formatHdd},
-		{"mount", "mount HDD", k_mountHdd},
+		{"format", "format HDD", k_format},
+		{"mount", "mount HDD", k_mount},
 		{"fs", "show file system info", k_showFileSystemInfo},
 		{"ls", "show directory", k_showRootDir},
 		{"ll", "show directory", k_showRootDir},
@@ -56,7 +56,9 @@ static ShellCommandEntry g_commandTable[] = {
 		{"intcnt", "show interrupt count by core * IRQ, usage) intcnt <irq>", k_showInterruptCounts},
 		{"chaf" ,"change task affinity, usage) chaf <taskId> <affinity>", k_changeAffinity},
 		{"vbe", "show VBE mode info", k_showVbeModeInfo},
-		{"run", "run application (.elf) usage) run <app> <arg1> <arg2> ...", k_runApp},
+		{"run", "run application (.elf), usage) run <app> <arg1> <arg2> ...", k_runApp},
+		{"install", "install application (.elf), usage) install <app>", k_install},
+		{"uninstall", "uninstall application (.elf), usage) uninstall <app>", k_uninstall},
 		{"exit", "exit shell", k_exitShell},
 		#if __DEBUG__
 		{"teststod", "test string to decimal/hex conversion, usage) teststod <decimal> <hex> ...", k_testStrToDecimalHex},
@@ -769,8 +771,8 @@ static void k_showHddInfo(const char* paramBuffer) {
 	k_printf("- total sectors  : %d sectors (%d MB)\n", hddInfo.totalSectors, hddInfo.totalSectors / 2 / 1024);
 }
 
-static void k_formatHdd(const char* paramBuffer) {
-	if (k_format() == false) {
+static void k_format(const char* paramBuffer) {
+	if (k_formatHdd() == false) {
 		k_printf("HDD format failure\n");
 		return;
 	}
@@ -778,8 +780,8 @@ static void k_formatHdd(const char* paramBuffer) {
 	k_printf("HDD format success\n");
 }
 
-static void k_mountHdd(const char* paramBuffer) {
-	if (k_mount() == false) {
+static void k_mount(const char* paramBuffer) {
+	if (k_mountHdd() == false) {
 		k_printf("HDD mount failure\n");
 		return;
 	}
@@ -1474,10 +1476,10 @@ static void k_showVbeModeInfo(const char* paramBuffer) {
 static void k_runApp(const char* paramBuffer) {
 	ParamList list;
 	char fileName[SHELL_MAXPARAMETERLENGTH] = {'\0', };
-	char args[LOADER_MAXARGSLENGTH + 1] = {'\0', };
+	char args[APPMGR_MAXARGSLENGTH + 1] = {'\0', };
 	int fileNameLen;
 	int argsLen;
-
+	
 	// initialize parameter.
 	k_initParam(&list, paramBuffer);
 
@@ -1487,7 +1489,7 @@ static void k_runApp(const char* paramBuffer) {
 	if (fileNameLen <= 0) {
 		k_printf("Usage) run <app> <arg1> <arg2> ...\n");
 		k_printf("  - app: application name (.elf can be omitted)\n");
-		k_printf("  - args: argument string (max %d)\n", LOADER_MAXARGSLENGTH);
+		k_printf("  - args: argument string (max %d)\n", APPMGR_MAXARGSLENGTH);
 		k_printf("  - example: run a.elf arg1 arg2 ...\n");
 		return;
 	}
@@ -1502,6 +1504,55 @@ static void k_runApp(const char* paramBuffer) {
 	k_executeApp(fileName, args, TASK_AFFINITY_LB);
 }
 
+static void k_install(const char* paramBuffer) {
+	ParamList list;
+	char fileName[SHELL_MAXPARAMETERLENGTH] = {'\0', };
+
+	// initialize parameter.
+	k_initParam(&list, paramBuffer);
+
+	// get No.1 parameter: app
+	if (k_getNextParam(&list, fileName) <= 0) {
+		k_printf("Usage) install <app>\n");
+		k_printf("  - app: application name (.elf can be omitted)\n");
+		k_printf("  - example: install a.elf\n");
+		return;
+	}
+
+	k_addFileExtension(fileName, "elf");
+
+	if (k_installApp(fileName) == true) {
+		k_printf("%s installation success\n", fileName);
+
+	} else {
+		k_printf("%s installation failure\n", fileName);
+	}
+}
+
+static void k_uninstall(const char* paramBuffer) {
+	ParamList list;
+	char fileName[SHELL_MAXPARAMETERLENGTH] = {'\0', };
+
+	// initialize parameter.
+	k_initParam(&list, paramBuffer);
+
+	// get No.1 parameter: app
+	if (k_getNextParam(&list, fileName) <= 0) {
+		k_printf("Usage) uninstall <app>\n");
+		k_printf("  - app: application name (.elf can be omitted)\n");
+		k_printf("  - example: uninstall a.elf\n");
+		return;
+	}
+
+	k_addFileExtension(fileName, "elf");
+
+	if (k_uninstallApp(fileName) == true) {
+		k_printf("%s uninstallation success\n", fileName);
+
+	} else {
+		k_printf("%s uninstallation failure\n", fileName);
+	}	
+}
 
 static void k_exitShell(const char* paramBuffer) {
 	if (k_isGraphicMode() == false) {

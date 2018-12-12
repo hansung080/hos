@@ -87,7 +87,7 @@ void k_commonExceptionHandler(int vector, qword errorCode) {
 
 	apicId = k_getApicId();
 	task = k_getRunningTask(apicId);
-		
+	
 	k_printStrXy(0, 0, "--------------------------------------------------");
 	k_printStrXy(0, 1, "               Exception Occur !!                 ");
 	k_sprintf(buffer,  "               - vector : %d                      ", vector);

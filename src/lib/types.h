@@ -111,7 +111,7 @@
 //----------------------------------------------------------------------------------------------------
 
 // max file name length
-#define FS_MAXFILENAMELENGTH      24   // max file name length (including file extension and last null character)
+#define FS_MAXFILENAMELENGTH      24   // max file name length (include file extension and last null character)
 
 // SEEK option
 #define SEEK_SET 0 // start of file
@@ -125,7 +125,7 @@
 #define d_size fileSize
 
 //----------------------------------------------------------------------------------------------------
-// Macro from loader.h
+// Macro from app_manager.h
 //----------------------------------------------------------------------------------------------------
 
 // max argument string length
@@ -165,7 +165,7 @@ typedef word Color;
 // Macro from window.h
 //----------------------------------------------------------------------------------------------------
 // etc macros
-#define WINDOW_MAXTITLELENGTH 40   // max title length: exclude last null character
+#define WINDOW_MAXTITLELENGTH 23   // max title length: exclude last null character
 #define WINDOW_INVALIDID      0xFFFFFFFFFFFFFFFF
 
 // window flags
@@ -338,7 +338,7 @@ typedef struct __Mutex {
 //----------------------------------------------------------------------------------------------------
 
 typedef struct __DirEntry {
-	char fileName[FS_MAXFILENAMELENGTH]; // [byte 0~23]  : file name (including file extension and last null character)
+	char fileName[FS_MAXFILENAMELENGTH]; // [byte 0~23]  : file name (include file extension and last null character)
 	dword fileSize;                      // [byte 24~27] : file size (byte-level)
 	dword startClusterIndex;             // [byte 28~31] : start cluster index (0x00:free directory entry)
 } DirEntry; // 32 bytes-sized

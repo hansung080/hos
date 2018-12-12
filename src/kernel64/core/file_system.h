@@ -14,7 +14,7 @@
 #define FS_CLUSTERSIZE            (FS_SECTORSPERCLUSTER * 512)        // cluster size (byte count, 4KB)
 #define FS_MAXDIRECTORYENTRYCOUNT (FS_CLUSTERSIZE / sizeof(DirEntry)) // max directory entry count of root directory (128)
 #define FS_HANDLE_MAXCOUNT        3072 // max handle count(max file count, max directory count): 3072 = 1024 (max task count) * 3
-#define FS_MAXFILENAMELENGTH      24   // max file name length (including file extension and last null character)
+#define FS_MAXFILENAMELENGTH      24   // max file name length (include file extension and last null character)
 
 // handle type
 #define FS_TYPE_FREE      0 // free handle
@@ -113,7 +113,7 @@ typedef struct k_Mbr {
 } Mbr; // 1 sector-sized (512 bytes)
 
 typedef struct k_DirEntry {
-	char fileName[FS_MAXFILENAMELENGTH]; // [byte 0~23]  : file name (including file extension and last null character)
+	char fileName[FS_MAXFILENAMELENGTH]; // [byte 0~23]  : file name (include file extension and last null character)
 	dword fileSize;                      // [byte 24~27] : file size (byte-level)
 	dword startClusterIndex;             // [byte 28~31] : start cluster index (0x00:free directory entry)
 } DirEntry; // 32 bytes-sized
@@ -157,8 +157,8 @@ typedef struct k_FileSystemManager {
 
 /* General Functions */
 bool k_initFileSystem(void);
-bool k_format(void);
-bool k_mount(void);
+bool k_formatHdd(void);
+bool k_mountHdd(void);
 bool k_getHddInfo(HddInfo* info);
 
 /* Low-Level Functions */

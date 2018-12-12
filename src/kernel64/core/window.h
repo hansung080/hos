@@ -35,7 +35,7 @@
 
 // etc macros
 #define WINDOW_MAXCOUNT       2048 // max window count: 2048 = 1024 (max task count) * 2
-#define WINDOW_MAXTITLELENGTH 40   // max title length: exclude last null character
+#define WINDOW_MAXTITLELENGTH 23   // max title length: exclude last null character
 #define WINDOW_INVALIDID      0xFFFFFFFFFFFFFFFF
 
 // window flags
@@ -97,8 +97,8 @@
 #define RESIZEMARKER_COLOR RGB(222, 98, 98)
 
 // event queue-related macros
-#define EVENTQUEUE_WINDOW_MAXCOUNT        100             // window event queue max count
-#define EVENTQUEUE_WINDOWMANAGER_MAXCOUNT WINDOW_MAXCOUNT // window manager event queue max count
+#define EVENTQUEUE_WINDOW_MAXCOUNT 100             // window event queue max count
+#define EVENTQUEUE_WINMGR_MAXCOUNT WINDOW_MAXCOUNT // window manager event queue max count
 
 /**
   < Event Classification >

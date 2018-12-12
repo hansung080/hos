@@ -38,7 +38,7 @@ bool k_initFileSystem(void) {
 		g_writeHddSector = k_writeRddSector;
 		
 		// create file system every when booting, because ram disk is volatile.
-		if (k_format() == false) {
+		if (k_formatHdd() == false) {
 			return false;
 		}
 		
@@ -47,7 +47,7 @@ bool k_initFileSystem(void) {
 	}
 	
 	// connect file system
-	if (k_mount() == false) {
+	if (k_mountHdd() == false) {
 		return false;
 	}
 	
@@ -69,7 +69,7 @@ bool k_initFileSystem(void) {
 	return true;
 }
 
-bool k_format(void) {
+bool k_formatHdd(void) {
 	HddInfo* hddInfo;
 	Mbr* mbr;
 	dword totalSectorCount;       // total sector count of hard disk
@@ -91,6 +91,7 @@ bool k_format(void) {
 		k_unlock(&(g_fileSystemManager.mutex));
 		return false;
 	}
+	
 	totalSectorCount = hddInfo->totalSectors;
 	
 	// total cluster count = total sector count of hard disk / sector count per a cluster (8)
@@ -166,7 +167,7 @@ bool k_format(void) {
 	return true;
 }
 
-bool k_mount(void) {
+bool k_mountHdd(void) {
 	Mbr* mbr;
 	
 	k_lock(&(g_fileSystemManager.mutex));
