@@ -2892,11 +2892,11 @@ static void k_testWaitTask(const char* paramBuffer) {
 		k_printf("  - option: -i (info)\n");
 		k_printf("  - option: -b (blocking test)\n");
 		k_printf("  - option: -nb (non-blocking test)\n");
-		k_printf("  - example: testsup -w 0x300000002\n");
-		k_printf("  - example: testsup -n 0x300000002\n");
-		k_printf("  - example: testsup -i\n");
-		k_printf("  - example: testsup -b\n");
-		k_printf("  - example: testsup -nb\n");
+		k_printf("  - example: testwait -w 0x300000002\n");
+		k_printf("  - example: testwait -n 0x300000002\n");
+		k_printf("  - example: testwait -i\n");
+		k_printf("  - example: testwait -b\n");
+		k_printf("  - example: testwait -nb\n");
 		return;
 	}
 
