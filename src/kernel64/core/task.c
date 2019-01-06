@@ -203,7 +203,7 @@ static void k_setTask(Task* task, qword flags, qword entryPointAddr, void* stack
 	*(qword*)((qword)stackAddr + stackSize - 8) = (qword)k_exitTask;
 	
 	// set segment selector.
-	if (task->flags & TASK_FLAGS_USER) {
+	if (flags & TASK_FLAGS_USER) {
 		task->context.registers[TASK_INDEX_CS] = GDT_OFFSET_USERCODESEGMENT | SELECTOR_RPL3;
 		task->context.registers[TASK_INDEX_DS] = GDT_OFFSET_USERDATASEGMENT | SELECTOR_RPL3;
 		task->context.registers[TASK_INDEX_ES] = GDT_OFFSET_USERDATASEGMENT | SELECTOR_RPL3;
