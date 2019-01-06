@@ -18,31 +18,7 @@ static PanelItem g_appPanelTable[APPPANEL_MAXITEMCOUNT] = {
 	{"System Monitor", k_funcSystemApp, APPPANEL_COLOR_ITEM_SYSTEMMONITOR},
 	{"Shell", k_funcSystemApp, APPPANEL_COLOR_ITEM_SHELL},
 	{"Image Viewer", k_funcSystemApp, APPPANEL_COLOR_ITEM_IMAGEVIEWER},
-	{"Color Picker", k_funcSystemApp, APPPANEL_COLOR_ITEM_COLORPICKER},
-	{"Test0", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER0},
-	{"Test1", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER1},
-	{"Test2", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER2},
-	{"Test3", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER3},
-	{"Test4", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER4},
-	{"Test5", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER5},
-	{"Test6", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER6},
-	{"Test7", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER7},
-	{"Test8", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER8},
-	{"Test9", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER9},
-	{"Test10", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER10},
-	{"Test11", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER11},
-	{"Test12", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER12},
-	{"Test13", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER13},
-	{"Test14", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER14},
-	{"Test15", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER15},
-	{"Test16", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER16},
-	{"Test17", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER17},
-	{"Test18", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER18},
-	{"Test19", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER19},
-	{"Test20", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER20},
-	{"Test21", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER21},
-	{"Test22", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER22},
-	{"Test23", k_funcSystemApp, APPPANEL_COLOR_ITEM_USER23}
+	{"Color Picker", k_funcSystemApp, APPPANEL_COLOR_ITEM_COLORPICKER}
 };
 
 Panel* g_appPanel = null;
@@ -81,12 +57,7 @@ void k_appPanelTask(void) {
 	appPanel.table[3].param = (qword)k_guiShellTask;
 	appPanel.table[4].param = (qword)k_imageViewerTask;
 	appPanel.table[5].param = (qword)k_colorPickerTask;
-
-	int i;
-	for (i = 6; i < appPanel.itemCount; i++) {
-		appPanel.table[i].param = (qword)k_eventMonitorTask;
-	}
-
+	
 	g_appPanel = &appPanel;
 
 	/* event processing loop */

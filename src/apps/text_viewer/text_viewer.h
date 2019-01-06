@@ -11,7 +11,7 @@
 #define MARGIN       5      // 5 pixels
 #define TABSIZE      4      // 4 spaces
 
-#define COLOR_FILEINFO RGB(55, 215, 47)
+#define COLOR_FILEINFO RGB(109, 213, 237)
 
 typedef struct __TextInfo {
 	byte* fileBuffer;  // file buffer

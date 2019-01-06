@@ -379,7 +379,7 @@ static void k_addArgsToTask(Task* task, const char* args) {
 	task->context.registers[TASK_INDEX_RDI] = rsp; // RDI (first parameter)
 }
 
-bool k_installApp(const char* fileName) {
+bool k_installApp(const char* fileName) {	
 	if (g_appPanel != null) {
 		if (g_appPanel->itemCount >= APPPANEL_MAXITEMCOUNT) {
 			return false;
