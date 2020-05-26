@@ -1,86 +1,24 @@
-# Created by https://www.gitignore.io/api/windows,eclipse,c
+# Created by https://www.gitignore.io/api/c,macos,assembler,visualstudiocode
+# Edit at https://www.gitignore.io/?templates=c,macos,assembler,visualstudiocode
 
-### Windows ###
-# Windows image file caches
-Thumbs.db
-ehthumbs.db
-
-# Folder config file
-Desktop.ini
-
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
-
-# Windows Installer files
-*.cab
-*.msi
-*.msm
-*.msp
-
-# Windows shortcuts
-*.lnk
-
-
-### Eclipse ###
-
-.metadata
-bin/
-tmp/
-*.tmp
-*.bak
-*.swp
-*~.nib
-local.properties
-.settings/
-.loadpath
-.recommenders
-
-# Eclipse Core
-.project
-
-# External tool builders
-.externalToolBuilders/
-
-# Locally stored "Eclipse launch configurations"
-*.launch
-
-# PyDev specific (Python IDE for Eclipse)
-*.pydevproject
-
-# CDT-specific (C/C++ Development Tooling)
-.cproject
-
-# JDT-specific (Eclipse Java Development Tools)
-.classpath
-
-# Java annotation processor (APT)
-.factorypath
-
-# PDT-specific (PHP Development Tools)
-.buildpath
-
-# sbteclipse plugin
-.target
-
-# Tern plugin
-.tern-project
-
-# TeXlipse plugin
-.texlipse
-
-# STS (Spring Tool Suite)
-.springBeans
-
-# Code Recommenders
-.recommenders/
-
+### Assembler ###
+*.exe
+*.o
+*.obj
+*.bc
 
 ### C ###
+# Prerequisites
+*.d
+
 # Object files
-*.o
 *.ko
-*.obj
 *.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
 
 # Precompiled Headers
 *.gch
@@ -99,7 +37,6 @@ local.properties
 *.dylib
 
 # Executables
-*.exe
 *.out
 *.app
 *.i*86
@@ -108,11 +45,62 @@ local.properties
 
 # Debug files
 *.dSYM/
+*.su
+*.idb
+*.pdb
 
-# End of https://www.gitignore.io/api/windows,eclipse,c
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
 
-# Added by hs.kwon
+### macOS ###
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
 
+# Icon must end with two \r
+Icon
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/c_cpp_properties.json
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+
+# End of https://www.gitignore.io/api/c,macos,assembler,visualstudiocode
+
+# Created by hansung
 # Output files
 *.dep
 *.elf.bin
@@ -125,10 +113,8 @@ network-transfer
 dep-modifier
 bin2c
 
-# Mac files
-.DS_Store
-
 # Build directory
 build/
 
-# End of hs.kwon
+# End of hansung
+
