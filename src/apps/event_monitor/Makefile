@@ -15,7 +15,7 @@ OBJDUMP=x86_64-pc-linux-objdump -M intel
 CFLAGS=-I$(LIBSRC_DIR_FROM_OUT)
 
 LDFLAGS=-L$(LIBOUT_DIR_FROM_OUT) \
-        -lhans
+        -lhos
 
 TARGET=$(OUT_DIR)/event-monitor.elf
 

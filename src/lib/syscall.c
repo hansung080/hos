@@ -848,7 +848,7 @@ bool processMenuEvent(Menu* menu) {
 	return (bool)executeSyscall(SYSCALL_PROCESSMENUEVENT, &paramTable);
 }
 
-bool drawHansLogo(qword windowId, int x, int y, int width, int height, Color brightColor, Color darkColor) {
+bool drawHosLogo(qword windowId, int x, int y, int width, int height, Color brightColor, Color darkColor) {
 	ParamTable paramTable;
 
 	PARAM(0) = windowId;
@@ -859,7 +859,7 @@ bool drawHansLogo(qword windowId, int x, int y, int width, int height, Color bri
 	PARAM(5) = brightColor;
 	PARAM(6) = darkColor;
 
-	return (bool)executeSyscall(SYSCALL_DRAWHANSLOGO, &paramTable);
+	return (bool)executeSyscall(SYSCALL_DRAWHOSLOGO, &paramTable);
 }
 
 bool drawButton(qword windowId, const Rect* buttonArea, Color textColor, Color backgroundColor, const char* text, dword flags) {

@@ -3,7 +3,7 @@
 
 /**
   < ELF64 File Structure (2 types) >
-    - HansOS uses Relocatable File (ET_REL).
+    - hOS uses Relocatable File (ET_REL).
 
           Relocatable File (ET_REL)               Executable File (ET_EXEC)
     -------------------------------------   -------------------------------------
@@ -131,7 +131,7 @@
 
 // e_type
 #define ET_NONE   0
-#define ET_REL    1 // relocatable file (used by HansOS)
+#define ET_REL    1 // relocatable file (used by hOS)
 #define ET_EXEC   2 // executable file
 #define ET_DYN    3
 #define ET_CORE   4

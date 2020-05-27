@@ -1,7 +1,7 @@
 #ifndef __TEXTVIEWER_H__
 #define __TEXTVIEWER_H__
 
-#include <hanslib.h>
+#include <hlib.h>
 
 // title
 #define TITLE "Text Viewer"

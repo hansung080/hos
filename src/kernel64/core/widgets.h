@@ -111,8 +111,8 @@ void k_processTopMenuActivity(qword parentId, int mouseX, int mouseY); // screen
 void k_clearTopMenuActivity(qword parentId, int mouseX, int mouseY); // screen coordinates
 int k_getTopMenuItemIndex(qword parentId, int mouseX, int mouseY); // screen coordinates
 
-/*** HansLogo Function ***/
-bool k_drawHansLogo(qword windowId, int x, int y, int width, int height, Color brightColor, Color darkColor);
+/*** hOS Logo Function ***/
+bool k_drawHosLogo(qword windowId, int x, int y, int width, int height, Color brightColor, Color darkColor);
 
 /*** Button Function ***/
 bool k_drawButton(qword windowId, const Rect* buttonArea, Color textColor, Color backgroundColor, const char* text, dword flags);

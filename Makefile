@@ -1,10 +1,10 @@
-# hans-os Makefile
+# hOS Makefile
 
 TARGET_DEP=build/output/boot_loader/boot_loader.bin \
            build/output/kernel32/kernel32.bin \
            build/output/kernel64/kernel64.bin
 
-TARGET=hans-os.img
+TARGET=hos.img
 
 all: prepare tools boot-loader kernel32 kernel64 $(TARGET) lib apps
 

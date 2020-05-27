@@ -7,13 +7,13 @@
     ---------------> | Segmentation Unit | --------------------> | Paging Unit | ---------------->
                      ---------------------                       ---------------
 
-  < HansOS Segmentation >
+  < hOS Segmentation >
   - protected mode: divide physical memory into segments by segment descriptors.
   - IA-32e mode: consider whole physical memory as a segment.
                  Segmentation output is linear address which is paging input.
                  Linear address represents entry offset in each page tables and address offset in page.
 
-  < HansOS Paging: 4 level paging with 2 MB page >
+  < hOS Paging: 4 level paging with 2 MB page >
   CR3 control register
   -> PML4 table
   -> page directory pointer table

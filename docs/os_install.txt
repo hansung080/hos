@@ -180,7 +180,7 @@ qemu-0.10.4.zip
 # back up original file and modify copied file.
 - original file: qemu-x86_64.bat_org
 - copied file: qemu-x86_64.bat
-- modify: qemu-system-x86_64.exe -L . -m 64 -fda "C:/work/ws/os/hans-os/hans-os.img" -hda "C:/work/ws/os/hans-os/hdd.img" -boot a -localtime -M pc -serial tcp:127.0.0.1:7984,server,nowait -smp 16
+- modify: qemu-system-x86_64.exe -L . -m 64 -fda "C:/work/ws/os/hos/hos.img" -hda "C:/work/ws/os/hos/hdd.img" -boot a -localtime -M pc -serial tcp:127.0.0.1:7984,server,nowait -smp 16
 
 # create hdd image
 > qemu-img.exe create hdd.img 20M
@@ -189,4 +189,4 @@ qemu-0.10.4.zip
 # move hdd image
 - file: hdd.img
 - from: C:\work\qemu
-- to: C:\work\ws\os\hans-os
+- to: C:\work\ws\os\hos

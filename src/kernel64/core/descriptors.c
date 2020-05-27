@@ -105,7 +105,7 @@ void k_initIdt(void) {
 	  - vector 0 ~ 31    : exception handlers
 	  - vector 32 ~ 47   : interrupt handlers (interrupt from ISA bus)
 	  - vector 48 ~ 99   : interrupt hanlders (etc interrupt)
-	  - vector 100 ~ 255 : HansOS do not use
+	  - vector 100 ~ 255 : hOS do not use
 	*/
 	
 	// create IDT (100 IDT gate descriptors): put ISR to 0 ~ 99 vectors of IDT.

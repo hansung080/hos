@@ -244,7 +244,7 @@ static void k_help(const char* paramBuffer) {
 	int x, y;
 	int len, maxCommandLen = 0;
 	
-	k_printf("*** HansOS Shell Help ***\n");
+	k_printf("*** hOS Shell Help ***\n");
 	
 	count = sizeof(g_commandTable) / sizeof(ShellCommandEntry);
 	

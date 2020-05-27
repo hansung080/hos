@@ -1,21 +1,21 @@
-HansOS is a 64-bit, multi-core, lightweight, and general OS.
+hOS is a 64-bit, multi-core, lightweight, and general OS.
 It provides a variety of functions general OS fundamentally have to provide.
 The functions HanOS provides and other helpful infomations are written below.
 
 < How to Build >
-First of all, clone HansOS git-hub repository to your local computer.
-$ git clone https://github.com/hansung080/hans-os.git
+First of all, clone hOS git-hub repository to your local computer.
+$ git clone https://github.com/hansung080/hos.git
 
 To set up OS development environment, refer to the text file below.
 -> docs/os_install.txt
 
-Put the commands below on the root directory of HansOS repository to build it,
-and check if 'hans-os.img' file has been created successfully.
+Put the commands below on the root directory of hOS repository to build it,
+and check if 'hos.img' file has been created successfully.
 $ make clean
 $ make
-$ ls -alF hans-os.img
+$ ls -alF hos.img
 
-The created 'hans-os.img' file is a bootable image, so you can boot and run it
+The created 'hos.img' file is a bootable image, so you can boot and run it
 on your computer or QEMU.
 
 < HanOS Functions >

@@ -14,7 +14,7 @@
 #pragma pack(push, 1)
 
 // VBE mode info block size must be 256 bytes. (It's the fixed size.)
-// HansOS uses VBE mode 0x117 (resolution: 1024 * 768 pixels, color count: 16 bits (64K) color, R:G:B=5:6:5)
+// hOS uses VBE mode 0x117 (resolution: 1024 * 768 pixels, color count: 16 bits (64K) color, R:G:B=5:6:5)
 typedef struct k_VbeModeInfoBlock {
 	//--------------------------------------------------
 	// Common Fields in All VBE Versions

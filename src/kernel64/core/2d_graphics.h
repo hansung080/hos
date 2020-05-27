@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-// HansOS uses 16 bits color.
+// hOS uses 16 bits color.
 // A color (16 bits) in video memory represents a pixel (16 bits) in screen.
 typedef word Color;
 

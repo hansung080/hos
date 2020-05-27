@@ -4,7 +4,7 @@
 #include "types.h"
 
 #define SHELL_MAXCOMMANDBUFFERCOUNT 300
-#define SHELL_PROMPTMESSAGE         "hans$ "
+#define SHELL_PROMPTMESSAGE         "hsh$ "
 
 // parameter-related macros
 #define SHELL_MAXPARAMETERLENGTH           30 // It's including the last null character, so the max parameter length user can input is 29.

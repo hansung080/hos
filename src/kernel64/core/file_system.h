@@ -7,7 +7,7 @@
 #include "cache.h"
 
 // file system-related macros
-#define FS_SIGNATURE              0x7E38CF10 // HansFS signature.
+#define FS_SIGNATURE              0x7E38CF10 // hFS signature.
 #define FS_SECTORSPERCLUSTER      8          // sector count per cluster (8)
 #define FS_LASTCLUSTER            0xFFFFFFFF // last cluster
 #define FS_FREECLUSTER            0x00       // free cluster
@@ -32,7 +32,7 @@ typedef int (* ReadHddSector)(bool primary, bool master, dword lba, int sectorCo
 typedef int (* WriteHddSector)(bool primary, bool master, dword lba, int sectorCount, char* buffer);
 
 /* macros redefined as C standard I/O names  */
-// redefine HansFS function names as C standard I/O function names.
+// redefine hFS function names as C standard I/O function names.
 #define fopen     k_openFile
 #define fread     k_readFile
 #define fwrite    k_writeFile
@@ -45,12 +45,12 @@ typedef int (* WriteHddSector)(bool primary, bool master, dword lba, int sectorC
 #define closedir  k_closeDir
 #define isfopen   k_isFileOpen
 
-// redefine HansFS macro names as C standard I/O macro names.
+// redefine hFS macro names as C standard I/O macro names.
 #define SEEK_SET FS_SEEK_SET
 #define SEEK_CUR FS_SEEK_CUR
 #define SEEK_END FS_SEEK_END
 
-// redefine HansFS type names as C standard I/O type names.
+// redefine hFS type names as C standard I/O type names.
 #define size_t dword
 #define dirent DirEntry
 #define d_name fileName
@@ -58,7 +58,7 @@ typedef int (* WriteHddSector)(bool primary, bool master, dword lba, int sectorC
 
 /**
   ====================================================================================================
-   < HansFS Structure >
+   < hFS Structure >
   ----------------------------------------------------------------------------------------------------
   |                    Meta Data Area                       |           General Data Area            |
   ----------------------------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ typedef int (* WriteHddSector)(bool primary, bool master, dword lba, int sectorC
   ====================================================================================================
 
   ====================================================================================================
-   < HansFS Algorithm >
+   < hFS Algorithm >
      MBR   Reserved   CL Table         C0(Root)     C1       C2       C3       C4       C5      ...
   ----------------------------------------------------------------------------------------------------
   |       |       | C0 : 0xFFFFFFFF | FN, FS, C1 |        |        |        |        |        |      |

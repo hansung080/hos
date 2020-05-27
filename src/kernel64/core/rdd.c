@@ -27,7 +27,7 @@ bool k_readRddInfo(bool primary, bool master, HddInfo* hddInfo) {
 	
 	// set total sector count, model number, serial number.
 	hddInfo->totalSectors = g_rddManager.totalSectorCount;
-	k_memcpy(hddInfo->modelNumber, "hans-ram-disk-v1.0", 18);
+	k_memcpy(hddInfo->modelNumber, "hos-ram-disk-v1.0", 17);
 	k_memcpy(hddInfo->serialNumber, "0000-0000", 9);
 	
 	return true;

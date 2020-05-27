@@ -371,7 +371,7 @@ int k_getTopMenuItemIndex(qword parentId, int mouseX, int mouseY) {
 	return k_getMenuItemIndex(window->topMenu, mouseX - window->area.x1, mouseY - window->area.y1);
 }
 
-bool k_drawHansLogo(qword windowId, int x, int y, int width, int height, Color brightColor, Color darkColor) {
+bool k_drawHosLogo(qword windowId, int x, int y, int width, int height, Color brightColor, Color darkColor) {
 	Window* window;
 	Rect area;
 	int w1, w2, w3;

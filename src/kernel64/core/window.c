@@ -159,7 +159,7 @@ void k_initGuiSystem(void) {
 	// set 0 to flags in order not to show. After drawing background color, It will show.
 	backgroundId = k_createWindow(0, 0, vbeMode->xResolution, vbeMode->yResolution, 0, WINDOW_SYSBACKGROUND_TITLE, WINDOW_COLOR_SYSBACKGROUND, null, null, WINDOW_INVALIDID);
 	g_windowManager.backgroundId = backgroundId;
-	k_drawHansLogo(g_windowManager.backgroundId, (vbeMode->xResolution - WINDOW_SYSBACKGROUND_LOGOWIDTH) / 2, (vbeMode->yResolution - WINDOW_SYSBACKGROUND_LOGOHEIGHT) / 2, WINDOW_SYSBACKGROUND_LOGOWIDTH, WINDOW_SYSBACKGROUND_LOGOHEIGHT, WINDOW_COLOR_SYSBACKGROUNDLOGOBRIGHT, WINDOW_COLOR_SYSBACKGROUNDLOGODARK);
+	k_drawHosLogo(g_windowManager.backgroundId, (vbeMode->xResolution - WINDOW_SYSBACKGROUND_LOGOWIDTH) / 2, (vbeMode->yResolution - WINDOW_SYSBACKGROUND_LOGOHEIGHT) / 2, WINDOW_SYSBACKGROUND_LOGOWIDTH, WINDOW_SYSBACKGROUND_LOGOHEIGHT, WINDOW_COLOR_SYSBACKGROUNDLOGOBRIGHT, WINDOW_COLOR_SYSBACKGROUNDLOGODARK);
 	//k_drawBackgroundImage();
 	k_showWindow(backgroundId, true);
 }

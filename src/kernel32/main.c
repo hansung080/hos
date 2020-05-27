@@ -26,13 +26,13 @@ void k_main(void) {
 	}
 	
 	// print the first message of kernel32 at line 1.
-	k_printStrXy(0, y++, "*** HansOS Initialization ***");
+	k_printStrXy(0, y++, "*** hOS Initialization ***");
 	
 	// [NOTE]
 	// print boot-loader messages here,
 	// and remove messages from boot-loader, because of the risk of duplication between messages and USB partition info in boot-loader.
 	k_printStrXy(0, y++, "- start boot-loader..........................pass");
-	k_printStrXy(0, y++, "- load HansOS image..........................pass");
+	k_printStrXy(0, y++, "- load hOS image.............................pass");
 	
 	// already printed 'switch to protected mode' message at line 4 in entry_point.s.
 	y++;

@@ -118,7 +118,7 @@
 #define SEEK_CUR 1 // current file pointer offset
 #define SEEK_END 2 // end of file
 
-// redefine HansFS type names as C standard I/O type names.
+// redefine hFS type names as C standard I/O type names.
 #define size_t dword
 #define dirent DirEntry
 #define d_name fileName
@@ -135,7 +135,7 @@
 // Macro from 2d_graphics.h
 //----------------------------------------------------------------------------------------------------
 
-// HansOS uses 16 bits color.
+// hOS uses 16 bits color.
 // A color (16 bits) in video memory represents a pixel (16 bits) in screen.
 typedef word Color;
 

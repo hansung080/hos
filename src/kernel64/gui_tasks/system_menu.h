@@ -12,9 +12,9 @@
 // system menu color
 #define SYSMENU_COLOR_BACKGROUND RGB(33, 147, 176)
 
-#define SYSMENU_INDEX_HANSOS 0
-#define SYSMENU_INDEX_APPS   1
-#define SYSMENU_INDEX_SHELL  2
+#define SYSMENU_INDEX_HOS   0
+#define SYSMENU_INDEX_APPS  1
+#define SYSMENU_INDEX_SHELL 2
 
 void k_systemMenuTask(void);
 static bool k_processSystemMenuEvent(qword windowId, Clock* clock, Menu* clockMenu);
@@ -23,8 +23,8 @@ static bool k_processSystemMenuEvent(qword windowId, Clock* clock, Menu* clockMe
 static void k_funcApps(qword parentId);
 static void k_funcShell(qword parentId);
 
-/* HansOS Menu Functions */
-static void k_funcAboutHansos(qword parentId);
+/* hOS Menu Functions */
+static void k_funcAboutHos(qword parentId);
 static void k_funcShutdown(qword parentId);
 static void k_funcReboot(qword parentId);
 

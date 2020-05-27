@@ -146,7 +146,7 @@ qword executeApp(const char* fileName, const char* args, byte affinity);
 /*** Syscall from widgets.h ***/
 bool createMenu(Menu* menu, int x, int y, int itemHeight, Color* colors, qword parentId, Menu* top, dword flags);
 bool processMenuEvent(Menu* menu);
-bool drawHansLogo(qword windowId, int x, int y, int width, int height, Color brightColor, Color darkColor);
+bool drawHosLogo(qword windowId, int x, int y, int width, int height, Color brightColor, Color darkColor);
 bool drawButton(qword windowId, const Rect* buttonArea, Color textColor, Color backgroundColor, const char* text, dword flags);
 void setClock(Clock* clock, qword windowId, int x, int y, Color textColor, Color backgroundColor, byte format, bool reset);
 void addClock(Clock* clock);

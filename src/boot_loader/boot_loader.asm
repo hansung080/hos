@@ -5,7 +5,7 @@ SECTION .text
 
 jmp 0x07C0:START ; set <0x07C0> to CS segment register, and move to the address <0x7C00 + START>.
 
-TOTAL_SECTOR_COUNT: dw 0x02    ; physical address 0x7C05: the total sector count of HansOS image except boot-loader (max 1152 sectors, max 0x90000 bytes)
+TOTAL_SECTOR_COUNT: dw 0x02    ; physical address 0x7C05: the total sector count of hOS image except boot-loader (max 1152 sectors, max 0x90000 bytes)
 KERNEL32_SECTOR_COUNT: dw 0x02 ; physical address 0x7C07: the sector count of kernel32
 BSP_FLAG: db 0x01              ; physical address 0x7C09: BSP flag (0: AP, 1: BSP)
 GRAPHIC_MODE_FLAG: db 0x01     ; physical address 0x7C0A: graphic mode flag (0: text mode, 1: graphic mode)
@@ -237,7 +237,7 @@ PRINT_MESSAGE:
 
 MESSAGE1:                         db 0 ; start boot-loader
 DISK_ERROR_MESSAGE:               db 'disk error', 0
-IMAGE_LOADING_MESSAGE:            db 0 ; load HansOS image...
+IMAGE_LOADING_MESSAGE:            db 0 ; load hOS image...
 LOADING_COMPLETE_MESSAGE:         db 0 ; pass
 CHANGE_GRAPHIC_MODE_FAIL_MESSAGE: db 'graphic mode switching failure', 0
 

@@ -387,8 +387,8 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 	case SYSCALL_PROCESSMENUEVENT:
 		return (qword)k_processMenuEvent((Menu*)PARAM(0));
 
-	case SYSCALL_DRAWHANSLOGO:
-		return (qword)k_drawHansLogo(PARAM(0), (int)PARAM(1), (int)PARAM(2), (int)PARAM(3), (int)PARAM(4), (Color)PARAM(5), (Color)PARAM(6));
+	case SYSCALL_DRAWHOSLOGO:
+		return (qword)k_drawHosLogo(PARAM(0), (int)PARAM(1), (int)PARAM(2), (int)PARAM(3), (int)PARAM(4), (Color)PARAM(5), (Color)PARAM(6));
 
 	case SYSCALL_DRAWBUTTON:
 		return (qword)k_drawButton(PARAM(0), (Rect*)PARAM(1), (Color)PARAM(2), (Color)PARAM(3), (char*)PARAM(4), (dword)PARAM(5));

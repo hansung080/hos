@@ -81,7 +81,7 @@
 #define IDT_FLAGS_DPL3     0x60 // descriptor privilege level 3: Ring 3, user, lowest
 #define IDT_FLAGS_P        0x80 // present: 1:valid current descriptor, 0: invalid current descriptor
 #define IDT_FLAGS_IST0     0    // stack switching in a traditional way: switching stack only when the privilege changes.
-#define IDT_FLAGS_IST1     1    // stack switching in a IST way: switching stack always, hansos only use IST 1 out of IST 1~7).
+#define IDT_FLAGS_IST1     1    // stack switching in a IST way: switching stack always, hOS only use IST 1 out of IST 1~7).
 
 // useful macros
 #define IDT_FLAGS_KERNEL (IDT_FLAGS_DPL0 | IDT_FLAGS_P)

@@ -127,7 +127,7 @@
 /*** Syscall from widgets.h ***/
 #define SYSCALL_CREATEMENU       1500
 #define SYSCALL_PROCESSMENUEVENT 1501
-#define SYSCALL_DRAWHANSLOGO     1502
+#define SYSCALL_DRAWHOSLOGO      1502
 #define SYSCALL_DRAWBUTTON       1503
 #define SYSCALL_SETCLOCK         1504
 #define SYSCALL_ADDCLOCK         1505

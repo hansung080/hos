@@ -19,7 +19,7 @@ global k_isrParallelPort2, k_isrFloppyDisk, k_isrParallelPort1, k_isrRtc, k_isrR
 global k_isrNotUsed1, k_isrNotUsed2, k_isrMouse, k_isrCoprocessor, k_isrHdd1
 global k_isrHdd2, k_isrEtcInterrupt
 
-; Order to Save/Restore Conxtet in HansOS (use IST stack)
+; Order to Save/Restore Conxtet in hOS (use IST stack)
 ; 1. saved/restored by processor (6): SS, RSP, RFLAGS, CS, RIP, error code (optional)
 ; 2. saved/restored by ISR (19): RBP, RAX, RBX, RCX, RDX, RDI, RSI, R8, R9, R10, R11, R12, R13, R14, R15, DS, ES, FS, GS
 

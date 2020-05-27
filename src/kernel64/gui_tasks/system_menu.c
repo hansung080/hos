@@ -11,13 +11,13 @@ Menu* g_systemMenu = null;
 
 void k_systemMenuTask(void) {
 	MenuItem systemMenuTable[] = {
-		{"HansOS", null, true},
+		{"hOS", null, true},
 		{"Apps", k_funcApps, false},
 		{"Shell", k_funcShell, false}
 	};
 
-	MenuItem hansosMenuTable[] = {
-		{"About HansOS", k_funcAboutHansos, false},
+	MenuItem hosMenuTable[] = {
+		{"About hOS", k_funcAboutHos, false},
 		{"Shutdown", k_funcShutdown, false},
 		{"Reboot", k_funcReboot, false}
 	};
@@ -32,7 +32,7 @@ void k_systemMenuTask(void) {
 	};
 
 	Menu systemMenu = {systemMenuTable, sizeof(systemMenuTable) / sizeof(MenuItem)};
-	Menu hansosMenu = {hansosMenuTable, sizeof(hansosMenuTable) / sizeof(MenuItem)};
+	Menu hosMenu = {hosMenuTable, sizeof(hosMenuTable) / sizeof(MenuItem)};
 	Menu clockMenu = {clockMenuTable, sizeof(clockMenuTable) / sizeof(MenuItem)};
 	WindowManager* windowManager;
 	qword windowId;
@@ -62,12 +62,12 @@ void k_systemMenuTask(void) {
 	}
 
 	k_convertRectWindowToScreen(systemMenu.id, &systemMenu.table[0].area, &itemArea);
-	if (k_createMenu(&hansosMenu, itemArea.x1, itemArea.y2 + 1, MENU_ITEMHEIGHT_NORMAL, null, windowId, &systemMenu, 0) == false) {
+	if (k_createMenu(&hosMenu, itemArea.x1, itemArea.y2 + 1, MENU_ITEMHEIGHT_NORMAL, null, windowId, &systemMenu, 0) == false) {
 		k_printf("[system menu error] system menu creation failure\n");
 		return;
 	}
 
-	systemMenu.table[0].param = (qword)&hansosMenu;
+	systemMenu.table[0].param = (qword)&hosMenu;
 	g_systemMenu = &systemMenu;
 
 	/* draw clock */
@@ -88,7 +88,7 @@ void k_systemMenuTask(void) {
 	/* initialize epoll */
 	equeues[0] = &k_getWindow(windowId)->eventQueue;
 	equeues[1] = &k_getWindow(systemMenu.id)->eventQueue;
-	equeues[2] = &k_getWindow(hansosMenu.id)->eventQueue;
+	equeues[2] = &k_getWindow(hosMenu.id)->eventQueue;
 	equeues[3] = &k_getWindow(clockMenu.id)->eventQueue;
 	k_initEpoll(&epoll, equeues, 4);
 
@@ -97,7 +97,7 @@ void k_systemMenuTask(void) {
 		k_waitEpoll(&epoll, null);
 		k_processSystemMenuEvent(windowId, &clock, &clockMenu);
 		k_processMenuEvent(&systemMenu);
-		k_processMenuEvent(&hansosMenu);
+		k_processMenuEvent(&hosMenu);
 		k_processMenuEvent(&clockMenu);
 	}
 	
@@ -143,7 +143,7 @@ static void k_funcShell(qword parentId) {
 	k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_guiShellTask, TASK_AFFINITY_LB);
 }
 
-static void k_funcAboutHansos(qword parentId) {
+static void k_funcAboutHos(qword parentId) {
 
 }
 

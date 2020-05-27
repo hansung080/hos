@@ -68,7 +68,7 @@
 #define SERIAL_LINESTATUS_RECEIVEDCHARACTERERROR 0x80 // [bit 7:FIFOE] FIFO Error, mean that error exists in the data saved in Receive FIFO.
 
 // fields of Divisor Latch Register (MSB=1 byte, LSB=1 byte)
-#define SERIAL_DIVISORLATCH_115200 1  // [MSB=0, LSB=1] set serial communication speed, 115200 Bd or Bps, send 14KB per 1 second, used in HansOS.
+#define SERIAL_DIVISORLATCH_115200 1  // [MSB=0, LSB=1] set serial communication speed, 115200 Bd or Bps, send 14KB per 1 second, used in hOS.
 #define SERIAL_DIVISORLATCH_57600  2  // [MSB=0, LSB=2] set serial communication speed,  57600 Bd or Bps
 #define SERIAL_DIVISORLATCH_38400  3  // [MSB=0, LSB=3] set serial communication speed,  38400 Bd or Bps
 #define SERIAL_DIVISORLATCH_19200  6  // [MSB=0, LSB=6] set serial communication speed,  19200 Bd or Bps
