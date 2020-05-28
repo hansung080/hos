@@ -20,6 +20,7 @@ prepare:
 	mkdir -p $(OUT_DIR)/fonts
 	mkdir -p $(OUT_DIR)/images
 	mkdir -p $(OUT_DIR)/gui_tasks
+	mkdir -p $(OUT_DIR)/widgets
 
 dep:
 	make -C $(OUT_DIR) -f $(SRC_DIR_FROM_OUT)/Makefile internal-dep
@@ -50,6 +51,8 @@ IMAGES_C_SRCS=$(wildcard $(SRC_DIR_FROM_OUT)/images/*.c)
 IMAGES_C_OBJS=$(patsubst %.c, images/%.o, $(notdir $(IMAGES_C_SRCS)))
 GUITASKS_C_SRCS=$(wildcard $(SRC_DIR_FROM_OUT)/gui_tasks/*.c)
 GUITASKS_C_OBJS=$(patsubst %.c, gui_tasks/%.o, $(notdir $(GUITASKS_C_SRCS)))
+WIDGETS_C_SRCS=$(wildcard $(SRC_DIR_FROM_OUT)/widgets/*.c)
+WIDGETS_C_OBJS=$(patsubst %.c, widgets/%.o, $(notdir $(WIDGETS_C_SRCS)))
 
 internal-dep:
 	$(GCC64) -MM $(CORE_C_SRCS) > core.dep
@@ -62,7 +65,9 @@ internal-dep:
 	../tools/dep_modifier/dep-modifier images.dep images/
 	$(GCC64) -MM $(GUITASKS_C_SRCS) > gui_tasks.dep
 	../tools/dep_modifier/dep-modifier gui_tasks.dep gui_tasks/
-	cat core.dep utils.dep fonts.dep images.dep gui_tasks.dep > dependency.dep
+	$(GCC64) -MM $(WIDGETS_C_SRCS) > widgets.dep
+	../tools/dep_modifier/dep-modifier widgets.dep widgets/
+	cat core.dep utils.dep fonts.dep images.dep gui_tasks.dep widgets.dep > dependency.dep
 
 $(EP_OBJ): $(EP_SRC)
 	$(NASM64) -o $@ $<
@@ -85,7 +90,10 @@ images/%.o: $(SRC_DIR_FROM_OUT)/images/%.c
 gui_tasks/%.o: $(SRC_DIR_FROM_OUT)/gui_tasks/%.c
 	$(GCC64) -c -o $@ $<
 
-kernel64.elf: $(EP_OBJ) $(CORE_C_OBJS) $(CORE_ASM_OBJS) $(UTILS_C_OBJS) $(FONTS_C_OBJS) $(IMAGES_C_OBJS) $(GUITASKS_C_OBJS)
+widgets/%.o: $(SRC_DIR_FROM_OUT)/widgets/%.c
+	$(GCC64) -c -o $@ $<
+
+kernel64.elf: $(EP_OBJ) $(CORE_C_OBJS) $(CORE_ASM_OBJS) $(UTILS_C_OBJS) $(FONTS_C_OBJS) $(IMAGES_C_OBJS) $(GUITASKS_C_OBJS) $(WIDGETS_C_OBJS)
 	$(LD64) -o $@ $^
 
 ifeq (dependency.dep, $(wildcard dependency.dep))
