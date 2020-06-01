@@ -190,6 +190,7 @@ static void k_freeTask(qword taskId);
 
 /* Task Functions */
 Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr, byte affinity);
+Task* k_createTaskWithArg(qword flags, void* memAddr, qword memSize, qword entryPointAddr, byte affinity, qword arg);
 static void k_setTask(Task* task, qword flags, qword entryPointAddr, void* stackAddr, qword stackSize);
 
 /* Scheduler Functions */

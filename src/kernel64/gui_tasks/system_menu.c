@@ -6,6 +6,7 @@
 #include "../core/task.h"
 #include "app_panel.h"
 #include "shell.h"
+#include "alert.h"
 
 Menu* g_systemMenu = null;
 
@@ -152,7 +153,8 @@ static void k_funcShutdown(qword parentId) {
 }
 
 static void k_funcReboot(qword parentId) {
-
+	const char* msg = "Do you want to reboot hOS?";
+	k_createTaskWithArg(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_alertTask, TASK_AFFINITY_LB, (qword)msg);
 }
 
 static void k_funcClockHh(qword clock_) {

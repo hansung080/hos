@@ -189,6 +189,19 @@ Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAd
 	return task;
 }
 
+Task* k_createTaskWithArg(qword flags, void* memAddr, qword memSize, qword entryPointAddr, byte affinity, qword arg) {
+	Task* task;
+
+	task = k_createTask(flags, memAddr, memSize, entryPointAddr, affinity);
+	if (task == null) {
+		return null;
+	}
+
+	// set argument to RDI (first parameter).
+	task->context.registers[TASK_INDEX_RDI] = arg;
+	return task;
+}
+
 static void k_setTask(Task* task, qword flags, qword entryPointAddr, void* stackAddr, qword stackSize) {
 	
 	// initialize context
