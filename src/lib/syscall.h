@@ -32,7 +32,7 @@ void readRtcTime(byte* hour, byte* minute, byte* second);
 void readRtcDate(word* year, byte* month, byte* dayOfMonth, byte* dayOfWeek);
 
 /*** Syscall from task.h ***/
-qword createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr, byte affinity);
+qword createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr, qword arg, byte affinity);
 qword getCurrentTaskId(void);
 bool schedule(void);
 bool changeTaskPriority(qword taskId, byte priority);

@@ -83,7 +83,7 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 
 	/*** Syscall from task.h ***/
 	case SYSCALL_CREATETASK:
-		task = k_createTask(PARAM(0), (void*)PARAM(1), PARAM(2), PARAM(3), (byte)PARAM(4));
+		task = k_createTask(PARAM(0), (void*)PARAM(1), PARAM(2), PARAM(3), PARAM(4), (byte)PARAM(5));
 		if (task == null) {
 			return TASK_INVALIDID;
 		}

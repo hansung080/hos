@@ -57,14 +57,15 @@ void readRtcDate(word* year, byte* month, byte* dayOfMonth, byte* dayOfWeek) {
 	executeSyscall(SYSCALL_READRTCDATE, &paramTable);
 }
 
-qword createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr, byte affinity) {
+qword createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr, qword arg, byte affinity) {
 	ParamTable paramTable;
 
 	PARAM(0) = flags;
 	PARAM(1) = (qword)memAddr;
 	PARAM(2) = memSize;
 	PARAM(3) = entryPointAddr;
-	PARAM(4) = (qword)affinity;
+	PARAM(4) = arg;
+	PARAM(5) = (qword)affinity;
 
 	return executeSyscall(SYSCALL_CREATETASK, &paramTable);
 }

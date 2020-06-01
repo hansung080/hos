@@ -49,7 +49,7 @@ void k_guiShellTask(void) {
 	/* create shell task */
 	k_setShellExitFlag(false);
 
-	shellTask = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_shellTask, TASK_AFFINITY_LB);
+	shellTask = k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_shellTask, 0, TASK_AFFINITY_LB);
 	if (shellTask == null) {
 		k_deleteWindow(g_guiShellId);
 		return;

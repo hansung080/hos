@@ -76,7 +76,7 @@ qword k_executeApp(const char* fileName, const char* args, byte affinity) {
 	#endif // __DEBUG__
 
 	/* create task and add argument string to task */
-	task = k_createTask(TASK_FLAGS_PROCESS | TASK_FLAGS_USER, (void*)appMemAddr, appMemSize, entryPointAddr, affinity);
+	task = k_createTask(TASK_FLAGS_PROCESS | TASK_FLAGS_USER, (void*)appMemAddr, appMemSize, entryPointAddr, 0, affinity);
 	if (task == null) {
 		k_printf("app manager error: task creation failure\n");
 		k_freeMem((void*)appMemAddr);
@@ -376,7 +376,7 @@ static void k_addArgsToTask(Task* task, const char* args) {
 
 	task->context.registers[TASK_INDEX_RSP] = rsp;
 	task->context.registers[TASK_INDEX_RBP] = rsp;
-	task->context.registers[TASK_INDEX_RDI] = rsp; // RDI (first parameter)
+	task->context.registers[TASK_INDEX_RDI] = rsp; // RDI (first argument)
 }
 
 bool k_installApp(const char* fileName) {	

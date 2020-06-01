@@ -111,7 +111,7 @@ static void k_freeTask(qword taskId) {
     ----
 */
 
-Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr, byte affinity) {
+Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAddr, qword arg, byte affinity) {
 	Task* task;    // task to create (task means process or thread)
 	Task* process; // process with running task in it (It means process which has created the task, or it means parent process.)
 	void* stackAddr;
@@ -170,7 +170,7 @@ Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAd
 	k_unlockSpin(&(g_schedulers[currentApicId].spinlock));
 		
 	// set task.
-	k_setTask(task, flags, entryPointAddr, stackAddr, TASK_STACKSIZE);
+	k_setTask(task, flags, entryPointAddr, arg, stackAddr, TASK_STACKSIZE);
 	
 	// initialize child thread list.
 	k_initList(&(task->childThreadList));
@@ -189,22 +189,9 @@ Task* k_createTask(qword flags, void* memAddr, qword memSize, qword entryPointAd
 	return task;
 }
 
-Task* k_createTaskWithArg(qword flags, void* memAddr, qword memSize, qword entryPointAddr, byte affinity, qword arg) {
-	Task* task;
-
-	task = k_createTask(flags, memAddr, memSize, entryPointAddr, affinity);
-	if (task == null) {
-		return null;
-	}
-
-	// set argument to RDI (first parameter).
-	task->context.registers[TASK_INDEX_RDI] = arg;
-	return task;
-}
-
-static void k_setTask(Task* task, qword flags, qword entryPointAddr, void* stackAddr, qword stackSize) {
+static void k_setTask(Task* task, qword flags, qword entryPointAddr, qword arg, void* stackAddr, qword stackSize) {
 	
-	// initialize context
+	// initialize context.
 	k_memset(task->context.registers, 0, sizeof(task->context.registers));
 	
 	// set RSP, RBP.
@@ -233,16 +220,19 @@ static void k_setTask(Task* task, qword flags, qword entryPointAddr, void* stack
 		task->context.registers[TASK_INDEX_SS] = GDT_OFFSET_KERNELDATASEGMENT | SELECTOR_RPL0;
 	}
 	
-	// set RIP
+	// set RIP.
 	task->context.registers[TASK_INDEX_RIP] = entryPointAddr;
 
-	// set RFLAGS
+	// set RDI for the first argument.
+	task->context.registers[TASK_INDEX_RDI] = arg;
+
+	// set RFLAGS.
 	// - set IF (bit 9) to 1 in order to enable interrupt.
 	// - set IOPL (bit 12~13) to 3 (Ring 3) in oder to allow user applications to access IO port.
 	//   [Ref] IOPL: input/output privilege level
 	task->context.registers[TASK_INDEX_RFLAGS] |= 0x3200;
 	
-	// set etc
+	// set etc.
 	task->stackAddr = stackAddr;
 	task->stackSize = stackSize;
 	task->flags = flags;
@@ -1445,16 +1435,13 @@ bool k_notifyAllInJoinGroup(qword groupId) {
 qword k_createThread(qword entryPointAddr, qword arg, byte affinity, qword exitFunc) {
 	Task* task;
 
-	task = k_createTask(TASK_FLAGS_THREAD | TASK_FLAGS_USER, null, 0, entryPointAddr, affinity);
+	task = k_createTask(TASK_FLAGS_THREAD | TASK_FLAGS_USER, null, 0, entryPointAddr, arg, affinity);
 	if (task == null) {
 		return TASK_INVALIDID;
 	}
 
 	// replace k_exitTask to exitFunc in stack.
 	*(qword*)task->context.registers[TASK_INDEX_RSP] = exitFunc;
-
-	// set argument to RDI (first parameter).
-	task->context.registers[TASK_INDEX_RDI] = arg;
 
 	return task->link.id;
 }

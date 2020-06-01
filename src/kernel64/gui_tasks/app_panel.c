@@ -542,7 +542,7 @@ Color k_getUserAppColor(void) {
 }
 
 static void k_funcSystemApp(qword entryPoint) {
-	k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, entryPoint, TASK_AFFINITY_LB);
+	k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, entryPoint, 0, TASK_AFFINITY_LB);
 }
 
 void k_funcUserApp(qword fileName_) {

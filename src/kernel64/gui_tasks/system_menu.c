@@ -133,7 +133,7 @@ static bool k_processSystemMenuEvent(qword windowId, Clock* clock, Menu* clockMe
 
 static void k_funcApps(qword parentId) {
 	if (g_appPanel == null) {
-		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_appPanelTask, TASK_AFFINITY_LB);
+		k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD, null, 0, (qword)k_appPanelTask, 0, TASK_AFFINITY_LB);
 
 	} else {
 		k_togglePanelVisibility(g_appPanel, g_systemMenu, SYSMENU_INDEX_APPS);
@@ -141,7 +141,7 @@ static void k_funcApps(qword parentId) {
 }
 
 static void k_funcShell(qword parentId) {
-	k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_guiShellTask, TASK_AFFINITY_LB);
+	k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_guiShellTask, 0, TASK_AFFINITY_LB);
 }
 
 static void k_funcAboutHos(qword parentId) {
@@ -154,7 +154,7 @@ static void k_funcShutdown(qword parentId) {
 
 static void k_funcReboot(qword parentId) {
 	const char* msg = "Do you want to reboot hOS?";
-	k_createTaskWithArg(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_alertTask, TASK_AFFINITY_LB, (qword)msg);
+	k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_alertTask, (qword)msg, TASK_AFFINITY_LB);
 }
 
 static void k_funcClockHh(qword clock_) {
