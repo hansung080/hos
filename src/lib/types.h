@@ -15,5 +15,6 @@
 #include "types/util.h"
 #include "types/widgets.h"
 #include "types/kid.h"
+#include "types/gui_tasks.h"
 
 #endif // __TYPES_H__

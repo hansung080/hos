@@ -137,6 +137,10 @@
 #define SYSCALL_ALLOCKID 1600
 #define SYSCALL_FREEKID  1601
 
+/*** Syscall from gui_task ***/
+#define SYSCALL_ALERT   1701
+#define SYSCALL_CONFIRM 1702
+
 /*** Syscall - test ***/
 #define SYSCALL_TEST 0xFFFFFFFFFFFFFFFF
 

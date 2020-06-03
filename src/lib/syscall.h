@@ -156,4 +156,8 @@ Clock* removeClock(qword clockId);
 qword allocKid(void);
 void freeKid(qword id);
 
+/*** Syscall from gui_task ***/
+void alert(const char* msg);
+void confirm(const ConfirmArg* arg);
+
 #endif // __SYSCALL_H__

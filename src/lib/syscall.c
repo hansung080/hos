@@ -918,3 +918,19 @@ void freeKid(qword id) {
 
 	executeSyscall(SYSCALL_FREEKID, &paramTable);
 }
+
+void alert(const char* msg) {
+	ParamTable paramTable;
+
+	PARAM(0) = (qword)msg;
+
+	executeSyscall(SYSCALL_ALERT, &paramTable);
+}
+
+void confirm(const ConfirmArg* arg) {
+	ParamTable paramTable;
+
+	PARAM(0) = (qword)arg;
+
+	executeSyscall(SYSCALL_CONFIRM, &paramTable);
+}

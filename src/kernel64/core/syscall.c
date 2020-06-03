@@ -15,6 +15,8 @@
 #include "mp_config_table.h"
 #include "multiprocessor.h"
 #include "../utils/kid.h"
+#include "../gui_tasks/alert.h"
+#include "../gui_tasks/confirm.h"
 
 /**
   < SYSCALL/SYSRET Initialization Registers >
@@ -410,6 +412,15 @@ qword k_processSyscall(qword syscallNumber, const ParamTable* paramTable) {
 
 	case SYSCALL_FREEKID:	
 		k_freeKid(PARAM(0));
+		return (qword)true;
+
+	/*** Syscall from gui_task ***/
+	case SYSCALL_ALERT:
+		k_alert((char*)PARAM(0));
+		return (qword)true;
+
+	case SYSCALL_CONFIRM:
+		k_confirm((ConfirmArg*)PARAM(0));
 		return (qword)true;
 
 	/*** Syscall - test ***/
