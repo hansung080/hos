@@ -4,8 +4,13 @@
 #include "../core/2d_graphics.h"
 #include "../core/window.h"
 #include "../fonts/fonts.h"
+#include "../core/task.h"
 
-void k_alertTask(qword arg) {
+void k_alert(const char* msg) {
+    k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_alertTask, (qword)msg, TASK_AFFINITY_LB);
+}
+
+static void k_alertTask(qword arg) {
     const char* msg = (const char*)arg;
     Rect screenArea;
     qword windowId;
@@ -13,6 +18,12 @@ void k_alertTask(qword arg) {
     int x, y;
     Event event;
     KeyEvent* keyEvent;
+
+    /* check argument */
+    if (msg == null) {
+        k_printf("[alert error] 'message' argument not provided\n");
+        return;
+    }
 
     /* check graphic mode */
     if (k_isGraphicMode() == false) {
@@ -50,21 +61,22 @@ void k_alertTask(qword arg) {
     /* event processing loop */
     while (true) {
         if (k_recvEventFromWindow(&event, windowId) == false) {
-            k_sleep(0);
-            continue;
+            k_printf("[alert error] k_recvEventFromWindow error in blocking mode");
+            return;
         }
 
         switch (event.type) {
-        case EVENT_WINDOW_CLOSE:
-            k_deleteWindow(windowId);
-            return;
-
         case EVENT_KEY_DOWN:
             keyEvent = &event.keyEvent;
             if (keyEvent->asciiCode == KEY_ESC) {
                 k_deleteWindow(windowId);
                 return;
             }
+            break;
+        
+        case EVENT_WINDOW_CLOSE:
+            k_deleteWindow(windowId);
+            return;
         }
     }
 }

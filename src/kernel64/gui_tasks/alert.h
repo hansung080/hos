@@ -10,6 +10,7 @@
 #define ALERT_WIDTH  300
 #define ALERT_HEIGHT 100
 
-void k_alertTask(qword arg);
+void k_alert(const char* msg);
+static void k_alertTask(qword arg);
 
 #endif // __GUITASKS_ALERT_H__

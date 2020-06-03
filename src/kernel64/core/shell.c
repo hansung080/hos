@@ -288,20 +288,14 @@ static void k_showTotalRamSize(const char* paramBuffer) {
 }
 
 static void k_reboot(const char* paramBuffer) {
-	k_printf("start system rebooting.\n");
-	
-	// flush file system cache buffer to hard disk.
-	k_printf("flush file system cache...");
-	if (k_flushFileSystemCache() == true) {
-		k_printf("success\n");
-		
-	} else {
-		k_printf("failure\n");
+	k_printf("flush file system cache.\n");
+	if (k_flushFileSystemCache() == false) {
+		k_printf("reboot error: file system cache flushing failure\n");
+		return;
 	}
-	
+
 	// reboot system using Keyboard Controller.
-	k_printf("Press any key to reboot system.");
-	k_getch();
+	k_printf("reboot hOS.\n");
 	k_rebootSystem();
 }
 

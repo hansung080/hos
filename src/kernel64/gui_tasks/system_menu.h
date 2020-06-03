@@ -27,6 +27,7 @@ static void k_funcShell(qword parentId);
 static void k_funcAboutHos(qword parentId);
 static void k_funcShutdown(qword parentId);
 static void k_funcReboot(qword parentId);
+static void k_executeReboot(void);
 
 /* Clock Menu Function */
 static void k_funcClockHh(qword clock_);

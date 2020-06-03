@@ -62,7 +62,9 @@ void k_appPanelTask(void) {
 
 	/* event processing loop */
 	while (true) {
-		k_processPanelEvent(&appPanel);
+		if (k_processPanelEvent(&appPanel) == false) {
+			break;
+		}
 	}
 
 	g_appPanel = null;
@@ -232,6 +234,7 @@ bool k_processPanelEvent(Panel* panel) {
 
 	while (true) {
 		if (k_recvEventFromWindow(&event, panel->id) == false) {
+			k_printf("[app panel error] k_recvEventFromWindow error in blocking mode");
 			return false;
 		}
 
@@ -253,49 +256,41 @@ bool k_processPanelEvent(Panel* panel) {
 		case EVENT_KEY_DOWN:
 			keyEvent = &event.keyEvent;
 
-
 			switch (keyEvent->asciiCode) {
 			case KEY_RIGHT:
 				if (panel->prevIndex + 1 < panel->itemCount) {
 					k_processPanelActivity(panel, panel->prevIndex + 1);
-				}
-				
+				}	
 				break;
 
 			case KEY_LEFT:
 				if (panel->prevIndex == -1) {
 					k_processPanelActivity(panel, panel->itemCount - 1);
-
 				} else {
 					if (panel->prevIndex - 1 >= 0) {
 						k_processPanelActivity(panel, panel->prevIndex - 1);
 					}	
 				}
-
 				break;
 
 			case KEY_DOWN:
 				if (panel->prevIndex == -1) {
 					k_processPanelActivity(panel, 0);
-
 				} else {
 					if (panel->prevIndex + panel->columns < panel->itemCount) {
 						k_processPanelActivity(panel, panel->prevIndex + panel->columns);
 					}
-				}
-				
+				}	
 				break;
 
 			case KEY_UP:
 				if (panel->prevIndex == -1) {
 					k_processPanelActivity(panel, panel->itemCount - 1);
-
 				} else {
 					if (panel->prevIndex - panel->columns >= 0) {
 						k_processPanelActivity(panel, panel->prevIndex - panel->columns);
 					}
 				}
-
 				break;
 
 			case KEY_ENTER:
@@ -305,14 +300,11 @@ bool k_processPanelEvent(Panel* panel) {
 			case KEY_ESC:
 				if (panel->flags & PANEL_FLAGS_APPPANEL) {
 					k_changePanelVisibility(panel, g_systemMenu, SYSMENU_INDEX_APPS, false);
-
 				} else {
 					k_changePanelVisibility(panel, null, -1, false);
 				}
-
 				break;
 			}
-
 			break;
 		}
 	}

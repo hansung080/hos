@@ -4,9 +4,12 @@
 #include "../utils/queue.h"
 #include "../core/rtc.h"
 #include "../core/task.h"
+#include "../core/file_system.h"
+#include "../core/keyboard.h"
 #include "app_panel.h"
 #include "shell.h"
 #include "alert.h"
+#include "confirm.h"
 
 Menu* g_systemMenu = null;
 
@@ -145,16 +148,26 @@ static void k_funcShell(qword parentId) {
 }
 
 static void k_funcAboutHos(qword parentId) {
-
+	k_alert("'About hOS' not implemented");
 }
 
 static void k_funcShutdown(qword parentId) {
-
 }
 
+static ConfirmArg arg = {"Do you want to reboot hOS?", k_executeReboot};
+
 static void k_funcReboot(qword parentId) {
-	const char* msg = "Do you want to reboot hOS?";
-	k_createTask(TASK_PRIORITY_LOW | TASK_FLAGS_THREAD, null, 0, (qword)k_alertTask, (qword)msg, TASK_AFFINITY_LB);
+	k_confirm(&arg);
+}
+
+static void k_executeReboot(void) {
+	if (k_flushFileSystemCache() == false) {
+		k_printf("[system menu error] file system cache flushing failure\n");
+		return;
+	}
+
+	// reboot system using Keyboard Controller.
+	k_rebootSystem();
 }
 
 static void k_funcClockHh(qword clock_) {
