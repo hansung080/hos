@@ -49,6 +49,7 @@ qword k_rand(void);
 /* ETC Functions */
 bool k_setInterruptFlag(bool interruptFlag);
 bool k_isGraphicMode(void);
+void k_shutdownSystem();
 
 extern volatile qword g_tickCount;
 

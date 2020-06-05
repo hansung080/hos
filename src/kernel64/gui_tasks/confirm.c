@@ -102,6 +102,8 @@ static bool k_processConfirmEvent(Confirm* confirm) {
             mouseEvent = &event.mouseEvent;
             if (k_isPointInRect(&confirm->okButton, mouseEvent->point.x, mouseEvent->point.y) == true) {
                 confirm->arg->okFunc();
+                return false;
+
             } else if (k_isPointInRect(&confirm->cancelButton, mouseEvent->point.x, mouseEvent->point.y) == true) {
                 k_deleteWindow(confirm->windowId);
                 return false;
@@ -128,6 +130,8 @@ static bool k_processConfirmEvent(Confirm* confirm) {
             case KEY_ENTER:
                 if (confirm->ok == true) {
                     confirm->arg->okFunc();
+                    return false;
+
                 } else {
                     k_deleteWindow(confirm->windowId);
                     return false;

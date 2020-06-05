@@ -18,7 +18,15 @@
 
 #define null 0
 
+// debug mode
 #define __DEBUG__ 1 // 0: release mode, 1: debug mode
+
+// system mode
+#define SYSMODE_SYSTEM     0 // system
+#define SYSMODE_QEMUOLD    1 // QEMU older versions than 2.0
+#define SYSMODE_QEMUNEW    2 // QEMU newer versions than 2.0
+#define SYSMODE_VIRTUALBOX 3 // VirtualBox
+#define SYSMODE SYSMODE_QEMUNEW
 
 // Original offsetof macro function is defined in stddef.h.
 // But, the same macro function is defined here in order to avoid type duplication.

@@ -38,6 +38,7 @@ int k_getNextParam(ParamList* list, char* param);
 static void k_help(const char* paramBuffer);
 static void k_clear(const char* paramBuffer);
 static void k_showTotalRamSize(const char* paramBuffer);
+static void k_shutdown(const char* paramBuffer);
 static void k_reboot(const char* paramBuffer);
 static void k_measureCpuSpeed(const char* paramBuffer);
 static void k_showDateAndTime(const char* paramBuffer);

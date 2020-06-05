@@ -30,6 +30,7 @@ static ShellCommandEntry g_commandTable[] = {
 		{"clear", "clear screen", k_clear},
 		{"ram", "show total RAM size", k_showTotalRamSize},
 		{"reboot", "reboot system", k_reboot},
+		{"shutdown", "shut down system", k_shutdown},
 		{"cpus", "measure CPU speed", k_measureCpuSpeed},
 		{"date", "show current date and time", k_showDateAndTime},
 		{"chpr" ,"change task priority, usage) chpr <taskId> <priority>", k_changePriority},
@@ -294,9 +295,21 @@ static void k_reboot(const char* paramBuffer) {
 		return;
 	}
 
-	// reboot system using Keyboard Controller.
+	// reboot the system using Keyboard Controller.
 	k_printf("reboot hOS.\n");
 	k_rebootSystem();
+}
+
+static void k_shutdown(const char* paramBuffer) {
+	k_printf("flush file system cache.\n");
+	if (k_flushFileSystemCache() == false) {
+		k_printf("shutdown error: file system cache flushing failure\n");
+		return;
+	}
+
+	// shutdown the system.
+	k_printf("shut down hOS.\n");
+	k_shutdownSystem();
 }
 
 static void k_measureCpuSpeed(const char* paramBuffer) {

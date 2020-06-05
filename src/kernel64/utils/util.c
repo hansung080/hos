@@ -2,6 +2,7 @@
 #include "../core/asm_util.h"
 #include "../core/vbe.h"
 #include "../core/sync.h"
+#include "../core/console.h"
 
 //====================================================================================================
 // k_memset, k_memcpy, k_memcmp (by 1 byte)
@@ -681,4 +682,17 @@ bool k_isGraphicMode(void) {
 	}
 
 	return true;
+}
+
+void k_shutdownSystem() {
+	// [REF] https://wiki.osdev.org/Shutdown#Emulator-specific_methods
+	#if SYSMODE == SYSMODE_QEMUOLD
+	k_outPortWord(0xB004, 0x2000);
+	#elif SYSMODE == SYSMODE_QEMUNEW
+	k_outPortWord(0x0604, 0x2000);
+	#elif SYSMODE == SYSMODE_VIRTUALBOX
+	k_outPortWord(0x4004, 0x3400);
+	#else
+	k_printf("'Shutdown' not implemented\n");
+	#endif
 }

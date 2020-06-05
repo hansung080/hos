@@ -26,6 +26,7 @@ static void k_funcShell(qword parentId);
 /* hOS Menu Functions */
 static void k_funcAboutHos(qword parentId);
 static void k_funcShutdown(qword parentId);
+static void k_executeShutdown(void);
 static void k_funcReboot(qword parentId);
 static void k_executeReboot(void);
 

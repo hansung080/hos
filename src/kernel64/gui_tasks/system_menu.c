@@ -151,13 +151,26 @@ static void k_funcAboutHos(qword parentId) {
 	k_alert("'About hOS' not implemented");
 }
 
+static ConfirmArg g_shutdownArg = {"Do you want to shut down hOS?", k_executeShutdown};
+
 static void k_funcShutdown(qword parentId) {
+	k_confirm(&g_shutdownArg);
 }
 
-static ConfirmArg arg = {"Do you want to reboot hOS?", k_executeReboot};
+static void k_executeShutdown(void) {
+	if (k_flushFileSystemCache() == false) {
+		k_printf("[system menu error] file system cache flushing failure\n");
+		return;
+	}
+
+	// shut down the system.
+	k_shutdownSystem();
+}
+
+static ConfirmArg g_rebootArg = {"Do you want to reboot hOS?", k_executeReboot};
 
 static void k_funcReboot(qword parentId) {
-	k_confirm(&arg);
+	k_confirm(&g_rebootArg);
 }
 
 static void k_executeReboot(void) {
@@ -166,7 +179,7 @@ static void k_executeReboot(void) {
 		return;
 	}
 
-	// reboot system using Keyboard Controller.
+	// reboot the system using Keyboard Controller.
 	k_rebootSystem();
 }
 
