@@ -12,7 +12,4 @@
 
 #define null 0
 
-#define __DEBUG__ 1 // 0: release mode, 1: debug mode
-
-
 #endif // __TYPES_TYPES_H__
