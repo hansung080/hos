@@ -181,8 +181,8 @@ And then, execute Nasm installer as admin.
 > File Name: nasm-2.13.03-installer-x64.exe
 
 Copy nasm to bin directory.
-> File Name: nasm.exe\
-> Source Directory: C:\Users\hansu\AppData\Local\bin\NASM\
+> File Name:             nasm.exe\
+> Source Directory:      C:\Users\hansu\AppData\Local\bin\NASM\
 > Destination Directory: C:\work\cygwin64\bin
 
 Check the version of Nasm to check if it's been installed successfully.
@@ -222,8 +222,8 @@ Download Eclipe for C/C++ Developers from [Eclipse Download](http://www.eclipse.
 And then, install it.\
 After running Elipse, add include path as below.
 > Properties > C/C++ General > Paths and Symbols > includes (Languages: GNU C)\
-> Add Path - C:/work/cygwin64/usr/include\
-> Add Path - C:/work/cygwin64/lib/gcc/x86_64-pc-cygwin/5.4.0/include
+> Add Path: C:/work/cygwin64/usr/include\
+> Add Path: C:/work/cygwin64/lib/gcc/x86_64-pc-cygwin/5.4.0/include
 
 # Install QEMU
 Install QEMU from zip file.
@@ -231,8 +231,8 @@ Install QEMU from zip file.
 
 Modify `qemu-x86_64.bat` file as below after copying a backup of original file.\
 -fda and -hda path must be your workspace path.
-> File Name - qemu-x86_64.bat\
-> Modify Content - qemu-system-x86_64.exe -L . -m 64 -fda "C:/work/ws/os/hos/hos.img" -hda "C:/work/ws/os/hos/hdd.img" -boot a -localtime -M pc -serial tcp:127.0.0.1:7984,server,nowait -smp 16
+> File Name:      qemu-x86_64.bat\
+> Modify Content: qemu-system-x86_64.exe -L . -m 64 -fda "C:/work/ws/os/hos/hos.img" -hda "C:/work/ws/os/hos/hdd.img" -boot a -localtime -M pc -serial tcp:127.0.0.1:7984,server,nowait -smp 16
 
 Create HDD image with 20 MB-sized as below.
 
@@ -242,6 +242,6 @@ Create HDD image with 20 MB-sized as below.
 ```
 
 And the, Move it to your workspace directory.
-> File Name: hdd.img\
-> Source Directory: C:\work\qemu\
-> Destination Directory - C:\work\ws\os\hos
+> File Name:             hdd.img\
+> Source Directory:      C:\work\qemu\
+> Destination Directory: C:\work\ws\os\hos
