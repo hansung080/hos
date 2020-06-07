@@ -4,16 +4,16 @@ This document explains how to set up hOS development environment for `Windows`.
 # Install Cygwin
 ### Create Directories
 First of all, you need to create two directories in where you want as below. \
-You can choose any path you want.
+You can choose any paths you want.
 > Root Install Directory - C:\work\cygwin64 \
 > Local Package Directory - C:\work\cygwin64\packagess
 
-### Download Cygwin
+### Install Cygwin
 You can download Cygwin from [Cygwin Install](https://cygwin.com/install.html) \
 And then, execute the exe file you've just downloaded.
 > File Name - setup-x86_64.exe
 
-Select the options just like below while installing Cygwin.
+Select the options as below while installing Cygwin.
 #### 1. Select Root Install Directory
 > C:\work\cygwin64
 
@@ -116,8 +116,9 @@ $ cd /usr/src/binutils-2.29-1.src/binutils-gdb
 $ export TARGET=x86_64-pc-linux
 $ export PREFIX=/usr/cross
 $ ./configure --target=$TARGET --prefix=$PREFIX --enable-64-bit-bfd --disable-shared --disable-nls
-$ ls -alF config.status -> exist
-$ ls -alF Makefile -> exist
+# Check if 'config.status' and 'Makefile' files exist.
+$ ls config.status
+$ ls Makefile
 $ make configure-host
 $ make LDFLAGS="-static"
 # Modify Makefile before executing the 'make install' command.
@@ -134,10 +135,10 @@ The following letters will be printed in the output if it's been succeeded.
 
 ```sh
 $ /usr/cross/bin/x86_64-pc-linux-ld --help | grep "supported targets"
-  elf64-x86-64 elf32-i386
+supported targets: elf64-x86-64 elf32-i386
 
 $ /usr/cross/bin/x86_64-pc-linux-ld --help | grep "supported emulations"
-  elf_x86_64 elf32_x86_64 elf_i386
+supported emulations: elf_x86_64 elf32_x86_64 elf_i386
 ```
 
 ### Build GCC
@@ -157,8 +158,8 @@ $ ./configure --target=$TARGET --prefix=$PREFIX --disable-nls --enable-languages
 # If gmp.h or mpfr.h or mpc.h is not found, execute 'configure' command with the 'with' options.
 $ ./configure --target=$TARGET --prefix=$PREFIX --disable-nls --enable-languages=c --without-headers --disable-shared --enable-multilib --with-gmp=/usr/local/include --with-mpfr=/usr/local/include --with-mpc=/usr/local/include
 # Check if 'config.status' and 'Makefile' files exist.  
-$ ls -alF config.status
-$ ls -alF Makefile
+$ ls config.status
+$ ls Makefile
 $ make configure-host
 $ cp /lib/gcc/x86_64-pc-cygwin/7.3.0/libgcc_s.dll.a /lib/gcc/x86_64-pc-cygwin/7.3.0/libgcc_s.a
 $ cp /lib/libmpfr.dll.a /lib/libmpfr.a
@@ -173,7 +174,8 @@ The following letters will be printed in the output if it's been succeeded.
 
 ```sh
 $ /usr/cross/bin/x86_64-pc-linux-gcc -dumpspecs | grep -A1 multilib_options
-  m64/m32
+*multilib_options:
+m64/m32
 ```
 
 ### Install Nasm
@@ -194,8 +196,8 @@ $ nasm -version
 ```
 
 # Install IDE
-You can choose any IDE or editor you want to work on. \
-`Visual Studio Code` or `Eclipse` is one of recommendable IDEs when writing code in C language.
+You can choose any IDEs or editors you want to work on. \
+`Visual Studio Code` or `Eclipse` is one of the recommendable IDEs when writing code in C language.
 
 ### Install Visual Studio Code
 Download VS Code Installer from [Visual Studio Code Download](https://code.visualstudio.com/download) \
@@ -228,7 +230,7 @@ After running Elipse, add include path as below.
 
 # Install QEMU
 Install QEMU from zip file.
-> File Name: qemu-0.10.4.zip
+> File Name - qemu-0.10.4.zip
 
 Modify `qemu-x86_64.bat` file as below after copying a backup of original file. \
 The options -fda and -hda must be your workspace path.

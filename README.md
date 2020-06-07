@@ -24,6 +24,35 @@ hOS is a 64-bit, multi-core, and lightweight operating system. hOS provides fund
 * System Call / User Libraries
 * User Applications - see below for the details.
 
+# Setup Development Environment
+Before you build hOS, you must set up hOS development environment to build toolchains and install QEMU which provides the virtual environment to run hOS.
+You can see the appropriate document below depending on your host PC.
+- [hOS Development Environment for Windows]
+- [hOS Development Environment for Mac] 
+
+# Build and Run hOS
+First, clone hOS repository to your local PC.
+
+```sh
+$ git clone https://github.com/hansung080/hos.git
+```
+
+And then, build hOS.
+
+```sh
+$ cd hos
+$ make
+
+# check if hOS image has been created successfully
+$ ls hos.img
+```
+
+And then, run hOS on QEME.
+
+```
+$ ./scripts/run_qemu-x86_64.sh
+```
+
 # Applications
 ### Widgets
 - Menu
@@ -48,4 +77,5 @@ hOS is a 64-bit, multi-core, and lightweight operating system. hOS provides fund
 - Test Elf
 - Text Viewer
 
-# Setup Development Environment
+[hOS Development Environment for Windows]: <https://github.com/hansung080/hos/blob/master/docs/dev_env_win.md>
+[hOS Development Environment for Mac]: <https://github.com/hansung080/hos/blob/master/docs/dev_env_mac.md>
