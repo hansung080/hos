@@ -139,7 +139,7 @@ $ /usr/cross/bin/x86_64-pc-linux-ld --help | grep "supported emulations"
   elf_x86_64 elf32_x86_64 elf_i386
 ```
 
-### Build GCC - GNU Compiler Collection
+### Build GCC
 Execute the following commands on Cygwin terminal to build GCC.
 
 ```sh
@@ -175,7 +175,7 @@ $ /usr/cross/bin/x86_64-pc-linux-gcc -dumpspecs | grep -A1 multilib_options
   m64/m32
 ```
 
-### Install Nasm - Netwide Assembler
+### Install Nasm
 Download Nasm installer from [Nasm](https://www.nasm.us/).\
 And then, execute Nasm installer as admin.
 > File Name: nasm-2.13.03-installer-x64.exe
@@ -192,7 +192,7 @@ $ nasm -version
   2.13.03
 ```
 
-# Install IDE - Integrated Development Environment
+# Install IDE
 You can choose any IDE or editor you want to work on.\
 `Visual Studio Code` or `Eclipse` is one of recommendable IDEs when writing code in C language.
 
@@ -202,7 +202,7 @@ And then, install it.\
 After running VS Code, install `C/C++` Extension made by Microsoft which can be searched on Extensions menu.
 
 ### Install Eclipse for C/C++ Developers
-#### 1. Install JDK - Java Development Kit
+#### 1. Install JDK
 Download JDK from [JDK download](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).\
 And then, install it.\
 Set `Path` environment variable.
