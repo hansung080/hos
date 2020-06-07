@@ -4,9 +4,9 @@ This documents explains how to set up hOS developments environments for `Windows
 # Install Cygwin
 ### Create Directories
 First of all, you need to create two directories in where you want as below.\
-One is for Cygwin, and another is for Cygwin packages.
-> C:\work\cygwin64 (Change path if you want)\
-> C:\work\cygwin64\packages (Change path if you want)
+You can choose any path you want.
+> Root Install Directory:  C:\work\cygwin64\
+> Local Package Directory: C:\work\cygwin64\packagess
 
 ### Download Cygwin
 You can download Cygwin from [Cygwin Install](https://cygwin.com/install.html)\
@@ -60,7 +60,8 @@ Set `Path` environment variable.\
 One is for cygwin64 binaries, another is for toolchains you will build in the next step.
 | Env | Value |
 | --- | ----- |
-| Path | C:\work\cygwin64\bin;C:\work\cygwin64\usr\cross\bin |
+| Path | C:\work\cygwin64\bin |
+| Path | C:\work\cygwin64\usr\cross\bin |
 
 ### Execute Cygwin Terminal
 You need to execute Cygwin terminal as `admin` in order to get a write permission.\
