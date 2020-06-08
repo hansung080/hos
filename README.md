@@ -54,7 +54,7 @@ $ ./scripts/run_qemu-x86_64.sh
 ```
 
 This screenshot shows Prototype, Color Picker, Shell, and Image Viewer running on hOS.
-<div style="text-align:center"><img src="images/hos.png" width="60%" height="60%"/></div>
+<p align="center"><img src="images/hos.png" width="60%" height="60%"/></p>
 
 # Applications
 ### Widgets
