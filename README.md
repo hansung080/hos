@@ -53,6 +53,8 @@ And then, run hOS on QEME.
 $ ./scripts/run_qemu-x86_64.sh
 ```
 
+[hOS](https://github.com/hansung080/hos/blob/master/images/hos.png)
+
 # Applications
 ### Widgets
 - Menu
