@@ -113,14 +113,18 @@ $ mkdir -p /usr/cross
 $ cd /usr/src/binutils-2.29-1.src
 $ tar xvf binutils-gdb-2.29.tar.bz2
 $ cd /usr/src/binutils-2.29-1.src/binutils-gdb
+
 $ export TARGET=x86_64-pc-linux
 $ export PREFIX=/usr/cross
 $ ./configure --target=$TARGET --prefix=$PREFIX --enable-64-bit-bfd --disable-shared --disable-nls
 # Check if 'config.status' and 'Makefile' files exist.
 $ ls config.status
 $ ls Makefile
+
 $ make configure-host
+
 $ make LDFLAGS="-static"
+
 # Modify Makefile before executing the 'make install' command.
 $ vi Makefile
 --------------------------------------------------
@@ -151,21 +155,23 @@ $ tar xvfJ gcc-7.3.0.tar.xz
 # patch -p1 < gcc-7.3.0-3.src.patch
 # patch -p1 < gcc-7.3.0-3.cygwin.patch
 $ cd /usr/src/gcc-7.3.0-3.src/gcc-7.3.0
+
 $ export TARGET=x86_64-pc-linux
 $ export PREFIX=/usr/cross
 $ export PATH=$PATH:$PREFIX/bin
 $ ./configure --target=$TARGET --prefix=$PREFIX --disable-nls --enable-languages=c --without-headers --disable-shared --enable-multilib
-# If gmp.h or mpfr.h or mpc.h is not found, execute 'configure' command with the 'with' options.
-$ ./configure --target=$TARGET --prefix=$PREFIX --disable-nls --enable-languages=c --without-headers --disable-shared --enable-multilib --with-gmp=/usr/local/include --with-mpfr=/usr/local/include --with-mpc=/usr/local/include
 # Check if 'config.status' and 'Makefile' files exist.  
 $ ls config.status
 $ ls Makefile
+
 $ make configure-host
+
 $ cp /lib/gcc/x86_64-pc-cygwin/7.3.0/libgcc_s.dll.a /lib/gcc/x86_64-pc-cygwin/7.3.0/libgcc_s.a
 $ cp /lib/libmpfr.dll.a /lib/libmpfr.a
 $ cp /lib/libgmp.dll.a /lib/libgmp.a
 $ cp /lib/libmpc.dll.a /lib/libmpc.a
 $ make all-gcc
+
 $ make install-gcc
 ```
 

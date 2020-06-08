@@ -28,14 +28,18 @@ Execute the following commands on terminal to build binutils.
 ```sh
 $ cd /usr/local/cross/x86_64-pc-linux
 $ tar xvfz binutils-2.31.tar.gz
+
 $ export TARGET=x86_64-pc-linux
 $ export PREFIX=/usr/local/cross/x86_64-pc-linux
 $ ./configure --target=$TARGET --prefix=$PREFIX --enable-64-bit-bfd --disable-shared --disable-nls
 # Check if 'config.status' and 'Makefile' files exist.
 $ ls config.status
 $ ls Makefile
+
 $ make configure-host
+
 $ make LDFLAGS="-static"
+
 # Modify Makefile before executing the 'make install' command.
 $ vi Makefile
 --------------------------------------------------
@@ -62,17 +66,20 @@ Execute the following commands on terminal to build GCC.
 ```sh
 $ cd /usr/local/cross/x86_64-pc-linux
 $ tar xvfz gcc-8.2.0.tar.gz
+
 $ export TARGET=x86_64-pc-linux
 $ export PREFIX=/usr/local/cross/x86_64-pc-linux
 $ export PATH=$PATH:$PREFIX/bin
-$ ./configure --target=$TARGET --prefix=$PREFIX --disable-nls --enable-languages=c --without-headers --disable-shared --enable-multilib
-# If gmp.h or mpfr.h or mpc.h is not found, execute 'configure' command with the 'with' options.
+# gmp.h, mpfr.h, and mpc.h are not found on Mac, thus, execute 'configure' command with the 'with' options.
 $ ./configure --target=$TARGET --prefix=$PREFIX --disable-nls --enable-languages=c --without-headers --disable-shared --enable-multilib --with-gmp=/usr/local/include --with-mpfr=/usr/local/include --with-mpc=/usr/local/include
 # Check if 'config.status' and 'Makefile' files exist.  
 $ ls config.status
 $ ls Makefile
+
 $ make configure-host
+
 $ make all-gcc
+
 $ make install-gcc
 ```
 
