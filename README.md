@@ -25,7 +25,7 @@ hOS is a 64-bit, multi-core, and lightweight operating system. hOS provides fund
 * User Applications - see below for the details.
 
 # Setup Development Environment
-Before you build hOS, you must set up hOS development environment to build toolchains and install QEMU which provides the virtual environment to run hOS.
+Before you build hOS, you must set up hOS development environment to build toolchains and install QEMU which provides the virtual environment to run hOS. \
 You can see the appropriate document below depending on your host PC.
 - [hOS Development Environment for Windows]
 - [hOS Development Environment for Mac] 
