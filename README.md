@@ -53,7 +53,8 @@ And then, run hOS on QEME.
 $ ./scripts/run_qemu-x86_64.sh
 ```
 
-![hOS](https://github.com/hansung080/hos/blob/master/images/hos.png)
+This screenshot shows Prototype, Color Picker, Shell, and Image Viewer running on hOS.
+<div style="text-align:center"><img src="images/hos.png" width="60%" height="60%"/></div>
 
 # Applications
 ### Widgets
@@ -79,5 +80,11 @@ $ ./scripts/run_qemu-x86_64.sh
 - Test Elf
 - Text Viewer
 
-[hOS Development Environment for Windows]: <https://github.com/hansung080/hos/blob/master/docs/dev_env_win.md>
-[hOS Development Environment for Mac]: <https://github.com/hansung080/hos/blob/master/docs/dev_env_mac.md>
+### Tools
+- Dep Modifier
+- Image Maker
+- Network Transfer
+- Bin2c
+
+[hOS Development Environment for Windows]: <docs/dev_env_win.md>
+[hOS Development Environment for Mac]: <docs/dev_env_mac.md>
