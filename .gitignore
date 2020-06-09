@@ -107,12 +107,6 @@ Temporary Items
 *.bin
 *.img
 
-# Executable files
-image-maker
-network-transfer
-dep-modifier
-bin2c
-
 # Build directory
 build/
 
