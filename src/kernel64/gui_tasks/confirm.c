@@ -76,8 +76,8 @@ static void k_confirmTask(qword _arg) {
 
 static bool k_processConfirmEvent(Confirm* confirm) {
     Event event;
-    KeyEvent* keyEvent;
     MouseEvent* mouseEvent;
+    KeyEvent* keyEvent;
 
     while (true) {
         if (k_recvEventFromWindow(&event, confirm->windowId) == false) {
