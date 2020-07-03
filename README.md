@@ -79,6 +79,7 @@ This screenshot shows Prototype, Color Picker, Shell, and Image Viewer running o
 - Event Monitor
 - Test Elf
 - Text Viewer
+- Bubble Shooter
 
 ### Tools
 - Dep Modifier
