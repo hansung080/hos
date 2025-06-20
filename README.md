@@ -1,7 +1,7 @@
 # hOS
 hOS is a 64-bit, multi-core, and lightweight operating system. hOS provides fundamental features of operating system, such as memory management, task scheduling, file system, GUI system, etc. Someone who wants to understand the inside of operating system and make one of his own will get a help by looking into the inside of hOS.
 
-# Features
+## Features
 * Boot-loader - implements floppy disk and USB booting.
 * Memory Management - implements segmentation and 4-level paging with 2MB-sized page.
 * Keyboard Driver
@@ -24,13 +24,13 @@ hOS is a 64-bit, multi-core, and lightweight operating system. hOS provides fund
 * System Call / User Libraries
 * User Applications - see below for the details.
 
-# Setup Development Environment
+## Setup Development Environment
 Before you build hOS, you must set up hOS development environment to build toolchains and install QEMU which provides the virtual environment to run hOS. \
 You can see the appropriate document below depending on your host PC.
 - [hOS Development Environment for Windows]
 - [hOS Development Environment for Mac] 
 
-# Build and Run hOS
+## Build and Run hOS
 First, clone hOS repository to your local PC.
 
 ```sh
@@ -43,7 +43,7 @@ And then, build hOS.
 $ cd hos
 $ make
 
-# check if hOS image has been created successfully
+# Check if the `hos.img` file has been created successfully.
 $ ls hos.img
 ```
 
@@ -56,7 +56,7 @@ $ ./scripts/run_qemu-x86_64.sh
 This screenshot shows Prototype, Color Picker, Shell, and Image Viewer running on hOS.
 <p align="center"><img src="images/hos.png" width="60%" height="60%"/></p>
 
-# Applications
+## Applications
 ### Widgets
 - Menu
 - Logo
